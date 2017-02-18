@@ -4,6 +4,7 @@ Hasta el momento hemos visto el proceso de compilación a grandes razgos, y hemo
 
 ### Parsing Descendente (*Top-Down*)
 
+
 Recordemos que el proceso de parsing consiste en analizar una secuencia de tokens, y producir un árbol de derivación, lo que es equivalente a producir una derivación extrema izquierda o derecha de la cadena a reconocer. Tomemos la siguiente gramática, que representa expresiones aritméticas (sin ambigüedad):
 
     E = T
