@@ -5,4 +5,5 @@
 * Teoría de Lenguajes Formales
 * Análisis Sintáctico
 * Análisis Semántico
+* Generación de Código
 
