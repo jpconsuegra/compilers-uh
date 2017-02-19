@@ -208,6 +208,17 @@ bool Parse(Token[] tokens) {
 }
 ```
 
+Usualmente por comodidad se asume que existe un terminal especial `$` generado directamente por el Lexer al final de toda cadena. Esto se hace para poder generalizar desde el punto de vista teórico, y no tener que especificar siempre si estamos al final de la cadena o no. Si nuestro Lexer produce este token, al que llamaremos `Token.EOF` en el código, entonces podemos reescribir el método anterior de la siguiente forma:
+
+```csharp
+bool Parse(Token[] tokens) {
+    this.tokens = tokens;
+    nextToken = 0;
+
+    return E() && Match(Token.EOF); // <-- Este es el cambio
+}
+```
+
 Esta metodología para crear parsers recursivos descendentes puede ser aplicada fácilmente a cualquier gramática libre del contexto. Sin embargo, no todas las gramáticas pueden ser reconocidas de esta forma. Según la estructura de la gramática, es posible que es parser definido no funcione correctamente.
 
 Por ejemplo, para gramáticas ambigüas, el parser (si termina) dará alguna de las derivaciones extrema izquierda posibles, en función del orden en que hayan sido definidas las producciones. Esto se debe al uso de operadores con cortocircuito. Es posible modificar este tipo de parsers fácilmente para generar no el primero sino todas las derivaciones extrema izquierda disponibles, simplemente reemplazando los operadores `||` más externos.
@@ -435,7 +446,7 @@ Para poder formalizar este concepto, será conveniente primero encontrar algorit
 * Si `X -> W1 | W2 | ... | Wn` entonces por definición, `First(X) = \union First(W_i)`.
 * Si `X -*-> epsilon` entonces `epsilon \in First(X)`.
 * Si `W = xZ` donde `x` es un terminal, entonces trivialmente `First(W) = { x }`.
-* Si `W = YZ` donde ambos `Y` y `Z` son no-terminales, entonces `First(Y) \subseteq First(W)`.
+* Si `W = YZ` donde `Y` es un no-terminal y `Z` una forma oracioanl, entonces `First(Y) \subseteq First(W)`.
 * Si `W = YZ` y `Y -*-> epsilon` entonces `First(Z) \subseteq First(W)`.
 
 Las observaciones anteriores nos permiten diseñar un algoritmo para calcular todos los conjuntos `First(X)` para cada no-terminal `X`. Como de forma general pueden existir producciones recursivas, calcularemos todos los conjuntos `First` a la vez, aplicando cada una de las "reglas" anteriores, hasta que no se modifique ninguno de los conjuntos `First`. Nuevamente abusaremos de la imaginación y creatividad para introducir métodos y clases utilitarias sin definirlos de manera formal.
@@ -467,8 +478,9 @@ Firsts CalculateFirsts(Grammar G) {
                 changed = Firsts[X].Add(epsilon);
             }
             else {
+                bool allEpsilon = true;
+
                 foreach(var s in W) {
-                    bool allEpsilon = true;
 
                     // Agregamos todo en el First(s)
                     changed = Firsts[X].AddAll(Firsts[s]);
@@ -493,3 +505,209 @@ Firsts CalculateFirsts(Grammar G) {
     return Firsts;
 }
 ```
+
+El algoritmo anterior computa todos los conjuntos `First` de todos los terminales y no-terminales a la vez. Hemos supuesto la existencia de estructuras de datos `Firsts` y `FirstSet` con operaciones convenientes para ello. Estas estructuras se implementan fácilmente usando diccionarios y conjuntos. Una vez obtenidos todos los `First` anteriores, podemos calcular fácilmente el `First` de cualquier forma oracional.
+
+```csharp
+FirstSet CalculateFirst(Symbol[] p, Firsts firsts) {
+    FirstSet result = new FirstSet();
+    bool allEpsilon = true;
+
+    foreach(var s in p) {
+        result.AddAll(Firsts[s]);
+
+        if (!Firsts[s].Contains(epsilon)) {
+            allEpsilon = false;
+            break;
+        }
+    }
+
+    if (allEpsilon) {
+        result.Add(epsilon);
+    }
+
+    return result;
+}
+```
+
+Básicamente este nuevo algoritmo consiste en repetir la parte más interna del algoritmo anterior, así que no son necesarias más explicaciones.
+
+Pasemos entonces a calcular el conjunto `Follow` de cada no-terminal. Para ello, veamos también algunos hechos que nos ayudarán a entender como está formado este conjunto:
+
+* `$` pertenece al `Follow(S)`.
+* Por definición `epsilon` nunca pertenece al `Follow(X)` para todo `X`.
+* Si `X -> WAZ` siendo `W` y `Z` formas oracionales, y `A` un no-terminal cualquiera, entonces `First(Z) - { epsilon } \subseteq Follow(A)`.
+* Si `X -> WAZ` y `Z -*-> epsilon` (o igualmente `epsilon` está en el `First(Z)`), entonces `Follow(X) \subseteq Follow(A)`.
+
+De la misma forma que en el caso del conjunto `First`, dado que las relaciones entre los `Follow` de cualquier par de no-terminales pueden ser recursivas, diseñaremos un algoritmo que los computa a todos a la misma vez:
+
+```csharp
+Follows CalculateFollows(Grammar G, Firsts firsts) {
+    var Follows = new Follows();
+
+    Follows[S] = new FollowSet() { Token.EOF };
+
+    foreach(var X in G.NonTerminals) {
+        Follows[X] = new FollowSet();
+    }
+
+    bool changed = false;
+
+    do {
+        changed = true;
+
+        foreach(var p in G.Productions) {
+            // X -> W
+            var X = p.First;
+            var W = p.Last;
+
+            for(int i=0; i < W.Length; i++) {
+                var S = W[i];
+
+                if (S.IsTerminal)
+                    continue;
+
+                var first = CalculateFirst(W.Sufix(i+1));
+
+                changed = Follows[S].AddAll(first.Remove(epsilon));
+
+                if (first.Contains(epsilon) || i == W.Length - 1) {
+                    changed = Follows[S].AddAll(Follows[X]);
+                }
+            }
+        }
+
+    } while (changed);
+}
+```
+
+Una vez tenemos todos los conjuntos `First` y `Follow` calculados, podemos decir formalmente en qué consiste una gramática LL(1). Para ello, construiremos una tabla `T`, donde asociaremos a cada par no-terminal `X` / token `t` una producción (a lo sumo). Dicha producción es la única que tiene sentido aplicar si se debe expandir el no-terminal `X` y el token actual es `t`.
+
+Las reglas generales para generar esta tabla son las siguientes:
+
+1. Si `X -> W` y `t` pertenece al `First(W)` entonces `T[X,t] = X -> W`.
+2. Si `X -> epsilon` y `t` pertenece al `Follow(X)` entonces `T[X,t] = X -> epsilon`.
+
+Si al aplicar estas reglas, en cada posición `T[X,t]` obtenemos a lo sumo una producción, entonces decimos que una gramática es LL(1). En caso contrario, tenemos al menos un conflicto, pues hay más de una producción que tiene sentido utilizar en algún caso. Formalmente:
+
+> **Definición:** Sea `G=<S,N,T,P>` una gramática libre del contexto. `G` es LL(1) si y solo se para todo no-terminal `X \in N`, tal que `X -> W1 | W2 | ... | Wn` se cumple que:
+> * First(Wi) \bigcap First(Wj) = \emptyset \forall i \neq j
+> * epsilon \in First(Wi) => First(Wj) \bigcap Follow(X) = \emptyset \forall j \neq i
+
+Esta definición nos garantiza que en toda entrada de la tabla LL(1) exista a lo sumo una producción a aplicar. Ahora podemos demostrar que la gramática anterior para expresiones, una vez factorizada, es LL(1):
+
+    E -> T X
+    X -> + E | epsilon
+    T -> int Y | ( E )
+    Y -> * T | epsilon
+
+Comencemos por calcular todos los conjuntos `First`. Para los terminales es trivial:
+
+    First( int ) = { int }
+    First( + )   = { + }
+    First( * ) =   { * }
+    First( ( ) =   { ( }
+    First( ) ) =   { ) }
+
+Ahora calculemos los `First` de cada no-terminal:
+
+    First(E) = { (, int }
+    First(X) = { +, epsilon }
+    First(T) = { (, int }
+    First(Y) = { *, epsilon }
+
+Luego podemos calcular los `First` de cada parte derecha de cada producción:
+
+    First( T X ) = { (, int }
+    First( + E ) = { + }
+    First(int Y) = { int }
+    First( (E) ) = { ( }
+    First( * T ) = { * }
+
+Calculemos finalmente los `Follow` de cada no-terminal:
+
+    Follow(E) = { $, ) }
+    Follow(X) = { $, ) }
+    Follow(T) = { +, $, ) }
+    Follow(Y) = { +, $, ) }
+
+Ahora podemos llenar la tabla LL(1). Comencemos por la fila correspondiente a `E`. Para ello analizamos la producción `E -> T X`. Por la regla (1) podemos decir que esta producción se aplica solo para los terminales `(` y `int`.
+
+          int      +       *       (       )       $
+       +-------+-------+-------+-------+-------+-------+
+     E |  T X  |       |       |  T X  |       |       |
+       +-------+-------+-------+-------+-------+-------+
+
+Veamos entonces la fila asociada a `T`. La producción `T -> int Y` solamente se aplica para el token `int` mientas que la producción `T -> (E)` se aplica solamente para `(`.
+
+          int      +       *       (       )       $
+       +-------+-------+-------+-------+-------+-------+
+     T | int Y |       |       | ( E ) |       |       |
+       +-------+-------+-------+-------+-------+-------+
+
+Ahora veamos las producciones de `X`. Para `X -> + E` la única entrada importante es con el token `+`. Por otro lado, la producción `X -> epsilon` se aplica en todos los tokens que pertenezcan al `Follow(X)`, es decir, `$` y `)`.
+
+          int      +       *       (       )       $
+       +-------+-------+-------+-------+-------+-------+
+     X |       |  + E  |       |       |  eps  |  eps  |
+       +-------+-------+-------+-------+-------+-------+
+
+Finalmente para el no-terminal `Y`, la producción `Y -> * T` es trivial, y la producción `Y -> epsilon` se aplica para `+`, `$` y `)`.
+
+          int      +       *       (       )       $
+       +-------+-------+-------+-------+-------+-------+
+     Y |       |  eps  |  * T  |       |  eps  |  eps  |
+       +-------+-------+-------+-------+-------+-------+
+
+Finalmente, nos queda la tabla completa. Dado que no encontrarmos conflictos al construirla, podemos concluir que la gramática es LL(1):
+
+          int      +       *       (       )       $
+       +-------+-------+-------+-------+-------+-------+
+     E |  T X  |       |       |  T X  |       |       |
+       +-------+-------+-------+-------+-------+-------+
+     T | int Y |       |       | ( E ) |       |       |
+       +-------+-------+-------+-------+-------+-------+
+     X |       |  + E  |       |       |  eps  |  eps  |
+       +-------+-------+-------+-------+-------+-------+
+     Y |       |  eps  |  * T  |       |  eps  |  eps  |
+       +-------+-------+-------+-------+-------+-------+
+
+### Parsing Descendente No Recursivo
+
+Una vez obtenida la tabla LL(1) podemos escribir un algoritmo de parsing descendente no recursivo. La idea general consiste en emplear una pila de símbolos, donde iremos construyendo la forma oracional que eventualmente derivará en la cadena a reconocer. Si leemos la pila desde el tope hasta el fondo, en todo momento tendremos una forma oracional que debe generar la parte de la cadena no reconocida.
+
+El símbolo en el tope de la pila representa el terminal o no-terminal a analizar. En caso de ser un terminal, debe coincidir con el token analizado. En caso de ser un no-terminal, se consulta la tabla LL(1) y se ejecuta la producción correspondiente, insertando en la pila (en orden inverso) la forma oracional en que deriva el no-terminal extraído:
+
+```csharp
+bool NonRecursiveParse(Grammar G, Token[] tokens) {
+    Stack<Symbol> stack = new Stack<Symbol>() { G.Start };
+    int nextToken = 0;
+    LLTable table = BuildLLTable(G);
+
+    while (stack.Count > 1 && nextToken < tokens.Length) {
+        var symbol = stack.Pop();
+
+        if (symbol.IsTerminal && tokens[nextToken++] != symbol.Value) {
+            return false;
+        }
+        else if (symbol.IsNonTerminal) {
+            var prod = LLTable[symbol, tokens[nextToken]];
+
+            if (prod == null)
+                return false;
+
+            for(var s in prod.Reverse()) {
+                stack.Push(s);
+            }
+        }
+    }
+
+    return stack.Count == 0 && nextToken == tokens.Length;
+}
+```
+
+En la práctica la mayoría de las gramáticas interesantes no son LL(1). Sin embargo, con suficiente esfuerzo pueden lograrse gramáticas LL(k) para un valor k > 1, que también pueden ser parseadas con técnicas similares. Por otro lado, para gramáticas suficientemente simples (como las expresiones aritméticas) este parser es muy eficiente, y fácil de implementar.
+
+Finalmente, en el caso que la gramática no sea LL(1), este análisis nos permite reducir al mínimo necesario la cantidad de producciones a probar en cada terminal. La tabla LL(1) en estos casos pudiera tener más de una producción en cada entrada, y en esos casos implementaríamos un parser recursivo que solamente probara aquellas producciones listadas en la tabla. De esta forma, podemos obtener el parser (descendiente) más eficiente posible, sin perder en expresividad.
+
+De todas formas, los lenguajes LL(1), es decir, aquellos donde existe al menos una gramática LL(1) que los genera, son un conjunto estrictamente menor que los lenguajes libres del contexto. Más adelante veremos estrategias de parsing basadas en principios similares que permiten reconocer lenguajes y gramáticas más expresivas.
