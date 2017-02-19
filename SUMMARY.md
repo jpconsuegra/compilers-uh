@@ -6,4 +6,5 @@
 * Análisis Sintáctico
 * Análisis Semántico
 * Generación de Código
+* Optimizaciones
 
