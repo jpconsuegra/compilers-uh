@@ -11,7 +11,7 @@
    * [Parsing Descendente (*Top-Down*)](Sintactico/ParsingDesc.md)
    * [Parsing Ascendente (*Bottom-Up*)](Sintactico/ParsingAsc.md)
 * [Análisis Semántico](Semantico/Intro.md)
-   * [Árboles de Sintaxis Abstract](Semantico/AST.md)
+   * [Árboles de Sintaxis Abstracta](Semantico/AST.md)
 * [Generación de Código](Generacion/Intro.md)
 * [Optimizaciones](Optimizaciones/Intro.md)
 
