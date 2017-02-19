@@ -1,15 +1,14 @@
 # Summary
 
-* [Introduction](README.md)
-* [Prefacio](Prefacio.md)
-* [Introducción](Sintactico/Lexer.md)
-* [Teoría de Lenguajes Formales](Parsing.md)
+* [Prefacio](Readme.md)
+* [Introducción](Intro.md)
+* [Teoría de Lenguajes Formales](Lenguajes/Intro.md)
    * Jerarquía de Lenguajes
    * Lenguajes Regulares
    * Lenguajes Libres del Contexto
 * [Análisis Sintáctico](Sintactico/Intro.md)
    * [Lexer](Sintactico/Lexer.md)
-   * Parsing
+   * [Parsing](Sintactico/Parsing.md)
 * Análisis Semántico
 * Generación de Código
 * Optimizaciones
