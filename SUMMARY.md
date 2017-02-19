@@ -5,6 +5,7 @@
 * [Teoría de Lenguajes Formales](Parsing.md)
    * Lenguajes Regulares
    * Lenguajes Libres del Contexto
+   * Jerarquía de Lenguajes
 * [Análisis Sintáctico](Sintactico/Intro.md)
    * Lexer
    * Parsing
