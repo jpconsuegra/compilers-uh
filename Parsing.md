@@ -1,2 +1,0 @@
-# Teoría de Lenguajes Formales
-
