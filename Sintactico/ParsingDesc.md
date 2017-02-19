@@ -1,4 +1,4 @@
-## Parsing Descendiente
+## Parsing Descendente
 
 Hasta el momento hemos visto el proceso de compilación a grandes razgos, y hemos definido que la primera fase consiste en el análisis sintáctico. Esta fase a su vez la hemos divido en 2 procesos secuenciales: el análisis lexicográfico (*tokenización* o *lexing*), y el análisis sintáctico en sí (*parsing*). En esta sección nos concentraremos en este segundo proceso.
 
@@ -244,8 +244,187 @@ Es posible eliminar la recursión izquierda con la transformación:
     S -> b1X | b2X | ... | bmX
     X -> a1X | a2X | ... | anX | epsilon
 
-Para el caso más general de recursión izquierda indirecta, también existe un algoritmo para su eliminación, que no presentaremos aquí :(
+Para el caso más general de recursión izquierda indirecta, también existe un algoritmo para su eliminación, pero de momento no lo presentaremos :(
+
+El algoritmo de parsing que hemos desarrollado resuelve, al menos de forma teórica, el problema de construir el árbol de derivación. Aunque el código presentado no construye explícitamente el árbol de derivación, es bastante fácil modificarlo al respecto. Sin embargo, aunque en principio el problema ha sido resuelto, el algoritmo recursivo descendente es extremadamente ineficiente. El problema es que, en principio, es necesario probar con todos los árboles de derivación posibles antes de encontrar el árbol correcto. De cierta forma, para resolver el problema de parsing lo que hemos hecho es buscar entre todos los posibles programas, cuál de ellos tiene una representación textual igual a la cadena deseada.
 
 ### Parsing Predictivo Descendente
 
+Idealmente, quisiéramos un algoritmo de parsing que construya el árbol de derivación con un costo lineal con respecto a la cadena de entrada. Para ello, necesitamos poder "adivinar", en cada método recursivo, cuál es la rama adecuada a la que descender. Con vistas a resolver este problema, consideremos nuevamente la gramática vista en la sección anterior:
+
+    E -> T | T + E
+    T -> int * T | int | (E)
+
+Analicemos ahora nuevamente la cadena de *tokens* `int * ( int + int )`, y tratemos de "adivinar" en cada paso de una derivación extrema izquierda qué producción es necesario aplicar. Tengamos en cuenta que en cada paso del proceso de parsing, hay al menos un *token* que conocemos tiene que ser generado de inmediato (dado que la gramática no puede "intercambiar" *tokens* una vez generados). Por tanto, observando el siguiente *token* que es necesario generar (`nextToken` en nuestra implementación), tenemos una pista de cuáles producciones no son posibles. En el caso anterior, el primer *token* a generar es `int`. Por tanto, es evidente que ninguna producción que derive en `(E)` funciona, pues el `(` no coincidirá con el *token* `int`. La primera producción a aplicar tiene que derivar en una forma oracional que comience por `int`.
+
+Desafortunadamente existen varias producciones que generan un `int` al inicio. Tanto `T -> int` como `T -> int * T` pudieran ser escogidas. Aún más, a cualquiera de estas dos producciones se llega tanto por `E -> T` como por `E -> T + E`. Por tanto, hay varios caminos por los cuáles se pudiera generar el primer *token* `int`. Intuitivamente, esto se debe a que la gramática no está **factorizada**. Informalmente, llamaremos a una gramática **factorizada a la izquierda** si las producciones de cualquier símbolo, dos a dos, no comparten ningún prefijo.
+
+En muchas ocasiones es fácil factorizar una gramática. Se introduce un no-terminal nuevo por cada grupo de producciones que compartan un prefijo común. Se reemplazan dichas producciones por una sola producción nueva que contiene el prefijo común, y el nuevo no-terminal se hace derivar en todos los posibles sufijos:
+
+    E -> T X
+    X -> + E | epsilon
+    T -> int Y | (E)
+    Y -> * T | epsilon
+
+Por supuesto, es posible que la relación entre los prefijos sea más complicada, y una vez que se realice la transformación anterior aún queden producciones no factorizadas (e.j. `X -> abC | abD | aY`). Incluso en estos casos es posible factorizar la gramática aplicando varias veces el proceso de factorización anterior.
+
+Esta modificación evidentemente no cambia el lenguaje, y ni siquiera cambia la ambigüedad o no de la gramática. Simplemente nos permite delegar la decisión de que producción tomar un *token* hacia adelante. Si antes no sabíamos cuando venía `int` que producción tomar, porque podía ser `T -> int` o `T -> int * T`, ahora simplemente reconocemos el primer `int`, y delegamos la decisión de generar `epsilon` o `* T` a un nuevo no-terminal.
+
+> **Nota:** Desde el punto de vista del diseño de lenguajes, el beneficio de este cambio es discutible. Por un lado nos permite aplicar un algoritmo que de otra forma no funcionaría. Sin embargo, por otra parte, estamos provocando un cambio en el diseño de la gramática, que es una cuestión de "alto nivel", para poder usar un algoritmo particular, que es una cuestión de "bajo nivel". En otras palabras, estamos cambiando el diseño en función de la implementación. Este cambio puede tener efectos adversos. Por ejemplo, nuestra gramática para expresiones aritméticas es ahora más difícil de entender, pues contiene símbolos "extraños" que no significan nada desde el punto de vista semántico, solamente están ahí para simplificar la implementación. El árbol de derivación ahora es más complejo. Más adelante discutiremos esta problemática en mayor profundidad.
+
+Consideremos ahora nuevamente el proceso de parsing, y tratemos de ver si es posible adivinar en todo caso cuál producción aplicar. Tomemos como ejemplo la cadena `int * ( int + int )`, y tratemos de generar la derivación extrema izquierda:
+
+    E -*-> int * ( int + int )
+
+La primera producción tiene que ser necesariamente `E -> T X` pues es la única disponible:
+
+    E -*-> T X -*-> int * ( int + int )
+
+Ahora, tenemos que expandir el primer símbolo `T`. Afortunadamente, sabemos que esta expansión obligatoriamente genera un *token* a continuación, ya sea `int` o `(`. Por tanto es trivial escoger la única producción posible:
+
+    E -*-> int Y X -*-> int * ( int + int )
+
+El nuevo símbolo a expandir es `Y`, y ahora se nos complica un poco el análisis. `Y` bien pudiera desaparecer (`Y -> epsilon`) o generar un `* T`. Sabemos que la producción `* T` nos genera el token que queremos. Pero la pregunta es, ¿cómo sabemos que la producción `Y -> epsilon` no pudiera redundar en que eventualmente aparezca ese `*` por otro lado? Observando la gramática, intuitivamente, podemos ver que si `Y` desaparece, `X` nunca podrá poner un `*` justamente en esa posición, ya que `X` tiene que generar primero un `+` (`X -> + E`) antes de que aparezca otro no-terminal que pudiera generar el `*`. Por tanto, la única producción posible es `Y -> * T`:
+
+    E -*-> int * T X -*-> int * ( int + int )
+
+En este punto es fácil ver que la única solución es derivar `T -> ( E )`, pues `T` nunca desaparece:
+
+    E -*-> int * ( E ) X -*-> int * ( int + int )
+
+Ahora volvemos al punto inicial:
+
+    E -*-> int * ( T X ) X -*-> int * ( int + int )
+
+Nuevamente `T` tiene que generar un `int`:
+
+    E -*-> int * ( int Y X ) X -*-> int * ( int + int )
+
+Evidentemente `Y` no puede generar el token `+` que hace falta, así que solo puede desaparecer:
+
+    E -*-> int * ( int X ) X -*-> int * ( int + int )
+
+Volvemos entonces a la situación complicada anterior. Es cierto que `X -> + E` nos sirve, pero ¿cómo sabemos que es la única opción? ¿Es posible que de `X -> epsilon` se logre en algún momento que aparezca un `+`. Si miramos la forma oracional generada hasta el momento, vemos que no nos queda otra `X` dentro los paréntesis que pueda poner el `+` que falta. Sin embargo, este análisis no lo puede hacer nuestro algoritmo, que solamente conoce el no-terminal actual, y el siguiente token que es necesario generar. Tratemos de hacer un razonamiento un más generalizable. La pregunta que estamos haciendo aquí básicamente es si es conveniente eliminar `X` con la esperanza de que aparezca un `+` de lo que sea que venga detrás. Más adelante formalizaremos este concepto, pero por ahora baste decir que, intuitivamente, podemos ver que detrás de una `X` solamente puede venir o bien un `)` o bien el fin de la cadena. Por tanto, no queda otra opción que derivar `X -> + E`:
+
+    E -*-> int * ( int + E ) X -*-> int * ( int + int )
+
+Generar el siguiente `int` es fácil:
+
+    E -*-> int * ( int + T X ) X -*-> int * ( int + int )
+    E -*-> int * ( int + int Y X ) X -*-> int * ( int + int )
+
+Finalmente nos queda por generar un `)`. Claro que si miramos la forma oracional generada, sabemos que es necesario eliminar `Y` y `X`, pero recordemos que nuestro algoritmo no puede ver tan hacia adelante. De todas formas, no hace falta mirar más, ni `Y` ni `X` son capaces de generar nunca un `)`, así que ambos símbolos desaparecen:
+
+    E -*-> int * ( int + int X ) X -*-> int * ( int + int )
+    E -*-> int * ( int + int ) X -*-> int * ( int + int )
+
+Y finalmente la última `X` debe desaparecer también pues se ha generado toda la cadena. Finalmente nos queda:
+
+    E -> T X
+      -> int Y X
+      -> int * T X
+      -> int * ( E ) X
+      -> int * ( T X ) X
+      -> int * ( int Y X ) X
+      -> int * ( int X ) X
+      -> int * ( int + E ) X
+      -> int * ( int + T X ) X
+      -> int * ( int + int Y X ) X
+      -> int * ( int + int X ) X
+      -> int * ( int + int ) X
+      -> int * ( int + int )
+
+La derivación extrema izquierda producida es considerablemente mayor con esta gramática factorizada, dado que existen más producciones. Sin embargo, ganamos en un factor exponencial al eliminar el *backtrack* por completo. Intuitivamente, el largo de esta derivación debe ser lineal con respecto a la longitud de la cadena de entrada, pues a lo sumo en cada paso o bien generamos un nuevo *token* o derivamos el símbolo más izquierdo en nuevos símbolos. Dado que no tenemos recursión izquierda, estas operaciones con cada símbolo no pueden ser "recursivas". Es decir, si el no-terminal más izquierdo es `Y`, y empezamos a derivarlo, eventualmente terminaremos con ese `Y`, ya sea produciendo un terminal o derivando en `epsilon`. De forma general, el costo está acotado superiormente por `|w| * |N|`, pues no es posible que para generar un *token* sea necesario usar `|N| + 1` no terminales, ya que en ese caso tendría un no-terminal derivando en sí mismo (al menos de forma indirecta), lo que contradice que la gramática no tenga recursión izquierda.
+
+Tratemos ahora de formalizar este proceso de "adivinación" de qué producción aplicar en cada caso. De forma general nos hemos enfrentado a dos interrogantes fundamentalmente distintas:
+
+* Saber si alguna de las producciones de X puede derivar en una forma oracional cuyo primer símbolo sea el terminal que toca generar.
+* Si `X -> epsilon`, saber si esta derivación puede potencialmente redundar en que "lo que sea que venga detrás" de `X` genere el terminal que toca.
+
+Si para las preguntas anteriores obtenemos una sola producción como respuesta, entonces podemos estar seguros de la decisión a tomar. En caso de que obtengamos más de una respuesta, nuestro algoritmo no podrá decidir qué producción tomar, y será inevitable el *backtrack*. Para encontrar una respuesta a estas preguntas, intentemos formalizar estos conceptos de "`X` puede derivar en..." y "lo que venga detrás de `X`...".
+
+Llamaremos `First(W)` al conjunto de todos los terminales que pueden ser generados por `W` como primer elemento (siendo `W` una forma oracional cualquiera, no solamente un no-terminal). Formalmente:
+
+> **Definición**: Sea `G=<S,N,T,P>` una gramática libre del contexto, `W \in { N \union T }*` una forma oracional, y `x \in T` un terminal. Decimos que `x \in First(W)` si y solo si `W -*-> xZ` (donde `W \in { N \union T }*` es otra forma oracional).
+
+Este concepto captura formalmente la noción de "comenzar por". De forma intuitiva, si logramos computar el conjunto `First(W)` para todas las producciones `X -> W` de nuestra gramática, y cada uno de estos conjuntos de las producciones del mismo símbolo son disjuntos dos a dos, entonces podremos decir inequívocamente qué producción aplicar para generar el terminal que toca (o cuando no es posible generarlo). Notemos que fue necesario definir `First(W)` no solo para un no-terminal, sino para una forma oracional en general, pues necesitamos computarlo en toda parte derecha de una producción.
+
+Por otro lado, la noción de "lo que viene detrás" se formaliza en un concepto similar, denominado `Follow(X)`. En este caso solo necesitamos definirlo para un no-terminal, pues solo nos interesan las producciones `X -> epsilon`. Informalmente diremos que el `Follow(X)` son todos aquellos terminales que pueden aparecer en cualquier forma oracional, detrás de un no-terminal `X`. Formalmente:
+
+> **Definición**: Sea `G=<S,N,T,P>` una gramática libre del contexto, `X \in N` un no-terminal, y `x \in T` un terminal. Decimos que `x \in Follow(X)` si y solo si `S -*-> WXxZ` (donde `W, Z \in { N \union T }*` son formas oracionales cualesquiera).
+
+La definición de `Follow(X)` básicamente nos dice que si en algún momento el terminal que queremos generar `x` está justo detrás del no-terminal `X` que toca expandir, entonces `X -> epsilon` es una producción válida a aplicar, porque existe la posibilidad de que otro no-terminal genere a `x` justo en esa posición (aunque en la cadena particular que se está reconociendo puede que esto no sea posible).
+
+Supongamos entonces que tenemos todos estos conjuntos calculados (o potencialmente calculables en cualquier momento). ¿Cómo podemos utilizarlos para guiar la búsqueda del árbol de derivación correcto? Veamos como podría quedar el método recursivo descendente para generar `T` en esta nueva gramática:
+
+```csharp
+bool T() {
+    // T -> int Y
+    if (Tokens[currToken] == Token.Int)
+        return Match(Token.Int) && Y()
+
+    // T -> ( E )
+    else if (Tokens[currToken] == Token.Open)
+        return Match(Token.Open) && E() && Match(Token.Close);
+
+    return false;
+}
+```
+
+Como `T` siempre genera un token, es fácil decidir qué camino escoger. Por otro lado, en la expansión de `X`, es posible que sea necesario escoger `X -> epsilon`. En este caso, el método recursivo sería:
+
+```csharp
+bool X() {
+    // X -> + E
+    if (Tokens[nextToken] == Token.Plus)
+        return Match(Token.Plus) && E()
+
+    // X -> epsilon
+    else if (Follow("X").Contains(Tokens[currToken]))
+        return true;
+
+    return false;
+}
+```
+
+En el caso de `X -> epsilon`, simplemente retornamos `true` de inmediato y no consumimos el terminal correspondiente.
+
+De forma general, podemos escribir cualquier método recursivo descendente de la siguiente forma (asumimos algunos métodos y clases utilitarios que no presentaremos formalmente):
+
+```csharp
+bool Expand(NonTerminal N) {
+    foreach(var p in N.Productions) {
+        if (!p.IsEpsilon && First(p).Contains(Tokens[nextToken]))
+            return MatchProduction(p);
+
+        if (p.IsEpsilon && Follow(N).Contains(Tokens[nextToken]))
+            return true;
+    }
+
+    return false;
+}
+```
+
+El método `MatchProduction` puede a grandes razgos implementarse de la siguiente forma:
+
+```csharp
+bool MatchProduction(Production p) {
+    foreach(var symbol in p.Symbols) {
+        if (symbol.IsTerminal && !Match(symbol as Token))
+            return false;
+
+        if (!symbol.IsTerminal && !Expand(symbol as NonTerminal))
+            return false;
+    }
+
+    return true;
+}
+```
+
+En todos estos casos hemos asumido que la primera producción aplicable era la única posible. Para ello deben cumplirse ciertas restricciones entre los conjuntos `First` y `Follow` que formalizaremos a continuación.
+
 ### Gramáticas LL(1)
+
+Llamaremos gramáticas LL(1) justamente a aquellas gramáticas para las cuales el proceso de cómputo de `First` y `Follow` descrito informalmente en la sección anterior nos permite construir un parser que nunca tenga que hacer *backtrack*. El nombre LL(1) significa *left-to-right left-derivation look-ahead 1*. Es decir, la cadena se analiza de izquierda a derecha, se construye una derivación extrema izquierda, y se analiza un solo *token* para decidir que producción aplicar. De forma general, existen las gramáticas LL(k), donde son necesarios k *tokens* para poder predecir que producción aplicar. Aunque los principios son los mismos, el proceso de construcción de estos conjuntos es más complejo, y por lo tanto no analizaremos estas gramáticas por el momento :(
+
+
