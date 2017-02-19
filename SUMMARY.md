@@ -1,7 +1,7 @@
 # Summary
 
 * [Prefacio](Prefacio.md)
-* [Introducción](Intro.md)
+* [Introducción](Sintactico/Lexer.md)
 * Teoría de Lenguajes Formales
 * [Análisis Sintáctico](Sintactico/Intro.md)
    * Lexer
