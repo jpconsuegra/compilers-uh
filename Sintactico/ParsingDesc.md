@@ -201,6 +201,9 @@ Finalmente, para reconocer la cadena completa, solo nos queda garantizar que se 
 
 ```csharp
 bool Parse(Token[] tokens) {
+    this.tokens = tokens;
+    nextToken = 0;
+
     return E() && nextToken == tokens.Length;
 }
 ```
@@ -360,11 +363,11 @@ Supongamos entonces que tenemos todos estos conjuntos calculados (o potencialmen
 ```csharp
 bool T() {
     // T -> int Y
-    if (Tokens[currToken] == Token.Int)
+    if (tokens[currToken] == Token.Int)
         return Match(Token.Int) && Y()
 
     // T -> ( E )
-    else if (Tokens[currToken] == Token.Open)
+    else if (tokens[currToken] == Token.Open)
         return Match(Token.Open) && E() && Match(Token.Close);
 
     return false;
@@ -376,11 +379,11 @@ Como `T` siempre genera un token, es fácil decidir qué camino escoger. Por otr
 ```csharp
 bool X() {
     // X -> + E
-    if (Tokens[nextToken] == Token.Plus)
+    if (tokens[nextToken] == Token.Plus)
         return Match(Token.Plus) && E()
 
     // X -> epsilon
-    else if (Follow("X").Contains(Tokens[currToken]))
+    else if (Follow("X").Contains(tokens[currToken]))
         return true;
 
     return false;
@@ -394,10 +397,10 @@ De forma general, podemos escribir cualquier método recursivo descendente de la
 ```csharp
 bool Expand(NonTerminal N) {
     foreach(var p in N.Productions) {
-        if (!p.IsEpsilon && First(p).Contains(Tokens[nextToken]))
+        if (!p.IsEpsilon && First(p).Contains(tokens[nextToken]))
             return MatchProduction(p);
 
-        if (p.IsEpsilon && Follow(N).Contains(Tokens[nextToken]))
+        if (p.IsEpsilon && Follow(N).Contains(tokens[nextToken]))
             return true;
     }
 
@@ -427,4 +430,66 @@ En todos estos casos hemos asumido que la primera producción aplicable era la �
 
 Llamaremos gramáticas LL(1) justamente a aquellas gramáticas para las cuales el proceso de cómputo de `First` y `Follow` descrito informalmente en la sección anterior nos permite construir un parser que nunca tenga que hacer *backtrack*. El nombre LL(1) significa *left-to-right left-derivation look-ahead 1*. Es decir, la cadena se analiza de izquierda a derecha, se construye una derivación extrema izquierda, y se analiza un solo *token* para decidir que producción aplicar. De forma general, existen las gramáticas LL(k), donde son necesarios k *tokens* para poder predecir que producción aplicar. Aunque los principios son los mismos, el proceso de construcción de estos conjuntos es más complejo, y por lo tanto no analizaremos estas gramáticas por el momento :(
 
+Para poder formalizar este concepto, será conveniente primero encontrar algoritmos explícitos para computar los conjuntos `First` y `Follow`. Comencemos por el `First` ;). Veamos primero algunos hechos interesantes que se cumplen en este conjunto, y luego veremos cómo se diseña un algoritmo para su cómputo. No presentaremos demostración para estos hechos, pues la mayoría son intuitivos.
 
+* Si `X -> W1 | W2 | ... | Wn` entonces por definición, `First(X) = \union First(W_i)`.
+* Si `X -*-> epsilon` entonces `epsilon \in First(X)`.
+* Si `W = xZ` donde `x` es un terminal, entonces trivialmente `First(W) = { x }`.
+* Si `W = YZ` donde ambos `Y` y `Z` son no-terminales, entonces `First(Y) \subseteq First(W)`.
+* Si `W = YZ` y `Y -*-> epsilon` entonces `First(Z) \subseteq First(W)`.
+
+Las observaciones anteriores nos permiten diseñar un algoritmo para calcular todos los conjuntos `First(X)` para cada no-terminal `X`. Como de forma general pueden existir producciones recursivas, calcularemos todos los conjuntos `First` a la vez, aplicando cada una de las "reglas" anteriores, hasta que no se modifique ninguno de los conjuntos `First`. Nuevamente abusaremos de la imaginación y creatividad para introducir métodos y clases utilitarias sin definirlos de manera formal.
+
+```csharp
+Firsts CalculateFirsts(Grammar G) {
+    var Firsts = new Firsts(); // Parecido a un Diccionario
+
+    // Calculamos el First de cada terminal
+    foreach(var t in G.Terminals) {
+        Firsts[t] = new FirstSet() { t };
+    }
+    foreach(var T in G.NonTerminals) {
+        Firsts[T] = new FirstSet(); // Parecido a un HashSet
+    }
+
+    bool changed = true;
+
+    do {
+        changed = false;
+
+        // Vamos por cada producción
+        foreach(var p in G.Productions) {
+            // X -> W
+            var X = p.Left;
+            var W = p.Right;
+
+            if (p.IsEpsilon) { // X -> epsilon
+                changed = Firsts[X].Add(epsilon);
+            }
+            else {
+                foreach(var s in W) {
+                    bool allEpsilon = true;
+
+                    // Agregamos todo en el First(s)
+                    changed = Firsts[X].AddAll(Firsts[s]);
+
+                    // Si s_i deriva en epsilon,
+                    // agregamos también el First(s_i+1)
+                    if (!Firsts[s].Contains(epsilon)) {
+                        allEpsilon = false;
+                        break;
+                    }
+                }
+
+                // Si todos los s_i derivan en epsilon
+                // entonces epsilon pertenece al First(X)
+                if (allEpsilon) {
+                    changed = Firsts[X].Add(epsilon);
+                }
+            }
+        }
+    } while (changed);
+
+    return Firsts;
+}
+```
