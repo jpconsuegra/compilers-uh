@@ -2,7 +2,7 @@
 
 * [Prefacio](Prefacio.md)
 * [Introducción](Sintactico/Lexer.md)
-* Teoría de Lenguajes Formales
+* [Teoría de Lenguajes Formales](Parsing.md)
 * [Análisis Sintáctico](Sintactico/Intro.md)
    * Lexer
    * Parsing
