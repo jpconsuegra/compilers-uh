@@ -23,7 +23,7 @@ Intentemos producir una derivación (en principio, extrema izquierda, por comodi
 
     [1]  E -*-> int * ( int + int )
 
-Preguntémonos entonces, ¿de cuántas formas pudiera `E` derivar en la cadena? Evidentemente, hay exactamente dos formas en que `E` es capaz de producir esta cadena, es decir, hay solamente dos producciones posibles que pudieran seguir en la derivación extrema izquierda. O bien `E -> T + E` o bien `E -> T`. Probemos entonces con la primera de ellas:
+Preguntémonos entonces, ¿de cuántas formas pudiera `E` derivar en la cadena? Evidentemente, hay exactamente dos formas en que `E` es capaz de producir esta cadena, es decir, hay solamente dos producciones posibles que pudieran seguir en la derivación extrema izquierda. O bien `E -> T` o bien `E -> T + E`. Probemos entonces con la primera de ellas:
 
     [2]  E -*-> T -*-> int * ( int + int )
 
@@ -35,7 +35,7 @@ De momento parece que vamos por buen camino, pues hemos logrado producir los pri
 
     [4]  E -*-> int * int * T -*-> int * ( int + int )
 
-En este punto, podemos darnos cuenta de que hemos tomado el camino equivocado. Cómo estamos produciendo una derivación extrema izquierda, y los terminales no derivan en ningún símbolo, sabemos que todo lo que esté a la izquierda del primer no-terminal no va a cambiar en el futuro. Luego, es evidentemente que ya no seremos capaces de generar la cadena, pues estos terminales (`int * int *`) no son prefijo de la cadena a reconocer. Deshagamos entonces la última producción (volviendo al paso 3) y probemos otro camino (`T -> int`):
+En este punto, podemos darnos cuenta de que hemos tomado el camino equivocado. Como estamos produciendo una derivación extrema izquierda, y los terminales no derivan en ningún símbolo, sabemos que todo lo que esté a la izquierda del primer no-terminal no va a cambiar en el futuro. Luego, es evidentemente que ya no seremos capaces de generar la cadena, pues estos terminales (`int * int *`) no son prefijo de la cadena a reconocer. Deshagamos entonces la última producción (volviendo al paso 3) y probemos otro camino (`T -> int`):
 
     [4]  E -> int * int -*-> int * ( int + int )
 
@@ -86,7 +86,7 @@ class RecursiveParser : IParser {
 }
 ```
 
-Para reconocer un terminal, tendremos un método cuya función es a la vez decidir si se reconocer el terminal, y avanzar en la cadena:
+Para reconocer un terminal, tendremos un método cuya función es a la vez decidir si se reconoce el terminal, y avanzar en la cadena:
 
 ```csharp
 bool Match(Token token) {
@@ -219,9 +219,9 @@ bool Parse(Token[] tokens) {
 }
 ```
 
-Esta metodología para crear parsers recursivos descendentes puede ser aplicada fácilmente a cualquier gramática libre del contexto. Sin embargo, no todas las gramáticas pueden ser reconocidas de esta forma. Según la estructura de la gramática, es posible que es parser definido no funcione correctamente.
+Esta metodología para crear parsers recursivos descendentes puede ser aplicada fácilmente a cualquier gramática libre del contexto. Sin embargo, no todas las gramáticas pueden ser reconocidas de esta forma. Según la estructura de la gramática, es posible que el parser definido no funcione correctamente.
 
-Por ejemplo, para gramáticas ambigüas, el parser (si termina) dará alguna de las derivaciones extrema izquierda posibles, en función del orden en que hayan sido definidas las producciones. Esto se debe al uso de operadores con cortocircuito. Es posible modificar este tipo de parsers fácilmente para generar no el primero sino todas las derivaciones extrema izquierda disponibles, simplemente reemplazando los operadores `||` más externos.
+Por ejemplo, para gramáticas ambigüas, el parser (si termina) dará alguna de las derivaciones extrema izquierda posibles, en función del orden en que hayan sido definidas las producciones. Esto se debe al uso de operadores con cortocircuito. Es posible modificar este tipo de parsers fácilmente para generar no solo la primera sino todas las derivaciones extrema izquierda disponibles, simplemente reemplazando los operadores `||` más externos.
 
 Consideremos ahora la siguiente gramática:
 
@@ -238,7 +238,7 @@ bool S() {
 
 El problema evidente con este parser es que al intentar reconocer el símbolo `S` el algoritmo cae en una recursión infinita. Este tipo de gramáticas se denominan gramáticas con recursión izquierda, que definiremos así:
 
-> **Definición**: Una gramática libre del contexto G=<S,N,T,P> se dice recursiva izquierda si y solo si `S -*-> Sw` (donde `w` es una forma oracional).
+> **Definición:** Una gramática libre del contexto `G=<S,N,T,P>` se dice recursiva izquierda si y solo si `S -*-> Sw` (donde `w` es una forma oracional).
 
 La forma más sencilla de las gramáticas recursivas izquierdas es cuando existe directamente una producción `S -> Sw`. A este caso le llamamos *recursión izquierda directa*. Para este caso, es posible eliminar la recursión izquierda de forma sencilla. Tomemos nuevamente la gramática anterior:
 
@@ -258,7 +258,7 @@ Es posible eliminar la recursión izquierda con la transformación:
     S -> b1X | b2X | ... | bmX
     X -> a1X | a2X | ... | anX | epsilon
 
-Para el caso más general de recursión izquierda indirecta, también existe un algoritmo para su eliminación, pero de momento no lo presentaremos :(
+Para el caso más general de recursión izquierda indirecta, también existe un algoritmo para su eliminación, pero de momento no lo presentaremos :(.
 
 El algoritmo de parsing que hemos desarrollado resuelve, al menos de forma teórica, el problema de construir el árbol de derivación. Aunque el código presentado no construye explícitamente el árbol de derivación, es bastante fácil modificarlo al respecto. Sin embargo, aunque en principio el problema ha sido resuelto, el algoritmo recursivo descendente es extremadamente ineficiente. El problema es que, en principio, es necesario probar con todos los árboles de derivación posibles antes de encontrar el árbol correcto. De cierta forma, para resolver el problema de parsing lo que hemos hecho es buscar entre todos los posibles programas, cuál de ellos tiene una representación textual igual a la cadena deseada.
 
@@ -282,7 +282,7 @@ En muchas ocasiones es fácil factorizar una gramática. Se introduce un no-term
 
 Por supuesto, es posible que la relación entre los prefijos sea más complicada, y una vez que se realice la transformación anterior aún queden producciones no factorizadas (e.j. `X -> abC | abD | aY`). Incluso en estos casos es posible factorizar la gramática aplicando varias veces el proceso de factorización anterior.
 
-Esta modificación evidentemente no cambia el lenguaje, y ni siquiera cambia la ambigüedad o no de la gramática. Simplemente nos permite delegar la decisión de que producción tomar un *token* hacia adelante. Si antes no sabíamos cuando venía `int` que producción tomar, porque podía ser `T -> int` o `T -> int * T`, ahora simplemente reconocemos el primer `int`, y delegamos la decisión de generar `epsilon` o `* T` a un nuevo no-terminal.
+Esta modificación evidentemente no cambia el lenguaje, y ni siquiera cambia la ambigüedad o no de la gramática. Simplemente nos permite delegar la decisión de qué producción tomar un *token* hacia adelante. Si antes no sabíamos cuando venía `int` que producción tomar, porque podía ser `T -> int` o `T -> int * T`, ahora simplemente reconocemos el primer `int`, y delegamos la decisión de generar `epsilon` o `* T` a un nuevo no-terminal.
 
 > **Nota:** Desde el punto de vista del diseño de lenguajes, el beneficio de este cambio es discutible. Por un lado nos permite aplicar un algoritmo que de otra forma no funcionaría. Sin embargo, por otra parte, estamos provocando un cambio en el diseño de la gramática, que es una cuestión de "alto nivel", para poder usar un algoritmo particular, que es una cuestión de "bajo nivel". En otras palabras, estamos cambiando el diseño en función de la implementación. Este cambio puede tener efectos adversos. Por ejemplo, nuestra gramática para expresiones aritméticas es ahora más difícil de entender, pues contiene símbolos "extraños" que no significan nada desde el punto de vista semántico, solamente están ahí para simplificar la implementación. El árbol de derivación ahora es más complejo. Más adelante discutiremos esta problemática en mayor profundidad.
 
@@ -318,7 +318,7 @@ Evidentemente `Y` no puede generar el token `+` que hace falta, así que solo pu
 
     E -*-> int * ( int X ) X -*-> int * ( int + int )
 
-Volvemos entonces a la situación complicada anterior. Es cierto que `X -> + E` nos sirve, pero ¿cómo sabemos que es la única opción? ¿Es posible que de `X -> epsilon` se logre en algún momento que aparezca un `+`. Si miramos la forma oracional generada hasta el momento, vemos que no nos queda otra `X` dentro los paréntesis que pueda poner el `+` que falta. Sin embargo, este análisis no lo puede hacer nuestro algoritmo, que solamente conoce el no-terminal actual, y el siguiente token que es necesario generar. Tratemos de hacer un razonamiento un más generalizable. La pregunta que estamos haciendo aquí básicamente es si es conveniente eliminar `X` con la esperanza de que aparezca un `+` de lo que sea que venga detrás. Más adelante formalizaremos este concepto, pero por ahora baste decir que, intuitivamente, podemos ver que detrás de una `X` solamente puede venir o bien un `)` o bien el fin de la cadena. Por tanto, no queda otra opción que derivar `X -> + E`:
+Volvemos entonces a la situación complicada anterior. Es cierto que `X -> + E` nos sirve, pero ¿cómo sabemos que es la única opción? ¿Es posible que de `X -> epsilon` se logre en algún momento que aparezca un `+`. Si miramos la forma oracional generada hasta el momento, vemos que no nos queda otra `X` dentro los paréntesis que pueda poner el `+` que falta. Sin embargo, este análisis no lo puede hacer nuestro algoritmo, que solamente conoce el no-terminal actual, y el siguiente token que es necesario generar. Tratemos de hacer un razonamiento un poco más generalizable. La pregunta que estamos haciendo aquí básicamente es si es conveniente eliminar `X` con la esperanza de que aparezca un `+` de lo que sea que venga detrás. Más adelante formalizaremos este concepto, pero por ahora baste decir que, intuitivamente, podemos ver que detrás de una `X` solamente puede venir o bien un `)` o bien el fin de la cadena. Por tanto, no queda otra opción que derivar `X -> + E`:
 
     E -*-> int * ( int + E ) X -*-> int * ( int + int )
 
@@ -348,7 +348,7 @@ Y finalmente la última `X` debe desaparecer también pues se ha generado toda l
       -> int * ( int + int ) X
       -> int * ( int + int )
 
-La derivación extrema izquierda producida es considerablemente mayor con esta gramática factorizada, dado que existen más producciones. Sin embargo, ganamos en un factor exponencial al eliminar el *backtrack* por completo. Intuitivamente, el largo de esta derivación debe ser lineal con respecto a la longitud de la cadena de entrada, pues a lo sumo en cada paso o bien generamos un nuevo *token* o derivamos el símbolo más izquierdo en nuevos símbolos. Dado que no tenemos recursión izquierda, estas operaciones con cada símbolo no pueden ser "recursivas". Es decir, si el no-terminal más izquierdo es `Y`, y empezamos a derivarlo, eventualmente terminaremos con ese `Y`, ya sea produciendo un terminal o derivando en `epsilon`. De forma general, el costo está acotado superiormente por `|w| * |N|`, pues no es posible que para generar un *token* sea necesario usar `|N| + 1` no terminales, ya que en ese caso tendría un no-terminal derivando en sí mismo (al menos de forma indirecta), lo que contradice que la gramática no tenga recursión izquierda.
+La derivación extrema izquierda producida es considerablemente mayor con esta gramática factorizada, dado que existen más producciones. Sin embargo, ganamos en un factor exponencial al eliminar el *backtrack* por completo. Intuitivamente, el largo de esta derivación debe ser lineal con respecto a la longitud de la cadena de entrada, pues a lo sumo en cada paso o bien generamos un nuevo *token* o derivamos el símbolo más izquierdo en nuevos símbolos. Dado que no tenemos recursión izquierda, estas operaciones con cada símbolo no pueden ser "recursivas". Es decir, si el no-terminal más izquierdo es `Y`, y empezamos a derivarlo, eventualmente terminaremos con ese `Y`, ya sea produciendo un terminal o derivando en `epsilon`. De forma general, el costo está acotado superiormente por `|w| * |N|`, pues no es posible que para generar un *token* sea necesario usar `|N| + 1` no terminales, ya que en ese caso tendríamos un no-terminal derivando en sí mismo (al menos de forma indirecta), lo que contradice que la gramática no tenga recursión izquierda.
 
 Tratemos ahora de formalizar este proceso de "adivinación" de qué producción aplicar en cada caso. De forma general nos hemos enfrentado a dos interrogantes fundamentalmente distintas:
 
@@ -359,7 +359,7 @@ Si para las preguntas anteriores obtenemos una sola producción como respuesta, 
 
 Llamaremos `First(W)` al conjunto de todos los terminales que pueden ser generados por `W` como primer elemento (siendo `W` una forma oracional cualquiera, no solamente un no-terminal). Formalmente:
 
-> **Definición**: Sea `G=<S,N,T,P>` una gramática libre del contexto, `W \in { N \union T }*` una forma oracional, y `x \in T` un terminal. Decimos que `x \in First(W)` si y solo si `W -*-> xZ` (donde `W \in { N \union T }*` es otra forma oracional).
+> **Definición**: Sea `G=<S,N,T,P>` una gramática libre del contexto, `W \in { N \union T }*` una forma oracional, y `x \in T` un terminal. Decimos que `x \in First(W)` si y solo si `W -*-> xZ` (donde `Z \in { N \union T }*` es otra forma oracional).
 
 Este concepto captura formalmente la noción de "comenzar por". De forma intuitiva, si logramos computar el conjunto `First(W)` para todas las producciones `X -> W` de nuestra gramática, y cada uno de estos conjuntos de las producciones del mismo símbolo son disjuntos dos a dos, entonces podremos decir inequívocamente qué producción aplicar para generar el terminal que toca (o cuando no es posible generarlo). Notemos que fue necesario definir `First(W)` no solo para un no-terminal, sino para una forma oracional en general, pues necesitamos computarlo en toda parte derecha de una producción.
 
@@ -375,7 +375,7 @@ Supongamos entonces que tenemos todos estos conjuntos calculados (o potencialmen
 bool T() {
     // T -> int Y
     if (tokens[currToken] == Token.Int)
-        return Match(Token.Int) && Y()
+        return Match(Token.Int) && Y();
 
     // T -> ( E )
     else if (tokens[currToken] == Token.Open)
@@ -439,14 +439,14 @@ En todos estos casos hemos asumido que la primera producción aplicable era la �
 
 ### Gramáticas LL(1)
 
-Llamaremos gramáticas LL(1) justamente a aquellas gramáticas para las cuales el proceso de cómputo de `First` y `Follow` descrito informalmente en la sección anterior nos permite construir un parser que nunca tenga que hacer *backtrack*. El nombre LL(1) significa *left-to-right left-derivation look-ahead 1*. Es decir, la cadena se analiza de izquierda a derecha, se construye una derivación extrema izquierda, y se analiza un solo *token* para decidir que producción aplicar. De forma general, existen las gramáticas LL(k), donde son necesarios k *tokens* para poder predecir que producción aplicar. Aunque los principios son los mismos, el proceso de construcción de estos conjuntos es más complejo, y por lo tanto no analizaremos estas gramáticas por el momento :(
+Llamaremos gramáticas LL(1) justamente a aquellas gramáticas para las cuales el proceso de cómputo de `First` y `Follow` descrito informalmente en la sección anterior nos permite construir un parser que nunca tenga que hacer *backtrack*. El nombre LL(1) significa *left-to-right left-derivation look-ahead 1*. Es decir, la cadena se analiza de izquierda a derecha, se construye una derivación extrema izquierda, y se analiza un solo *token* para decidir que producción aplicar. De forma general, existen las gramáticas LL(k), donde son necesarios k *tokens* para poder predecir que producción aplicar. Aunque los principios son los mismos, el proceso de construcción de estos conjuntos es más complejo, y por lo tanto no analizaremos estas gramáticas por el momento :(.
 
 Para poder formalizar este concepto, será conveniente primero encontrar algoritmos explícitos para computar los conjuntos `First` y `Follow`. Comencemos por el `First` ;). Veamos primero algunos hechos interesantes que se cumplen en este conjunto, y luego veremos cómo se diseña un algoritmo para su cómputo. No presentaremos demostración para estos hechos, pues la mayoría son intuitivos.
 
 * Si `X -> W1 | W2 | ... | Wn` entonces por definición, `First(X) = \union First(W_i)`.
 * Si `X -*-> epsilon` entonces `epsilon \in First(X)`.
 * Si `W = xZ` donde `x` es un terminal, entonces trivialmente `First(W) = { x }`.
-* Si `W = YZ` donde `Y` es un no-terminal y `Z` una forma oracioanl, entonces `First(Y) \subseteq First(W)`.
+* Si `W = YZ` donde `Y` es un no-terminal y `Z` una forma oracional, entonces `First(Y) \subseteq First(W)`.
 * Si `W = YZ` y `Y -*-> epsilon` entonces `First(Z) \subseteq First(W)`.
 
 Las observaciones anteriores nos permiten diseñar un algoritmo para calcular todos los conjuntos `First(X)` para cada no-terminal `X`. Como de forma general pueden existir producciones recursivas, calcularemos todos los conjuntos `First` a la vez, aplicando cada una de las "reglas" anteriores, hasta que no se modifique ninguno de los conjuntos `First`. Nuevamente abusaremos de la imaginación y creatividad para introducir métodos y clases utilitarias sin definirlos de manera formal.
@@ -463,7 +463,7 @@ Firsts CalculateFirsts(Grammar G) {
         Firsts[T] = new FirstSet(); // Parecido a un HashSet
     }
 
-    bool changed = true;
+    bool changed;
 
     do {
         changed = false;
@@ -481,7 +481,6 @@ Firsts CalculateFirsts(Grammar G) {
                 bool allEpsilon = true;
 
                 foreach(var s in W) {
-
                     // Agregamos todo en el First(s)
                     changed = Firsts[X].AddAll(Firsts[s]);
 
@@ -551,10 +550,10 @@ Follows CalculateFollows(Grammar G, Firsts firsts) {
         Follows[X] = new FollowSet();
     }
 
-    bool changed = false;
+    bool changed;
 
     do {
-        changed = true;
+        changed = false;
 
         foreach(var p in G.Productions) {
             // X -> W
@@ -568,7 +567,6 @@ Follows CalculateFollows(Grammar G, Firsts firsts) {
                     continue;
 
                 var first = CalculateFirst(W.Sufix(i+1));
-
                 changed = Follows[S].AddAll(first.Remove(epsilon));
 
                 if (first.Contains(epsilon) || i == W.Length - 1) {
@@ -590,7 +588,7 @@ Las reglas generales para generar esta tabla son las siguientes:
 
 Si al aplicar estas reglas, en cada posición `T[X,t]` obtenemos a lo sumo una producción, entonces decimos que una gramática es LL(1). En caso contrario, tenemos al menos un conflicto, pues hay más de una producción que tiene sentido utilizar en algún caso. Formalmente:
 
-> **Definición:** Sea `G=<S,N,T,P>` una gramática libre del contexto. `G` es LL(1) si y solo se para todo no-terminal `X \in N`, tal que `X -> W1 | W2 | ... | Wn` se cumple que:
+> **Definición:** Sea `G=<S,N,T,P>` una gramática libre del contexto. `G` es LL(1) si y solo si para todo no-terminal `X \in N`, tal que `X -> W1 | W2 | ... | Wn` se cumple que:
 > * First(Wi) \bigcap First(Wj) = \emptyset \forall i \neq j
 > * epsilon \in First(Wi) => First(Wj) \bigcap Follow(X) = \emptyset \forall j \neq i
 
@@ -605,9 +603,9 @@ Comencemos por calcular todos los conjuntos `First`. Para los terminales es triv
 
     First( int ) = { int }
     First( + )   = { + }
-    First( * ) =   { * }
-    First( ( ) =   { ( }
-    First( ) ) =   { ) }
+    First( * )   = { * }
+    First( ( )   = { ( }
+    First( ) )   = { ) }
 
 Ahora calculemos los `First` de cada no-terminal:
 
@@ -684,7 +682,7 @@ bool NonRecursiveParse(Grammar G, Token[] tokens) {
     int nextToken = 0;
     LLTable table = BuildLLTable(G);
 
-    while (stack.Count > 1 && nextToken < tokens.Length) {
+    while (stack.Count > 0 && nextToken < tokens.Length) {
         var symbol = stack.Pop();
 
         if (symbol.IsTerminal && tokens[nextToken++] != symbol.Value) {
