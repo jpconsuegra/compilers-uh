@@ -8,7 +8,7 @@
    * Lenguajes Regulares
    * Lenguajes Libres del Contexto
 * [Análisis Sintáctico](Sintactico/Intro.md)
-   * Lexer
+   * [Lexer](Sintactico/Lexer.md)
    * Parsing
 * Análisis Semántico
 * Generación de Código
