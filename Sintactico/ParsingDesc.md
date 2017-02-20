@@ -588,9 +588,11 @@ Las reglas generales para generar esta tabla son las siguientes:
 
 Si al aplicar estas reglas, en cada posición `T[X,t]` obtenemos a lo sumo una producción, entonces decimos que una gramática es LL(1). En caso contrario, tenemos al menos un conflicto, pues hay más de una producción que tiene sentido utilizar en algún caso. Formalmente:
 
-> **Definición:** Sea `G=<S,N,T,P>` una gramática libre del contexto. `G` es LL(1) si y solo si para todo no-terminal `X \in N`, tal que `X -> W1 | W2 | ... | Wn` se cumple que:
-> * First(Wi) \bigcap First(Wj) = \emptyset \forall i \neq j
-> * epsilon \in First(Wi) => First(Wj) \bigcap Follow(X) = \emptyset \forall j \neq i
+> **Definición:** Sea $G=<S,N,T,P>$ una gramática libre del contexto. $G$ es LL(1) si y solo si para todo no-terminal $X \in N$, tal que $X \leftarrow W_1 | W_2 | ... | W_n$ se cumple que:
+>
+> * $First(Wi) \bigcap First(Wj) = \emptyset \forall i \neq j$`
+>
+> * $epsilon \in First(Wi) => First(Wj) \bigcap Follow(X) = \emptyset \forall j \neq i$
 
 Esta definición nos garantiza que en toda entrada de la tabla LL(1) exista a lo sumo una producción a aplicar. Ahora podemos demostrar que la gramática anterior para expresiones, una vez factorizada, es LL(1):
 

@@ -15,4 +15,3 @@ Para comenzar, pueder ser conveniente mostrar recordar los estudiantes el proces
 > ¿Desde el punto de vista computacional, qué cosa es el programa de entrada?
 
 Aquí los estudiantes deberían rápidamente llegar a que el programa de entrada es un **string**, más específicamente, una secuencia de caracteres en algún vocabulario, digamos ASCII o Unicode. Es conveniente ilustrar esto presentando un programa tal y como se ve en un IDE, y luego presentar como se ve para el compilador, es decir, con los cambios de línea y los espacios en blanco como caracteres escapados.
-
