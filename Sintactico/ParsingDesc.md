@@ -1,4 +1,4 @@
-## Parsing Descendente
+## Parsing Descendente (*Top-Down*)
 
 Hasta el momento hemos visto el proceso de compilación a grandes razgos, y hemos definido que la primera fase consiste en el análisis sintáctico. Esta fase a su vez la hemos divido en 2 procesos secuenciales: el análisis lexicográfico (*tokenización* o *lexing*), y el análisis sintáctico en sí (*parsing*). En esta sección nos concentraremos en este segundo proceso.
 
@@ -359,7 +359,7 @@ Si para las preguntas anteriores obtenemos una sola producción como respuesta, 
 
 Llamaremos `First(W)` al conjunto de todos los terminales que pueden ser generados por `W` como primer elemento (siendo `W` una forma oracional cualquiera, no solamente un no-terminal). Formalmente:
 
-> **Definición**: Sea `G=<S,N,T,P>` una gramática libre del contexto, `W \in { N \union T }*` una forma oracional, y `x \in T` un terminal. Decimos que `x \in First(W)` si y solo si `W -*-> xZ` (donde `Z \in { N \union T }*` es otra forma oracional).
+> **Definición**: Sea $G=<S,N,T,P>$ una gramática libre del contexto, $W \in { N \union T }^*$ una forma oracional, y $x \in T$ un terminal. Decimos que $x \in First(W)$ si y solo si $W -*-> xZ$ (donde $Z \in { N \union T }*$ es otra forma oracional).
 
 Este concepto captura formalmente la noción de "comenzar por". De forma intuitiva, si logramos computar el conjunto `First(W)` para todas las producciones `X -> W` de nuestra gramática, y cada uno de estos conjuntos de las producciones del mismo símbolo son disjuntos dos a dos, entonces podremos decir inequívocamente qué producción aplicar para generar el terminal que toca (o cuando no es posible generarlo). Notemos que fue necesario definir `First(W)` no solo para un no-terminal, sino para una forma oracional en general, pues necesitamos computarlo en toda parte derecha de una producción.
 

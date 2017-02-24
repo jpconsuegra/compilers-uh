@@ -5,6 +5,7 @@ pandoc -o Compilers.pdf \
     Sintactico/Intro.md \
     Sintactico/Lexer.md \
     Sintactico/ParsingDesc.md \
+    Sintactico/ParsingAsc.md \
     Semantico/Intro.md \
     Semantico/AST.md \
 
