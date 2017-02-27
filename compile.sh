@@ -8,5 +8,5 @@ pandoc -o Compilers.pdf \
     Sintactico/ParsingAsc.md \
     Semantico/Intro.md \
     Semantico/AST.md \
-
+    && \
 xdg-open Compilers.pdf

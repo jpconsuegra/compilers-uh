@@ -1,4 +1,4 @@
-## Parsing Descendente (*Top-Down*)
+# Parsing Descendente (*Top-Down*)
 
 Hasta el momento hemos visto el proceso de compilación a grandes razgos, y hemos definido que la primera fase consiste en el análisis sintáctico. Esta fase a su vez la hemos divido en 2 procesos secuenciales: el análisis lexicográfico (*tokenización* o *lexing*), y el análisis sintáctico en sí (*parsing*). En esta sección nos concentraremos en este segundo proceso.
 
@@ -64,7 +64,7 @@ Una vez llegados a este punto, ya podemos hacernos una idea de cómo funciona es
 
 Básicamente, lo que hemos hecho ha sido probar todas las posibles derivaciones extrema izquierda, de forma recursiva, podando inteligentemente cada vez que era evidente que habíamos producido una derivación incorrecta. Tratemos de formalizar este proceso.
 
-### Parsing Recursivo Descendente
+## Parsing Recursivo Descendente
 
 De forma general, tenemos tres tipos de operaciones o situaciones que analizar:
 * La expansión de un no-terminal en la forma oracional actual.
@@ -262,7 +262,7 @@ Para el caso más general de recursión izquierda indirecta, también existe un 
 
 El algoritmo de parsing que hemos desarrollado resuelve, al menos de forma teórica, el problema de construir el árbol de derivación. Aunque el código presentado no construye explícitamente el árbol de derivación, es bastante fácil modificarlo al respecto. Sin embargo, aunque en principio el problema ha sido resuelto, el algoritmo recursivo descendente es extremadamente ineficiente. El problema es que, en principio, es necesario probar con todos los árboles de derivación posibles antes de encontrar el árbol correcto. De cierta forma, para resolver el problema de parsing lo que hemos hecho es buscar entre todos los posibles programas, cuál de ellos tiene una representación textual igual a la cadena deseada.
 
-### Parsing Predictivo Descendente
+## Parsing Predictivo Descendente
 
 Idealmente, quisiéramos un algoritmo de parsing que construya el árbol de derivación con un costo lineal con respecto a la cadena de entrada. Para ello, necesitamos poder "adivinar", en cada método recursivo, cuál es la rama adecuada a la que descender. Con vistas a resolver este problema, consideremos nuevamente la gramática vista en la sección anterior:
 
@@ -359,13 +359,13 @@ Si para las preguntas anteriores obtenemos una sola producción como respuesta, 
 
 Llamaremos `First(W)` al conjunto de todos los terminales que pueden ser generados por `W` como primer elemento (siendo `W` una forma oracional cualquiera, no solamente un no-terminal). Formalmente:
 
-> **Definición**: Sea $G=<S,N,T,P>$ una gramática libre del contexto, $W \in { N \union T }^*$ una forma oracional, y $x \in T$ un terminal. Decimos que $x \in First(W)$ si y solo si $W -*-> xZ$ (donde $Z \in { N \union T }*$ es otra forma oracional).
+> **Definición**: Sea $G=<S,N,T,P>$ una gramática libre del contexto, $W \in { N \cup T }^*$ una forma oracional, y $x \in T$ un terminal. Decimos que $x \in First(W)$ si y solo si $W -*-> xZ$ (donde $Z \in { N \cup T }*$ es otra forma oracional).
 
 Este concepto captura formalmente la noción de "comenzar por". De forma intuitiva, si logramos computar el conjunto `First(W)` para todas las producciones `X -> W` de nuestra gramática, y cada uno de estos conjuntos de las producciones del mismo símbolo son disjuntos dos a dos, entonces podremos decir inequívocamente qué producción aplicar para generar el terminal que toca (o cuando no es posible generarlo). Notemos que fue necesario definir `First(W)` no solo para un no-terminal, sino para una forma oracional en general, pues necesitamos computarlo en toda parte derecha de una producción.
 
 Por otro lado, la noción de "lo que viene detrás" se formaliza en un concepto similar, denominado `Follow(X)`. En este caso solo necesitamos definirlo para un no-terminal, pues solo nos interesan las producciones `X -> epsilon`. Informalmente diremos que el `Follow(X)` son todos aquellos terminales que pueden aparecer en cualquier forma oracional, detrás de un no-terminal `X`. Formalmente:
 
-> **Definición**: Sea `G=<S,N,T,P>` una gramática libre del contexto, `X \in N` un no-terminal, y `x \in T` un terminal. Decimos que `x \in Follow(X)` si y solo si `S -*-> WXxZ` (donde `W, Z \in { N \union T }*` son formas oracionales cualesquiera).
+> **Definición**: Sea `G=<S,N,T,P>` una gramática libre del contexto, `X \in N` un no-terminal, y `x \in T` un terminal. Decimos que `x \in Follow(X)` si y solo si `S -*-> WXxZ` (donde `W, Z \in { N \cup T }*` son formas oracionales cualesquiera).
 
 La definición de `Follow(X)` básicamente nos dice que si en algún momento el terminal que queremos generar `x` está justo detrás del no-terminal `X` que toca expandir, entonces `X -> epsilon` es una producción válida a aplicar, porque existe la posibilidad de que otro no-terminal genere a `x` justo en esa posición (aunque en la cadena particular que se está reconociendo puede que esto no sea posible).
 
@@ -437,13 +437,13 @@ bool MatchProduction(Production p) {
 
 En todos estos casos hemos asumido que la primera producción aplicable era la única posible. Para ello deben cumplirse ciertas restricciones entre los conjuntos `First` y `Follow` que formalizaremos a continuación.
 
-### Gramáticas LL(1)
+## Gramáticas LL(1)
 
 Llamaremos gramáticas LL(1) justamente a aquellas gramáticas para las cuales el proceso de cómputo de `First` y `Follow` descrito informalmente en la sección anterior nos permite construir un parser que nunca tenga que hacer *backtrack*. El nombre LL(1) significa *left-to-right left-derivation look-ahead 1*. Es decir, la cadena se analiza de izquierda a derecha, se construye una derivación extrema izquierda, y se analiza un solo *token* para decidir que producción aplicar. De forma general, existen las gramáticas LL(k), donde son necesarios k *tokens* para poder predecir que producción aplicar. Aunque los principios son los mismos, el proceso de construcción de estos conjuntos es más complejo, y por lo tanto no analizaremos estas gramáticas por el momento :(.
 
 Para poder formalizar este concepto, será conveniente primero encontrar algoritmos explícitos para computar los conjuntos `First` y `Follow`. Comencemos por el `First` ;). Veamos primero algunos hechos interesantes que se cumplen en este conjunto, y luego veremos cómo se diseña un algoritmo para su cómputo. No presentaremos demostración para estos hechos, pues la mayoría son intuitivos.
 
-* Si `X -> W1 | W2 | ... | Wn` entonces por definición, `First(X) = \union First(W_i)`.
+* Si `X -> W1 | W2 | ... | Wn` entonces por definición, `First(X) = \cup First(W_i)`.
 * Si `X -*-> epsilon` entonces `epsilon \in First(X)`.
 * Si `W = xZ` donde `x` es un terminal, entonces trivialmente `First(W) = { x }`.
 * Si `W = YZ` donde `Y` es un no-terminal y `Z` una forma oracional, entonces `First(Y) \subseteq First(W)`.
@@ -672,7 +672,7 @@ Finalmente, nos queda la tabla completa. Dado que no encontrarmos conflictos al 
      Y |       |  eps  |  * T  |       |  eps  |  eps  |
        +-------+-------+-------+-------+-------+-------+
 
-### Parsing Descendente No Recursivo
+## Parsing Descendente No Recursivo
 
 Una vez obtenida la tabla LL(1) podemos escribir un algoritmo de parsing descendente no recursivo. La idea general consiste en emplear una pila de símbolos, donde iremos construyendo la forma oracional que eventualmente derivará en la cadena a reconocer. Si leemos la pila desde el tope hasta el fondo, en todo momento tendremos una forma oracional que debe generar la parte de la cadena no reconocida.
 
