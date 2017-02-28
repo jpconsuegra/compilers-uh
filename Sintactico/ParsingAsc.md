@@ -111,7 +111,7 @@ Un parser *shift-reduce* es un mecanismo de parsing que cuenta con las siguiente
 
 Y las operaciones siguientes:
 
-* **shift**: Si $S = \alpha |$ el contenido de la pila, y $T = c \omega \$$ la secuencia de terminales, entonces tras aplicar una operación **shift** se tiene en la pila $S' = \alpha c |$, y la secuencia de terminales ahora es $T' = \omega \$$. Es decir, se mete en la pila el token $c$.
+* **shift**: Si $S = \alpha |$ es el contenido de la pila, y $T = c \omega \$$ la secuencia de terminales, entonces tras aplicar una operación **shift** se tiene en la pila $S' = \alpha c |$, y la secuencia de terminales ahora es $T' = \omega \$$. Es decir, se mete en la pila el token $c$.
 * **reduce**: Si $S = \alpha \beta |$ el contenido de la pila, y $X \rightarrow \beta$ es una producción, entonces tras aplicar una operación **reduce $T \rightarrow \beta$** se tiene en la pila $S' = \alpha X |$. La secuencia de terminales no se modifica. Es decir, se extraen de la pila $| \beta |$ símbolos y se introduce el símbolo $X$ correspondiente.
 
 

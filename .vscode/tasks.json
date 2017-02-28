@@ -4,6 +4,6 @@
     "version": "0.1.0",
     "command": "bash",
     "args": ["compile.sh"],
-    "showOutput": "always",
+    "showOutput": "silent",
     "echoCommand": true
 }

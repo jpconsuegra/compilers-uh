@@ -710,4 +710,4 @@ En la práctica la mayoría de las gramáticas interesantes no son LL(1). Sin em
 
 Finalmente, en el caso que la gramática no sea LL(1), este análisis nos permite reducir al mínimo necesario la cantidad de producciones a probar en cada terminal. La tabla LL(1) en estos casos pudiera tener más de una producción en cada entrada, y en esos casos implementaríamos un parser recursivo que solamente probara aquellas producciones listadas en la tabla. De esta forma, podemos obtener el parser (descendiente) más eficiente posible, sin perder en expresividad.
 
-De todas formas, los lenguajes LL(1), es decir, aquellos donde existe al menos una gramática LL(1) que los genera, son un conjunto estrictamente menor que los lenguajes libres del contexto. Más adelante veremos estrategias de parsing basadas en principios similares que permiten reconocer lenguajes y gramáticas más expresivas.
+De todas formas las gramáticas LL(1) sonson un conjunto estrictamente menor que las gramáticas libres del contexto. Más adelante veremos estrategias de parsing basadas en principios similares que permiten reconocer lenguajes y gramáticas más expresivas.
