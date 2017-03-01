@@ -73,7 +73,7 @@ De forma general, tenemos tres tipos de operaciones o situaciones que analizar:
 
 Para cada una de estas situaciones, vamos a tener un conjunto de métodos. Para representar la cadena a reconocer, necesitamos mantener un estado global que indique la parte reconocida de la cadena. Diseñemos una clase para ello:
 
-```csharp
+```cs
 interface IParser {
     bool Parse(Token[] tokens);
 }
@@ -88,7 +88,7 @@ class RecursiveParser : IParser {
 
 Para reconocer un terminal, tendremos un método cuya función es a la vez decidir si se reconoce el terminal, y avanzar en la cadena:
 
-```csharp
+```cs
 bool Match(Token token) {
     return tokens[nextToken++] == token;
 }
@@ -96,7 +96,7 @@ bool Match(Token token) {
 
 A cada no-terminal vamos a asociar un método recursivo cuya función es determinar si el no-terminal correspondiente genera una sub-cadena "adecuada" del lenguaje. Por ejemplo, para el caso de la gramática anterior, tenemos los siguientes métodos:
 
-```csharp
+```cs
 bool E() {
     // Parsea un no-terminal E
 }
@@ -108,7 +108,7 @@ bool T() {
 
 La semántica de cada uno de estos métodos es que devuelven `true` si y solo si el no-terminal correspondiente genera una parte de la cadena, comenzando en la posición `nextToken`. Tratemos de escribir el código del método `E`. Para ello, recordemos que el símbolo `E` deriva en 2 producciones: `E -> T` y `E -> T + E`. Por tanto, de forma recursiva podemos decir que `E` genera esta cadena si y solo si la genera a partir de una de estas dos producciones. El primer caso es fácil: `E` genera la cadena a partir de derivar en `T` si y solo si `T` a su vez genera dicha cadena, y ya tenemos un método para eso:
 
-```csharp
+```cs
 bool E1() {
     // E -> T
     return T();
@@ -117,7 +117,7 @@ bool E1() {
 
 Para el segundo caso, notemos que la producción `E -> T + E` básicamente lo que dice es: necesitamos generar una cadena a partir de `E`, de forma tal que primero se genere una parte con `T`, luego se genere un `+` y luego se genere otra parte con `E`. Dado que ya tenemos todos los métodos necesarios:
 
-```csharp
+```cs
 bool E2() {
     // E -> T + E
     return T() && Match(Token.Plus) && E();
@@ -126,7 +126,7 @@ bool E2() {
 
 Aprovechamos el operador `&&` con cortocircuito para podar lo antes posible el intento de generar la cadena, de forma que el primero de estos tres métodos que falle ya nos permite salir de esa rama recursiva. Ahora que tenemos métodos para cada producción, podemos finalmente develar el cuerpo del método `E`:
 
-```csharp
+```cs
 bool E() {
     int currToken = nextToken;
     if (E1()) return true;
@@ -140,7 +140,7 @@ bool E() {
 
 Este método simplemente prueba cada una de las producciones en orden, teniendo cuidado de retornar `nextToken` a su valor original tras cada llamado recursivo fallido. Así mismo, podemos escribir el método asociado al símbolo `T`, basado en los métodos correspondientes a cada producción:
 
-```csharp
+```cs
 bool T1() {
     // T -> int * T
     return Match(Token.Int) && Match(Token.Times) && T();
@@ -159,7 +159,7 @@ bool T3() {
 
 Y el método general para `T` queda así:
 
-```csharp
+```cs
 bool T() {
     int currToken = nextToken;
     if (T1()) return true;
@@ -176,7 +176,7 @@ bool T() {
 
 Es posible hacer estos métodos más compactos introduciendo un nuevo método auxiliar:
 
-```csharp
+```cs
 bool Reset(int pos) {
     nextToken = pos;
     return true;
@@ -185,7 +185,7 @@ bool Reset(int pos) {
 
 Este método nos permite reescribir cada método con una sola expresión, haciendo uso del operador `||` con cortocircuito:
 
-```csharp
+```cs
 bool E() {
     int n = nextToken;
     return E1() || Reset(n) && E2();
@@ -199,7 +199,7 @@ bool T() {
 
 Finalmente, para reconocer la cadena completa, solo nos queda garantizar que se hayan consumido todos los *tokens*:
 
-```csharp
+```cs
 bool Parse(Token[] tokens) {
     this.tokens = tokens;
     nextToken = 0;
@@ -210,7 +210,7 @@ bool Parse(Token[] tokens) {
 
 Usualmente por comodidad se asume que existe un terminal especial `$` generado directamente por el Lexer al final de toda cadena. Esto se hace para poder generalizar desde el punto de vista teórico, y no tener que especificar siempre si estamos al final de la cadena o no. Si nuestro Lexer produce este token, al que llamaremos `Token.EOF` en el código, entonces podemos reescribir el método anterior de la siguiente forma:
 
-```csharp
+```cs
 bool Parse(Token[] tokens) {
     this.tokens = tokens;
     nextToken = 0;
@@ -229,7 +229,7 @@ Consideremos ahora la siguiente gramática:
 
 Para esta gramática, el parser recursivo descendente queda de la siguiente forma (simplificada):
 
-```csharp
+```cs
 bool S() {
     int c = nextToken;
     return S() && Match(Token.A) || Reset(n) && Match(Token.B);
@@ -371,7 +371,7 @@ La definición de `Follow(X)` básicamente nos dice que si en algún momento el 
 
 Supongamos entonces que tenemos todos estos conjuntos calculados (o potencialmente calculables en cualquier momento). ¿Cómo podemos utilizarlos para guiar la búsqueda del árbol de derivación correcto? Veamos como podría quedar el método recursivo descendente para generar `T` en esta nueva gramática:
 
-```csharp
+```cs
 bool T() {
     // T -> int Y
     if (tokens[currToken] == Token.Int)
@@ -387,7 +387,7 @@ bool T() {
 
 Como `T` siempre genera un token, es fácil decidir qué camino escoger. Por otro lado, en la expansión de `X`, es posible que sea necesario escoger `X -> epsilon`. En este caso, el método recursivo sería:
 
-```csharp
+```cs
 bool X() {
     // X -> + E
     if (tokens[nextToken] == Token.Plus)
@@ -405,7 +405,7 @@ En el caso de `X -> epsilon`, simplemente retornamos `true` de inmediato y no co
 
 De forma general, podemos escribir cualquier método recursivo descendente de la siguiente forma (asumimos algunos métodos y clases utilitarios que no presentaremos formalmente):
 
-```csharp
+```cs
 bool Expand(NonTerminal N) {
     foreach(var p in N.Productions) {
         if (!p.IsEpsilon && First(p).Contains(tokens[nextToken]))
@@ -421,7 +421,7 @@ bool Expand(NonTerminal N) {
 
 El método `MatchProduction` puede a grandes razgos implementarse de la siguiente forma:
 
-```csharp
+```cs
 bool MatchProduction(Production p) {
     foreach(var symbol in p.Symbols) {
         if (symbol.IsTerminal && !Match(symbol as Token))
@@ -451,7 +451,7 @@ Para poder formalizar este concepto, será conveniente primero encontrar algorit
 
 Las observaciones anteriores nos permiten diseñar un algoritmo para calcular todos los conjuntos `First(X)` para cada no-terminal `X`. Como de forma general pueden existir producciones recursivas, calcularemos todos los conjuntos `First` a la vez, aplicando cada una de las "reglas" anteriores, hasta que no se modifique ninguno de los conjuntos `First`. Nuevamente abusaremos de la imaginación y creatividad para introducir métodos y clases utilitarias sin definirlos de manera formal.
 
-```csharp
+```cs
 Firsts CalculateFirsts(Grammar G) {
     var Firsts = new Firsts(); // Parecido a un Diccionario
 
@@ -507,7 +507,7 @@ Firsts CalculateFirsts(Grammar G) {
 
 El algoritmo anterior computa todos los conjuntos `First` de todos los terminales y no-terminales a la vez. Hemos supuesto la existencia de estructuras de datos `Firsts` y `FirstSet` con operaciones convenientes para ello. Estas estructuras se implementan fácilmente usando diccionarios y conjuntos. Una vez obtenidos todos los `First` anteriores, podemos calcular fácilmente el `First` de cualquier forma oracional.
 
-```csharp
+```cs
 FirstSet CalculateFirst(Symbol[] p, Firsts firsts) {
     FirstSet result = new FirstSet();
     bool allEpsilon = true;
@@ -540,7 +540,7 @@ Pasemos entonces a calcular el conjunto `Follow` de cada no-terminal. Para ello,
 
 De la misma forma que en el caso del conjunto `First`, dado que las relaciones entre los `Follow` de cualquier par de no-terminales pueden ser recursivas, diseñaremos un algoritmo que los computa a todos a la misma vez:
 
-```csharp
+```cs
 Follows CalculateFollows(Grammar G, Firsts firsts) {
     var Follows = new Follows();
 
@@ -678,7 +678,7 @@ Una vez obtenida la tabla LL(1) podemos escribir un algoritmo de parsing descend
 
 El símbolo en el tope de la pila representa el terminal o no-terminal a analizar. En caso de ser un terminal, debe coincidir con el token analizado. En caso de ser un no-terminal, se consulta la tabla LL(1) y se ejecuta la producción correspondiente, insertando en la pila (en orden inverso) la forma oracional en que deriva el no-terminal extraído:
 
-```csharp
+```cs
 bool NonRecursiveParse(Grammar G, Token[] tokens) {
     Stack<Symbol> stack = new Stack<Symbol>() { G.Start };
     int nextToken = 0;

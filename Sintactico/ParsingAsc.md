@@ -517,4 +517,7 @@ Y finalmente, en esta entrada el autómata nos deja en el estado $I_1$, que nos 
 
 De esta forma, el algoritmo de parsing SLR(1) ha logrado obtener una derivación extrema derecha de nuestra cadena favorita, pero empleando una gramática mucho más expresiva y "natural" que la gramática LL correspondiente.
 
-De todas formas, muchas gramáticas medianamente complicadas no son SLR(1), por lo que necesitaremos un parser de mayor potencia. Para ello, tendremos que refinar aún más el criterio con el cuál se producen los **reduce**. Pero antes de pasar a eso, veamos algunas mejoras que podemos hacer al parser SLR(1).
+De todas formas, muchas gramáticas medianamente complicadas no son SLR(1), por lo que necesitaremos un parser de mayor potencia. Para ello, tendremos que refinar aún más el criterio con el cuál se producen los **reduce**.
+
+## Parsing LR(1)
+

@@ -1,7 +1,7 @@
-pandoc -o Compilers.pdf \
-    Metadata.yaml \
-    Prefacio.md \
-    Intro.md \
+pandoc --toc -H Meta/Header.tex -V lang=es -o Compilers.pdf \
+    Meta/Metadata.yaml \
+    Pre/Prefacio.md \
+    Pre/Intro.md \
     Sintactico/Intro.md \
     Sintactico/Lexer.md \
     Sintactico/ParsingDesc.md \

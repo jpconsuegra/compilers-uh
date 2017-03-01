@@ -1,4 +1,4 @@
-# Introducción
+# Introducción {-}
 
 El objetivo de esta segunda parte del curso es introducir a los estudiantes en el estudio de la construcción de compiladores en sus 4 fases fundamentales: análisis sintáctico y semántico, optimización de código, generación de código; además de algunas nociones de diseño de lenguajes de programación.
 
