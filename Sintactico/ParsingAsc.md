@@ -100,9 +100,11 @@ Esta propiedad nos permite entonces entender que en todo paso de un parser ascen
      T|                          | reduce E -> T
      E                           | OK
 
+Debido a estas operaciones, llamaremos a este tipo de mecanismos *parsers shift-reduce*. Veamos de forma general como implementar este tipo de parsers.
+
 ## Parsers *Shift-Reduce*
 
-Debido a estas operaciones, llamaremos a este tipo de mecanismos *parsers shift-reduce*. Veamos de forma general como implementar este tipo de parsers. Notemos que la parte a la izquierda de la barra siempre cambia porque un sufijo es parte derecha de una producción, y se reduce a un no-terminal. La parte derecha solo cambia cuando un terminal "cruza" la barra y se convierte en parte del sufijo que será reducido en el futuro. De forma que la barra que la parte izquierda se comporta como una pila, ya que solamente se introducen terminales por un extremo, y se extraen símbolos (terminales o no-terminales) por el mismo extremo. La parte derecha es simplemente una secuencia de tokens, que se introducen en la pila uno a uno. Formalicemos entonces el funcionamiento de un parser *shift-reduce*.
+Notemos que la parte a la izquierda de la barra siempre cambia porque un sufijo es parte derecha de una producción, y se reduce a un no-terminal. La parte derecha solo cambia cuando un terminal "cruza" la barra y se convierte en parte del sufijo que será reducido en el futuro. De forma que la barra que la parte izquierda se comporta como una pila, ya que solamente se introducen terminales por un extremo, y se extraen símbolos (terminales o no-terminales) por el mismo extremo. La parte derecha es simplemente una secuencia de tokens, que se introducen en la pila uno a uno. Formalicemos entonces el funcionamiento de un parser *shift-reduce*.
 
 Un parser *shift-reduce* es un mecanismo de parsing que cuenta con las siguientes estructuras:
 
