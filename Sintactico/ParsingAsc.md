@@ -523,3 +523,185 @@ De todas formas, muchas gramáticas medianamente complicadas no son SLR(1), por 
 
 ## Parsing LR(1)
 
+Veamos a continuación un ejemplo de una gramática clásica que no es SLR(1):
+
+    S -> E
+    E -> A = A | i
+    A -> i + A | i
+
+Esta gramática representa un subconjunto del lenguaje de las ecuaciones algebraicas, donde tanto en la parte derecha como en la izquierda del token `=` podemos tener una expresión aritmética cualquiera. Veamos que sucede al construir el autómata SLR(1):
+
+    I0 = {
+        S -> .E
+        E -> .A = A
+        E -> .i
+        A -> .i + A
+        A -> .i
+    }
+
+Viendo los items de este estado, ya podemos intuir dónde podría haber problemas. Al hacer `Goto(I0, i)` aparecerán dos items **reduce** con parte izquierda distinta:
+
+    I1 = Goto(I0, i) = {
+        E -> i.
+        A -> i.+ A
+        A -> i.
+    }
+
+En este estado aperece entonces un conflicto **reduce-reduce**, ya que $Follow(E) = \{ \$ \}$, y $\$ \in Follow(A)$, puesto que `A` aparece como parte derecha de una producción de `E`. Por tanto esta gramática no es SLR(1). Sin embargo, la gramática no es ambigua, y esto es fácil de demostrar. Intuitivamente, la única cadena donde pudiera haber ambiguedad es justamente la cadena `i` (es el único token que es generado por más de un no-terminal). Sin embargo, para esta cadena, la única derivación posible es `S -> E -> i`. Aunque `A -> i` es una producción, la forma oracional `i` no es **handle** de `A`. Si solo existe un `i` en la pila, este tiene que ser generado por el no-terminal `E`, pues de lo contrario no sería posible reducir a `S`.
+
+Sin embargo, nuestro parser SLR(1) no es suficientemente inteligente para determinar esto. Al encontrarse con la forma oracional `i` en la pila, en principio, el autómata dice que `A -> i` es una reducción posible. Sin embargo, sabemos que esta reducción es inválida, porque luego quedaría `A` en la pila, que no es una forma oracional válida en ninguna derivación extrema derecha. De la producción `E -> A = A` podemos ver que esta gramática nunca genera una `A` sola. En otras palabras, nuestra heurística SLR(1) para detectar **handles** (reducir en `X` para todo terminal en el `Follow(X)`) es demasiado débil para manejar esta situación, y produce un falso positivo, al determinar que la forma oracional `ì$` es un **handle** de `A`, cuando realmente no lo es.
+
+La pregunta es entonces, ¿por qué surge este conflicto? Qué falla en la heurística SLR(1) que produce estos falsos positivos? Evidentemente el conjunto Follow es en ocasiones demasiado grande, y contiene tokens para los cuáles no es válida una operación **reduce** en ese estado particular. Tratemos de rastrear, durante la construcción del autómata, dónde es que se introducen estos tokens inválidos.
+
+Comenzamos por el estado inicial nuevamente, pero viéndolo paso a paso a medida que se computa la clausura. Comenzamos por el *kernel*:
+
+    I0 = {
+        S -> .E
+        ...
+    }
+
+En este punto, el único item de este estado indica que esperamos encontrar en la cadena una forma oracional que se reduzca a `E`. Por tanto, añadimos las producciones de `E`:
+
+    I0 = {
+        S -> .E
+        E -> .A = A
+        E -> .i
+        ...
+    }
+
+Hasta aquí no hay problemas, pues ni siquiera hay dos items con la misma parte derecha. Entonces tenemos que adicionar las producciones de `A`:
+
+    I0 = {
+        S -> .E
+        E -> .A = A
+        E -> .i
+        A -> .i + A
+        A -> .i
+    }
+
+Y aquí es donde podemos tener la primera pista de que viene un conflicto. Tenemos dos items que tienen la misma parte derecha (`E -> .i` y `A -> .i`). Por tanto, tras el próximo **shift** llegaremos a un estado con dos **reduce** a no-terminales distintos. Ahora, recordemos que el conflicto va a suceder porque `$` está en la intersección de los Follow. Sin embargo, veamos por qué motivo aparece `A -> .i` en este estado. Justamente, es por culpa de la producción `E -> .A = A` que tenemos que expandir los items de `A`. Recordemos entonces qué significa este item para nosotros: básicamente representa que a partir de este punto en la cadena de entrada, estamos esperando que aparezca *algo que se pueda reducir* a la forma oracional `A = A`. Por tanto, como esta forma oracional empieza con `A`, debemos expandir sus producciones.
+
+Pero sí analizamos cuidadosamente el significado del item anterior, veremos que no tiene sentido reducir a este `A` si aparece `$` como *look-ahead*. ¿Por qué? Pues precisamente, el item nos dice que lo que viene en la cadena, si resultara que es correcta, debería reducirse a la forma oracional `A = A`. Por tanto, la primera parte de esa supuesta cadena, que se debería reducir al primer `A` de la forma oracional, solamente sería correcta si justo detrás de ese `A` viniera un token `=`. De lo contrario no podríamos seguir reduciendo el resto de la forma oracional.
+
+Es decir, en el momento qué por culpa del item `E -> .A = A` nos toca adicionar el item `A -> .i`, lo que estamos esperando es que ese `i` se reduzca a `A` e inmediatamente después venga un `=`. El propio item nos está diciendo eso. Por tanto, si en el siguiente estado resultara que felizmente apareció el token `i` en la pila, antes de reducirlo ingenuamente a `A`, deberíamos verificar si justo detrás viene el `=` que estábamos esperando. De lo contrario, podríamos decir que la reducción no tiene sentido, porque el item "padre" de este item (es decir, `E -> .A = A`) se va a quedar esperando un `=` que no viene en la cadena.
+
+El problema con la heurística SLR radica justamente en que calculamos el Follow de cualquier no-terminal de forma *global*. Es decir, no tenemos en cuenta qué según las producciones que se vayan aplicando, solamente una parte de ese Follow es la que realmente puede aparecer a continuación. En este caso particular $Follow(A) = \{ =, \$\}$. Pero cada uno de esos tokens está en el Follow por un motivo *distinto*. Justamente `=` aparece en el `Follow(A)` por culpa de la *primera* `A` en la producción `E -> A = A`. Pero `$` aparece por culpa de la *segunda* `A` de esa producción. De cierta forma, es como si tuviéramos *dos instancias* distintas del mismo no-terminal `A`, aquella que aparece delante del token `=` y aquella que aparece detrás. Entonces cuando estamos parseando una cadena, y el autómata pasa al estado `E -> .A = A`, estamos esperando una `A`, pero no cualquier `A`, sino aquella *instancia* de `A` que viene delante del `=`. El error en la heurística SLR es justamente que no puede identificar estas situaciones distintas. Para el autómata SLR toda `A` es la misma `A`, por tanto tiene sentido reducir siempre con el mismo *look-ahead*.
+
+¿Cómo podemos entonces identificar de forma distinta a cuál de las posibles `A` nos estamos refiriendo? Precisamente, durante la construcción del autómata, cuando el item `E -> .A = A` nos genera un item `A -> .i`, sabemos a "cuál" `A` nos referimos. Es justamente aquella que estaba detrás del punto. Por tanto, podemos en este momento decir qué es lo que puede venir detrás de esa `A` particular si se aplica esta producción particular. Lo que haremos entonces es adicionar a cada item un conjunto de tokens, que nos dirán explícitamente cuándo es que tiene sentido hacer **reduce**. Y este conjunto de tokens lo iremos calculando a medida que se crean los nuevos items, justamente mirando en el item "padre" que lo generó qué es lo que puede venir detrás de cada no-terminal.
+
+Vamos a introducir entonces el concepto de **item LR(1)**, que no es más que un **item LR(0)** normal junto a token:
+
+> Sea $G=<S,N,T,P>$ una gramática libre del contexto, un **item LR(1)** es una expresión de la forma $X \rightarrow \alpha \cdot \beta, c$ donde $X \rightarrow \alpha \beta$ es una producción ($\alpha, \beta \in (N \cup T)^*$), y $c \in T$.
+
+El nuevo token que hemos adicionado a cada item nos servirá para ir rastreando qué terminales pueden aparecer el Follow de la forma oracional que estamos intentando reducir. De modo que un item de la forma $X \rightarrow \alpha \cdot \beta, c$ en un estado del autómata representa que ya hemos reconocido la parte $\alpha$ de la forma oracional, y esperamos reconocer la parte $\beta$, y que una vez reconocida toda esta porción $\beta$, esperamos que venga exactamente un terminal $c$. Por tanto, en algún momento tendremos un item $X \rightarrow \delta \cdot, c$, y entonces la operación de **reduce** la aplicaremos solamente si el siguiente terminal es $c$. A este token asociado a cada item le llamaremos *look-ahead*, y a la parte $X \rightarrow \alpha \cdot \beta$ le llamaremos centro. De modo que un item LR(1) está compuesto por un centro, que es un item LR(0), y un token *look-ahead*.
+
+A partir de este nuevo tipo de item, vamos a construir un autómata similar al SLR(1), que llamaremos **LR(1) canónico** o simplemente LR(1). Para ello, necesitaremos definir cuál es el item inicial, y cómo se computan nuevos items a partir de los items ya existentes. El item LR(1) inicial es fácil de definir. El centro es idéntico al item inicial del autómata SLR: es decir, $S \rightarrow \cdot E$ (siendo `S` el nuevo símbolo inicial de la gramática aumentada, y `E` el símbolo inicial de la gramática original). Ahora, para definir el token *look-ahead*, volvamos al significado de este item. Básicamente $S \rightarrow \cdot E$ significa que esperamos encontrar una forma oracional que se pueda reducir a `E`, y por tanto lo único que puede venir posteriormente es justamente `$`. De este modo el item LR(1) inicial significamente exactamente que queremos reducir **toda** la cadena a un simbolo `E`.
+
+> Sea $G=<S,N,T,P>$ una gramática libre del contexto, $S'$ el símbolo inicial de la gramática autmentada, entonces el item LR(1) inicial es $S' \rightarrow \cdot S, \$$.
+
+Veamos entonces qué sucede con cualquier otro item LR(1). Recordemos que en SLR teníamos dos tipos de items, los *kernel* y los *no-kernel*. Aquí tendremos la misma separación. Si tenemos un item LR(1) $X \rightarrow \alpha \cdot x \beta, c$, donde $x \in T$, la operación **shift** nos generará el item $X \rightarrow es\alpha x \cdot \beta, c$. Dado que todavía estamos reconociendo la parte derecha de esta producción, el *look-ahead* se mantiene igual. Por otro lado, si tenemos $X \rightarrow \alpha \cdot Y \beta, c$ con $Y \in N$, entonces tenemos que computar (además de correr el punto) todos los items con centro $Y \rightarrow \cdot \delta$. La pregunta es entonces cuál es el *look-ahead* correspondiente. Básicamente la pregunta es, si logramos reducir a $\delta$ al $Y$ que estamos esperando, ¿qué puede venir detrás? La respuesta es, en principio, todo terminal en el $First(\beta)$, y *nada más*.
+
+Ahora, puede suceder que $\beta \rightarrow^* \epsilon$, es decir, que la parte detrás de $Y$ no exista, o que desaparezca en el futuro. En este caso, tendremos que $\epsilon \in First(\beta)$. Pero no tiene sentido alguno decir que detrás de $Y$ esperamos que venga $\epsilon$ (incluso definimos anteriormente que $\epsilon \notin Follow(Y)$ para todo $Y$). Sin embargo, en este caso, si $\beta$ desaparece, entonces lo único que puede venir detrás de $Y$, es justamente el *look-ahead* de $X$. Por ejemplo, para el item $X \rightarrow \alpha \cdot Y, c$ generamos el item $Y \rightarrow \cdot \delta, c$, pues como $Y$ está al final del $X$, le sigue lo mismo que habíamos decidido que seguía a $X$. Podemos generalizar de la siguiente manera, extendiendo los conceptos definidos para SLR:
+
+> Sea $I$ un conjunto de **items LR(1)** (kernel o no), el conjunto clausura de $I$ se define como $CL(I) = I \cup \{ X \rightarrow .\beta, b\}$ tales que $Y \rightarrow \alpha .X \delta, c \in CL(I)$ y $b \in First(\delta c)$.
+
+> Sea $I$ un conjunto de **items LR(1)**, se define la función $Goto(I,X) = CL(\{ Y \rightarrow \alpha X. \beta, c | Y \rightarrow \alpha .X \beta, c \in I \})$
+
+Para construir el autómata, seguimos el mismo algoritmo que para SLR. La función **Goto** para un conjunto de items (un estado) se define de igual forma como el conjunto de items (estado) que se obtienen de aplicar **Goto** a cada item en el conjunto origen. La función **Clausura** igualmente se define de forma recursiva como la clausura transitiva de cada uno de los items del propio conjunto. De la misma forma, tendremos conflictos **shift-reduce** o **reduce-reduce** en algún estado, si los *look-ahead* de algunas producciones **reduce** coinciden con otras, o con una de las transiciones salientes.
+
+Pasemos entonces a construir el autómata LR(1) de la gramática anterior:
+
+    S -> E
+    E -> A = A | i
+    A -> i + A | i
+
+Comenzamos por el estado inicial:
+
+    S0 = {
+        S -> .E, $
+    }
+
+Vamos a añadir entonces las producciones de `E`. Notemos que como en `S -> E` detrás de `E` no viene nada, el *look-ahead* será justamente `$`:
+
+    S0 = {
+        S -> .E,     $
+        E -> .A = A, $
+        E -> .i,     $
+    }
+
+Hasta el momento hemos obtenido un estado inicial equivalente al del autómata SLR correspondiente. Adicionamos entonces las producciones de `A`, y veremos el primer cambio importante. El centro de estos items serán (de forma equivalente al caso SLR), `A -> .i + A` y `A -> .i`. Sin embargo, al calcular el *look-ahead*, aplicando la definición, tenemos que computar $First(=\$)$ que es el token `=`. Luego:
+
+    S0 = {
+        S -> .E,     $
+        E -> .A = A, $
+        E -> .i,     $
+        A -> .i + A, =
+        A -> .i,     =
+    }
+
+Y ya podemos intuir cómo el autómata LR resolverá el conflicto **reduce-reduce** que teníamos anteriormente, ya que las producciones a reducir en el próximo estado tienen *look-ahead* distinto. Por completitud, continuemos con el resto del autómata.
+
+    S1 = Goto(S0, E) = {
+        S -> E., $
+    }
+
+    S2 = Goto(S0, A) = {
+        E -> A.= A, $
+    }
+
+    S3 = Goto(S0, i) = {
+        E -> i.,    $
+        A -> i.+ A, =
+        A -> i.,    =
+    }
+
+Como intuíamos, el estado $S_3$, que anteriormente tenía un conflicto **reduce-reduce**, ahora es válido. Veamos el resto de los estados:
+
+    S4 = Goto(S2, =) = {
+        E ->  A =.A, $
+        A -> .i + A, $
+        A -> .i,     $
+    }
+
+    S5 = Goto(S3, +) = {
+        A ->  i +.A, =
+        A -> .i + A, =
+        A -> .i,     =
+    }
+
+Ahora veamos los estados que se derivan de estos. Comenzaremos a notar que aparecen estados muy similares a los anteriores, pero con conjuntos *look-ahead* distintos:
+
+    S6 = Goto(S4, A) = {
+        E -> A = A., $
+    }
+
+    S7 = Goto(S4, i) = {
+        A -> i.+ A, $
+        A -> i.,    $
+    }
+
+    S8 = Goto(S5, A) = {
+        A -> i + A., =
+    }
+
+    S9 = Goto(S5, i) = {
+        A -> i.+ A, =
+        A -> i.,    =
+    }
+
+Como vemos, $S_7$ y $S_9$ son estados en principio idénticos, excepto porque los *look-ahead* asociados a cada item son distintos. Esta repetición de estados casi iguales será el próximo problema a resolver, pero por el momento continuemos con el autómata:
+
+    S10 = Goto(S7, +) = {
+        A ->  i +.A, $
+        A -> .i + A, $
+        A -> .i,     $
+    }
+
+    Goto(S9, +) = S5
+
+    S11 = Goto(S10, A) = {
+        A ->  i + A., $
+    }
+
+    Goto(S10, i) = S7
+
