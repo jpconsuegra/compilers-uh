@@ -541,13 +541,17 @@ Esta gramática representa un subconjunto del lenguaje de las ecuaciones algebra
 
 Viendo los items de este estado, ya podemos intuir dónde podría haber problemas. Al hacer `Goto(I0, i)` aparecerán dos items **reduce** con parte izquierda distinta:
 
-    I1 = Goto(I0, i) = {
+    Goto(I0, i) = {
         E -> i.
         A -> i.+ A
         A -> i.
     }
 
-En este estado aperece entonces un conflicto **reduce-reduce**, ya que $Follow(E) = \{ \$ \}$, y $\$ \in Follow(A)$, puesto que `A` aparece como parte derecha de una producción de `E`. Por tanto esta gramática no es SLR(1). Sin embargo, la gramática no es ambigua, y esto es fácil de demostrar. Intuitivamente, la única cadena donde pudiera haber ambiguedad es justamente la cadena `i` (es el único token que es generado por más de un no-terminal). Sin embargo, para esta cadena, la única derivación posible es `S -> E -> i`. Aunque `A -> i` es una producción, la forma oracional `i` no es **handle** de `A`. Si solo existe un `i` en la pila, este tiene que ser generado por el no-terminal `E`, pues de lo contrario no sería posible reducir a `S`.
+En este estado aperece entonces un conflicto **reduce-reduce**, ya que $Follow(E) = \{ \$ \}$, y $\$ \in Follow(A)$, puesto que `A` aparece como parte derecha de una producción de `E`. Por tanto esta gramática no es SLR(1). Sin embargo, la gramática no es ambigua, y esto es fácil de demostrar. Intuitivamente, la única cadena donde pudiera haber ambigüedad es justamente la cadena `i` (es el único token que es generado por más de un no-terminal). Sin embargo, para esta cadena, la únic.
+
+Luego tenemos que ver cómo se comporta el autómata si reemplazamos los estados originales por estos nuevos "estados combinados". Para ello, tenemos que ver que sucede con las transiciones entrantes y salientes. En principio, todas las transiciones que iban a parar a alguno de los estados originales, irán a parar al nuevo estado mezcla derivación posible es `S -> E -> i`. Aunque `A -> i` es una producción, la forma oracional `i` no es **handle** de `A`. Si combinado. Veamos entonces qué aristas entrantes tenía cada estado original:
+
+    I7 = lo existe un `i` en la pila, este tiene que ser generado por el no-terminal `E`, pues de lo contrario no sería posible reducir a `S`.
 
 Sin embargo, nuestro parser SLR(1) no es suficientemente inteligente para determinar esto. Al encontrarse con la forma oracional `i` en la pila, en principio, el autómata dice que `A -> i` es una reducción posible. Sin embargo, sabemos que esta reducción es inválida, porque luego quedaría `A` en la pila, que no es una forma oracional válida en ninguna derivación extrema derecha. De la producción `E -> A = A` podemos ver que esta gramática nunca genera una `A` sola. En otras palabras, nuestra heurística SLR(1) para detectar **handles** (reducir en `X` para todo terminal en el `Follow(X)`) es demasiado débil para manejar esta situación, y produce un falso positivo, al determinar que la forma oracional `ì$` es un **handle** de `A`, cuando realmente no lo es.
 
@@ -560,7 +564,19 @@ Comenzamos por el estado inicial nuevamente, pero viéndolo paso a paso a medida
         ...
     }
 
-En este punto, el único item de este estado indica que esperamos encontrar en la cadena una forma oracional que se reduzca a `E`. Por tanto, añadimos las producciones de `E`:
+E
+    I7-9
+    -------------------------------n este  Goto(I4, ip = Goto(I10, iu
+I9 = Goto(I5, in
+
+I5 = Goto(I3, +to, el único item
+    I5-10
+    ------------------------------de este estado indica que esperamos encontrar en la cadena una forma oracional que se reduzca a `E`. Por tanto, añadimos las = Goto() producciones de `E`I9, +:
+    I10 = Goto(I7, +)
+
+    I8-11
+    ------------------
+    I8 = Goto()
 
     I0 = {
         S -> .E
@@ -617,13 +633,13 @@ Pasemos entonces a construir el autómata LR(1) de la gramática anterior:
 
 Comenzamos por el estado inicial:
 
-    S0 = {
+    I0 = {
         S -> .E, $
     }
 
 Vamos a añadir entonces las producciones de `E`. Notemos que como en `S -> E` detrás de `E` no viene nada, el *look-ahead* será justamente `$`:
 
-    S0 = {
+    I0 = {
         S -> .E,     $
         E -> .A = A, $
         E -> .i,     $
@@ -631,7 +647,7 @@ Vamos a añadir entonces las producciones de `E`. Notemos que como en `S -> E` d
 
 Hasta el momento hemos obtenido un estado inicial equivalente al del autómata SLR correspondiente. Adicionamos entonces las producciones de `A`, y veremos el primer cambio importante. El centro de estos items serán (de forma equivalente al caso SLR), `A -> .i + A` y `A -> .i`. Sin embargo, al calcular el *look-ahead*, aplicando la definición, tenemos que computar $First(=\$)$ que es el token `=`. Luego:
 
-    S0 = {
+    I0 = {
         S -> .E,     $
         E -> .A = A, $
         E -> .i,     $
@@ -641,29 +657,29 @@ Hasta el momento hemos obtenido un estado inicial equivalente al del autómata S
 
 Y ya podemos intuir cómo el autómata LR resolverá el conflicto **reduce-reduce** que teníamos anteriormente, ya que las producciones a reducir en el próximo estado tienen *look-ahead* distinto. Por completitud, continuemos con el resto del autómata.
 
-    S1 = Goto(S0, E) = {
+    I1 = Goto(I0, E) = {
         S -> E., $
     }
 
-    S2 = Goto(S0, A) = {
+    I2 = Goto(I0, A) = {
         E -> A.= A, $
     }
 
-    S3 = Goto(S0, i) = {
+    I3 = Goto(I0, i) = {
         E -> i.,    $
         A -> i.+ A, =
         A -> i.,    =
     }
 
-Como intuíamos, el estado $S_3$, que anteriormente tenía un conflicto **reduce-reduce**, ahora es válido. Veamos el resto de los estados:
+Como intuíamos, el estado $I_3$, que anteriormente tenía un conflicto **reduce-reduce**, ahora es válido. Veamos el resto de los estados:
 
-    S4 = Goto(S2, =) = {
+    I4 = Goto(I2, =) = {
         E ->  A =.A, $
         A -> .i + A, $
         A -> .i,     $
     }
 
-    S5 = Goto(S3, +) = {
+    I5 = Goto(I3, +) = {
         A ->  i +.A, =
         A -> .i + A, =
         A -> .i,     =
@@ -671,37 +687,256 @@ Como intuíamos, el estado $S_3$, que anteriormente tenía un conflicto **reduce
 
 Ahora veamos los estados que se derivan de estos. Comenzaremos a notar que aparecen estados muy similares a los anteriores, pero con conjuntos *look-ahead* distintos:
 
-    S6 = Goto(S4, A) = {
+    I6 = Goto(I4, A) = {
         E -> A = A., $
     }
 
-    S7 = Goto(S4, i) = {
+    I7 = Goto(I4, i) = {
         A -> i.+ A, $
         A -> i.,    $
     }
 
-    S8 = Goto(S5, A) = {
+    I8 = Goto(I5, A) = {
         A -> i + A., =
     }
 
-    S9 = Goto(S5, i) = {
+    I9 = Goto(I5, i) = {
         A -> i.+ A, =
         A -> i.,    =
     }
 
-Como vemos, $S_7$ y $S_9$ son estados en principio idénticos, excepto porque los *look-ahead* asociados a cada item son distintos. Esta repetición de estados casi iguales será el próximo problema a resolver, pero por el momento continuemos con el autómata:
+Como vemos, $I_7$ y $I_9$ son estados en principio idénticos, excepto porque los *look-ahead* asociados a cada item son distintos. Esta repetición de estados casi iguales será el próximo problema a resolver, pero por el momento continuemos con el autómata:
 
-    S10 = Goto(S7, +) = {
+    I10 = Goto(I7, +) = {
         A ->  i +.A, $
         A -> .i + A, $
         A -> .i,     $
     }
 
-    Goto(S9, +) = S5
+    Goto(I9, +) = I5
 
-    S11 = Goto(S10, A) = {
-        A ->  i + A., $
+    I11 = Goto(I10, A) = {
+        A -> i + A., $
     }
 
-    Goto(S10, i) = S7
+    Goto(I10, i) = I7
+
+El autómata resultante tiene 12 estados. A modo de comparación, el autómata SLR correspondiente tiene 9 estados. Como ya tenemos práctica, lo mostraremos sin más explicación:
+
+    I0 = {
+        S -> .E
+        E -> .A = A
+        E -> .i
+        A -> .i + A
+        A -> .i
+    }
+
+    I1 = Goto(I0, E) = {
+        S -> E.
+    }
+
+    I2 = Goto(I0, A) = {
+        E -> A.= A
+    }
+
+    I3 = Goto(I0, i) = {
+        E -> i.
+        A -> i.+ A
+        A -> i.
+    }
+
+    I4 = Goto(I2, =) = {
+        E ->  A =.A
+        A -> .i+ A
+        A -> .i
+    }
+
+    I5 = Goto(I3, +) = {
+        A ->  i +.A
+        A -> .i + A
+        A -> .i
+    }
+
+    I6 = Goto(I4, A) = {
+        E -> A = A.
+    }
+
+    I7 = Goto(I4, i) = {
+        A -> i.+ A
+        A -> i.
+    }
+
+    I8 = Goto(I5, A) = {
+        A -> i + A.
+    }
+
+    Goto(I5, i) = I7
+
+    Goto(I7, +) = I5
+
+Los estados adicionales necesarios en LR son justamente aquellos donde existen conflictos.
+
+
+## Parsing LALR(1)
+
+Si observamos el autómata LR(1) nuevamente, notaremos algunos estados que son muy semejantes, y solo se diferencian en los conjuntos de *look-aheads*. En particular, el estado $I_7$ y el estado $I_9$ tienen los mismos centros:
+
+    I7 = Goto(I4, i) = {
+        A -> i.+ A, $
+        A -> i.,    $
+    }
+
+    I9 = Goto(I5, i) = {
+        A -> i.+ A, =
+        A -> i.,    =
+    }
+
+Al igual que los estados $I_5$ e $I_10$:
+
+    I5 = Goto(I3, +) = {
+        A ->  i +.A, =
+        A -> .i + A, =
+        A -> .i,     =
+    }
+
+    I10 = Goto(I7, +) = {
+        A ->  i +.A, $
+        A -> .i + A, $
+        A -> .i,     $
+    }
+
+Y los estados $I_8$ e $I_11$:
+
+    I8 = Goto(I5, A) = {
+        A -> i + A., =
+    }
+
+    I11 = Goto(I10, A) = {
+        A -> i + A., $
+    }
+
+Intuitivamente, estos son los estados que ayudan a desambiguar el autómata SLR, pues separan en diferentes subconjuntos de terminales lo que antes era el Follow de un no-terminal. De cierta forma este es el precio a pagar por el poder adicional del autómata LR sobre el SLR: es necesario separar en mútiples estados lo que antes era un solo estado, para poder discriminar con exactitud qué tokens activan una reducción.
+
+Afortunadamente, en ocasiones podemos obtener lo mejor de ambos mundos. ¿Qué sucede si intentamos "compactar" estos estados "duplicados"? Idealmente, si esta compactación no introdujera nuevos conflictos, lograríamos un autómata con menos estados y el mismo poder de reconocimiento. Veamos como podríamos proceder. Tomemos por ejemplo los estados $I_7$ e $I_9$ y definamos un nuevo estado $I_{7,9}$. Para ello simplemente combinamos los *look-ahead* de cada par de items iguales en un conjunto:
+
+    I7-9 = {
+        A -> i.+ A, =$
+        A -> i.,    =$
+    }
+
+De la misma forma, podemos hacer con los pares de estados restantes:
+
+    I5-10 = {
+        A ->  i +.A, =$
+        A -> .i + A, =$
+        A -> .i,     =$
+    }
+
+    I8-11 = {
+        A -> i + A., =$
+    }
+
+La primera verificación que necesitamos hacer es si estos nuevos estados crean conflictos en sí mismos. Es decir, si al combinar, aparece un conflicto **reduce-reduce** que antes no existía, dado por dos reducciones distintas cuyos *look-ahead* ahora tengan intersección. En este caso vemos que no sucede, pues en los estados donde hay reducciones, afortunadamente son al mismo no-terminal, por tanto no hay ambigüedad.
+
+Luego tenemos que ver cómo se comporta el autómata si reemplazamos los estados originales por estos nuevos "estados combinados". Para ello, tenemos que ver que sucede con las transiciones entrantes y salientes. En principio, todas las transiciones que iban a parar a alguno de los estados originales, irán a parar al nuevo estado combinado. Veamos entonces qué aristas entrantes tenía cada estado original:
+
+    I7-9
+    --------------------------------
+    I7  = Goto(I4, i) = Goto(I10, i)
+    I9  = Goto(I5, i)
+
+    I5-10
+    -------------------------------
+    I5  = Goto(I3, +) = Goto(I9, +)
+    I10 = Goto(I7, +)
+
+    I8-11
+    ------------------
+    I8  = Goto(I5, A)
+    I11 = Goto(I10, A)
+
+Tenemos entonces que factorizar todas estas aristas entrantes hacia los nuevos estados, y comprobar que no ocurran conflictos. Por ejemplo, como `Goto(I4, i) = I7`, ahora esa arista irá hacia `I7-9`. Por otro lado, como `Goto(I5, i) = I9`, esa arista también irá para `I7-9`. Y en este segundo caso, como en estado de salida también va a ser parte de un estado combinado, realmente lo que sucederá es que tendremos una arista de `I5-10` hacia `I7-9`. Pero para que esto sea posible, necesitamos que la otra arista que salía de `I10` también caiga en el nuevo estado combinado, pues de lo contrario tendríamos una ambigüedad. Afortunadamente, en este caso `Goto(I10, i) = I7`, por lo que no existe conflicto. Luego, procedamos a compactar todas las transiciones entrantes:
+
+    I7-9  = Goto(I4, i) = Goto(I5-10, i)
+    I5-10 = Goto(I3, +) = Goto(I7-9, +)
+    I8-11 = Goto(I5-10, A)
+
+En principio, nos queda ver las aristas salientes de estos estados combinados. En este caso particular todas las aristas salientes ya han sido analizadas, como aristas entrantes de otros estados. En el caso general, es posible que existan aristas salientes de un estado combinado de vayan a parar a estados distintos. Por ejemplo, si hubiera una arista de $I_7$ con un token `c` hacia un estado $I_i$, y otra arista desde $I_9$ con el mismo token `c` hacia otro estado $I_j$, que no fueran combinables (no tuvieran el mismo centro), entonces no sería posible realizar esta compactación.
+
+Veamos el autómata final que hemos obtenido al combinar los estados con el mismo centro:
+
+    I0 = {
+        S -> .E,     $
+        E -> .A = A, $
+        E -> .i,     $
+        A -> .i + A, =
+        A -> .i,     =
+    }
+
+    I1 = Goto(I0, E) = {
+        S -> E., $
+    }
+
+    I2 = Goto(I0, A) = {
+        E -> A.= A, $
+    }
+
+    I3 = Goto(I0, i) = {
+        E -> i.,    $
+        A -> i.+ A, =
+        A -> i.,    =
+    }
+
+    I4 = Goto(I2, =) = {
+        E ->  A =.A, $
+        A -> .i + A, $
+        A -> .i,     $
+    }
+
+    I5-10 = Goto(I3, +) = Goto(I7-9, +) {
+        A ->  i +.A, =$
+        A -> .i + A, =$
+        A -> .i,     =$
+    }
+
+    I6 = Goto(I4, A) = {
+        E -> A = A., $
+    }
+
+    I7-9 = Goto(I4, i) = Goto(I5-10, i) {
+        A -> i.+ A, =$
+        A -> i.,    =$
+    }
+
+    I8-11 = Goto(I5-10, A) = {
+        A -> i + A., =$
+    }
+
+El nuevo autómata que hemos construido tiene exactamente 9 estados, la misma cantidad que el autómata SLR, y sin embargo no presenta conflictos. Este autómata se denomina LALR, y constituye el resultado más importante en la práctica para la construcción de compiladores, ya que la mayoría de los generadores de parsers autómaticos usados en la industria construyen este tipo de autómatas. Esto se debe a que combina de forma ideal un poder reconocedor muy similar al LR, con una cantidad de estados mucho menor, proporcional al SLR.
+
+Intuitivamente, el motivo por el que este autómata no presenta conflictos, y el SLR sí, se debe a que en este caso hemos hecho un análisis más riguroso de los Follow primero (construyendo el autómata LR), y solo entonces hemos intentado combinar los estados. Esto fue posible ya que los estados con los mismos centros no eran aquellos donde se producían los conflictos **reduce-reduce** en el autómata SLR. Es decir, al aplicar la técnica LR, y analizar cuidadosamente los Follow, logramos evitar el conflicto en el estado $I_3$, pero luego esa misma técnica nos llevó a crear estados independientes innecesarios. De cierta forma, la técnica LR es demasiado rigurosa, y nos lleva incluso a intentar evitar conflictos que en realidad no van a ocurrir. La técnica LALR entonces reconoce estas situaciones donde tenemos "demasiado rigor" y simplifica el autómata tanto como sea posible.
+
+Siguiendo esta línea de pensamiento, debería ser posible construir el autómata LALR directamente, sin necesidad de primero construir el LR para luego combinar los estados innecesarios. De hecho, esto es posible, y es lo que hacen los generadores de parsers usados en la práctica. Aunque no presentaremos un algoritmo detallado para esto, podemos ver intuitivamente que los estados se pueden ir combinando "sobre la marcha", a medida que se descubren estados con el mismo centro que otros ya creados, y arreglando las transiciones existentes en caso de ser necesario.
+
+Un punto de importancia en el autómata LALR, es que no se puede hacer "una parte" de este. Es decir, o bien todos los estados con el mismo centro de combinan, y no aparece ningún conflicto nuevo, o no se combina ninguno y el autómata se queda LR. De modo que no existen "grados" de LALR.
+
+## Implementación del parser LR
+
+Veamos entonces como construir un algoritmo de parsing lineal que obtenga el árbol de derivación correspondiente. Recordemos que lo que tenemos hasta el momento es un autómata que nos permite reconocer si el contenido de la pila es un prefijo viable. En principio, en cada iteración, tras realizar un **shift** o un **reduce**, es necesario volver a correr el autómata en todo el contenido de la pila, para determinar en qué estado termina, y poder decidir la próxima operación. Esto es innecesariamente costoso. Intuitivamente, dado que tras una operación **shift** o **reduce** sabemos exactamente como cambia la pila, deberíamos poder "hacer backtrack" en el autómata, y solamente ejecutar la parte necesaria para reconocer el nuevo sufijo de la pila.
+
+Por ejemplo, supongamos que tenemos un estado del parser $\alpha | c \omega$, y al ejecutar el autómata, terminamos en un estado $I_i$ que indica **shift** con el token `c`. Si $Goto(I_i, c) = I_j$, entonces sabemos que la siguiente iteración terminaremos en el estado $I_j$. Efectivamente, tras un **shift** tendremos un nuevo estado en la pila $\alpha c | \omega$, y como el autómata es determinista, tras reconocer $\alpha$ tendrá que terminar necesariamente en el estado $I_i$. Luego, el token `c` lo envía al estado $I_j$, precisamente porque esa es la definición de la función **Goto**. Por tanto, tras una operación de **shift**, no es necesario volver a correr el autómata en todo el contenido de la pila. Simplemente podemos transitar directamente al estado $Goto(I_i, c)$.
+
+Veamos que sucede tras una operación **reduce**. Sea $\alpha \beta | \omega$ el estado de la pila antes del **reduce**, y $\alpha X | \omega$ el estado después de reducir $X \rightarrow \beta$. Supongamos que el autómata, tras reconocer $\alpha$, cae en el estado $I_i$. Entonces tras reconocer $\alpha X$ debe caer en el estado $Goto(I_i, X)$ por definición. Por tanto, una vez sacados $|\beta|$ terminales de la pila, solamente necesitamos ser capaces de "recordad" en que estado estaba el autómata cuando reconoció los primeros $|\alpha|$ terminales, y de ahí movernos una sola transición. Para ello, sencillamente almacenaremos en la pila, además de la forma oracional que se está construyendo, también los estados que transita el autómata en cada símbolo (ya sea almacenando pares $<X,i>$ o con una pila paralela para los estados). Por tanto, cuando extraemos los $|\beta|$ terminales de la pila, en el tope está justamente el estado $I_i$.
+
+Con estas dos estrategias, podemos demostrar que tenemos un algoritmo de parsing lineal. Definamos entonces de una vez y por todas este algoritmo formalmente. Para ello vamos a construir una tabla, que llamaremos **tabla LR**, y que nos indicará en cada situación qué hacer (al estilo de la **tabla LL**). Mostraremos a continuación la **tabla LR** para el autómata construido anteriormente, y luego veremos paso a paso los detalles sobre su construcción:
+
+  Estado Items          Acción         Goto
+-------- -------------- -------------- -------------
+
+-------- -------------- -------------- --------------
+
+
+## Comparaciones entre SLR, LR y LALR
+
+De manera general, el autómata SLR tiene una cantidad considerablemente menor de estados que el autómata LR correspondiente. En los casos donde la gramática es SLE(1) es preferible usar dicho autómata. Desgraciadamente, la mayoría de las construcciones sintácticas de interés para los lenguajes de programación usuales tienen gramáticas "naturales" que no son SLR, pero sí LR. Por este motivo, el parser LR(1) es, en la práctica, el más usado. Su mayor desventaja radica en el elevado número de estados, que dificultan su almacenamiento. Este problema era especialmente complejo en el año 1965, cuando Donald Knuth propuso este parser. Por tal motivo, aunque teóricamente es una solución adecuada, en la práctica no se usó hasta que en 1969 James DeRemer propuso el parser LALR que reduce considerablemente la cantidad de estados, hasta un nivel comparable con el SLR, sin perder prácticamente en expresividad con respecto con al LR. Más adelante en 1971 el propio DeRemer propondría el SLR como una variante más sencilla de construir algo parecido al LALR de forma más sencilla.
 
