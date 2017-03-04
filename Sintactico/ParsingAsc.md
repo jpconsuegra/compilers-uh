@@ -823,20 +823,14 @@ La primera verificación que necesitamos hacer es si estos nuevos estados crean 
 
 Luego tenemos que ver cómo se comporta el autómata si reemplazamos los estados originales por estos nuevos "estados combinados". Para ello, tenemos que ver que sucede con las transiciones entrantes y salientes. En principio, todas las transiciones que iban a parar a alguno de los estados originales, irán a parar al nuevo estado combinado. Veamos entonces qué aristas entrantes tenía cada estado original:
 
-    I7-9
-    --------------------------------
-    I7  = Goto(I4, i) = Goto(I10, i)
-    I9  = Goto(I5, i)
+    I7-9  | I7  = Goto(I4, i) = Goto(I10, i)
+          | I9  = Goto(I5, i)
 
-    I5-10
-    -------------------------------
-    I5  = Goto(I3, +) = Goto(I9, +)
-    I10 = Goto(I7, +)
+    I5-10 | I5  = Goto(I3, +) = Goto(I9, +)
+          | I10 = Goto(I7, +)
 
-    I8-11
-    ------------------
-    I8  = Goto(I5, A)
-    I11 = Goto(I10, A)
+    I8-11 | I8  = Goto(I5, A)
+          | I11 = Goto(I10, A)
 
 Tenemos entonces que factorizar todas estas aristas entrantes hacia los nuevos estados, y comprobar que no ocurran conflictos. Por ejemplo, como `Goto(I4, i) = I7`, ahora esa arista irá hacia `I7-9`. Por otro lado, como `Goto(I5, i) = I9`, esa arista también irá para `I7-9`. Y en este segundo caso, como en estado de salida también va a ser parte de un estado combinado, realmente lo que sucederá es que tendremos una arista de `I5-10` hacia `I7-9`. Pero para que esto sea posible, necesitamos que la otra arista que salía de `I10` también caiga en el nuevo estado combinado, pues de lo contrario tendríamos una ambigüedad. Afortunadamente, en este caso `Goto(I10, i) = I7`, por lo que no existe conflicto. Luego, procedamos a compactar todas las transiciones entrantes:
 
@@ -1038,6 +1032,8 @@ Desde el punto de vista teórico, tenemos una jerarquía de gramáticas que se c
 Es decir, las gramáticas LR son un conjunto estrictamente superior a las gramáticas LL, SLR y LALR. Entre las gramáticas SLR, LALR y LR hay una relación de inclusión que es un orden total. Sin embargo, aunque las gramáticas LL están estrictamente incluidas en las LR, existen gramáticas LL que no son ni SLR ni LALR.
 
 Desde el punto de vista de la implementación, los parsers SLR, LALR y LR son idénticos. Solamente se diferencian en la forma en que se construye el autómata, que en última instancia determina la tabla obtenida. De la tabla en adelante el algoritmo de parsing es el mismo que hemos visto. De modo que, en una implementación concreta, es posible desacoplar el mecanismo que genera la tabla, del mecanismo que la ejecuta, y reutilizar toda la segunda parte para cualquiera de los tres tipos de parsers.
+
+Otra cuestión interesante es qué sucede con los errores de parsing. Knuth demostró que el autómata LR reconoce los errores de parsing lo antes posible, para cualquier clase de parser determinista. Esto quiere decir que con la misma cadena (incorrecta) de entrada, ningún algoritmo de parsing podrá darse cuenta de que la cadena es errónea antes que el algoritmo LR. De hecho, los parsers LALR y SLR son más permisivos. Dada una cadena incorrecta, es posible que el parser SLR o LALR haga algunas reducciones de más, antes de darse cuenta de que la cadena es inválida. Al final ninguno de estos parsers deja pasar incorrectamente una cadena inválida, por supuesto. Pero reconocer un error lo antes posible, además de la ventaja en eficiencia, es también muy conveniente para brindar al programar un mensaje de error lo más acertado posible.
 
 Cabe preguntarse entonces si al inventar el autómata LR hemos definitivamente terminado con el problema de parsing. Pues resulta que la respuesta teórica para esta pregunta es **sí**. En 1965 Knuth demostró que para todo lenguaje libre del contexto determinista tiene que existir una gramática LR(k). Los lenguajes libres del contexto deterministas son aquellos tales que existe un algoritmo de parsing lineal en la longitud de la cadena en caso peor. Por otro lado, toda gramática LR(k) puede ser convertida a LR(1), con la adición de nuevos no-terminales y producciones. De modo que tenemos un resultado teórico que dice: si un lenguaje puede ser parseado en tiempo lineal, entonces puede ser parseado con un parser LR(1). Aquellos lenguajes libres del contexto que no son LR(1) tienen que ser por necesidad ambiguos, o al menos es imposible diseñar un algoritmo de parsing con tiempo lineal. De cierta forma, podemos decir que hemos terminado, pues todo lenguaje "sensato" es LR(1).
 
