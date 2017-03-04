@@ -932,9 +932,9 @@ Estado  =             +        i        $             E       A
 La tabla LR contiene una fila por cada estado del autómata, y una columna por cada símbolo (terminales y no-terminales). Usaremos la notación $T[i,x]$ para referirnos a la entrada asociada al símbolo $x$ en el estado $I_i$:
 
 * Si $S \rightarrow E \cdot, \$$ pertenece al estado $I_i$, entonces la entrada $T[i,\$] = OK$.
-* Si $Goto(I_i, X) = I_j$:
+* Si $Goto(I_i, X) = I_j$:t
     * Si $X \in N$, entonces $T[i,X] = j$.
-    * Si $X \in T$, entonces $T[i,X] = S_j (**shift**)$:
+    * Si $X \in T$, entonces $T[i,X] = S_j$ (**shift**):
 * Si el item $Y \rightarrow \beta \cdot, c$ está en el estado $I_i$, entonces $T[i,c] = Y \rightarrow \beta$ (**reduce**).
 
 Para usar la tabla, veamos qué significa cada posible valor en una entrada. Sea $S = \alpha | c \omega$ el estado de la pila de símbolos, e $I_i$ el estado del autómata en el tope de la pila de estados (asumiendo una implementación basada en dos pilas paralelas). Buscamos entonces la entrada $T[i,c]$, y según su valor realizamos la siguiente operación:
@@ -946,7 +946,97 @@ Para usar la tabla, veamos qué significa cada posible valor en una entrada. Sea
 
 Para entender por qué el algoritmo descrito anteriormente funciona, tratemos de interpretar qué significa cada entrada en la tabla. Una entrada de la forma $S_j$ significa que con el token correspondiente existe una transición hacia el estado $I_j$. Por tanto, la operación a realizar es **shift**, y como ya hemos visto anteriormente, en la pila de estados sabemos que el siguiente estado hacia el que transitar será justamente $j$. Una entrada de la forma $X \rightarrow \beta$ significa que existe un item **reduce** con el token correspondiente de *look-ahead*. Por lo tanto se realiza la operación de **reduce**. Como vimos anteriormente, en el tope de la pila de estados quedará el estado $I_j$ que habíamos transitado justo antes de reconocer la producción reducida. Por tanto, de ese estado anterior, el nuevo estado al que transitaremos es justamente $T[j,X]$.
 
-## Comparaciones entre SLR, LR y LALR
+El único punto que nos queda por discutir, es cómo se construye el árbol de derivación. Esbozaremos un algoritmo para esto, que ejemplificaremos más adelante. Dado que la derivación se construye de abajo hacia arriba, intuitivamente puede verse que construiremos el árbol empezando por las hojas. La idea general consiste en mantener una tercera pila donde se irán acumulando sub-árboles de derivación. Cada vez que se haga una operación **reduce** $X \rightarrow \beta$, tendremos en el tope de esta pila $|\beta$ sub-árboles de derivación, que agruparemos bajo una nueva raíz $X$. Al finalizar el reconocimiento, en la pila quedará solamente un árbol, que será la derivación de toda la cadena.
 
-De manera general, el autómata SLR tiene una cantidad considerablemente menor de estados que el autómata LR correspondiente. En los casos donde la gramática es SLE(1) es preferible usar dicho autómata. Desgraciadamente, la mayoría de las construcciones sintácticas de interés para los lenguajes de programación usuales tienen gramáticas "naturales" que no son SLR, pero sí LR. Por este motivo, el parser LR(1) es, en la práctica, el más usado. Su mayor desventaja radica en el elevado número de estados, que dificultan su almacenamiento. Este problema era especialmente complejo en el año 1965, cuando Donald Knuth propuso este parser. Por tal motivo, aunque teóricamente es una solución adecuada, en la práctica no se usó hasta que en 1969 James DeRemer propuso el parser LALR que reduce considerablemente la cantidad de estados, hasta un nivel comparable con el SLR, sin perder prácticamente en expresividad con respecto con al LR. Más adelante en 1971 el propio DeRemer propondría el SLR como una variante más sencilla de construir algo parecido al LALR de forma más sencilla.
+Veamos ahora un ejemplo de cómo funciona el algoritmo de parsing bottom-up con la cadena `i = i + i`, usando la tabla definida anteriormente. Ilustraremos la ejecución del algoritmo, representando el estado de la pila de símbolos de la forma usual, y además representando las dos pilas correspondientes a los estados y los sub-árboles de derivación. Para representar un árbol, usaremos la notación $X(t_1,t_2,\ldots,t_n)$, donde $X$ es el símbolo de la raíz, y $t_i$ es una hoja, o un árbol a su vez. Comenzamos entonces con todas las pilas en su estado inicial:
 
+    Symbols ::  |i = i + i $
+    States  :: 0|
+    Trees   ::  |
+
+Consultamos la tabla. En el estado 0, con *look-ahead* `i`, la operación es **shift 3**. Notemos cómo en este estado inicial, todos los demás token darían error. Colocamos el terminal, el estado, y el árbol recién creado en el tope de las respectivas pilas:
+
+    Symbols ::   i|= i + i $
+    States  :: 0 3|
+    Trees   ::   i|
+
+Nos encontramos ahora en el estado 3, con *look-ahead* `=`, la operación es **reduce** `A -> i`. Entonces sacamos el token `i` de la pila y lo reemplazamos por `A`. El estado 3 también se saca y se reemplaza por $Goto(0, A) = 2$ (0 es el estado que queda justo debajo de 3 en la pila). El árbol $i$ se ubica como único hijo del nuevo árbol $A$ creado:
+
+    Symbols ::    A|= i + i $
+    States  ::  0 2|
+    Trees   :: A(i)|
+
+Consultamos de nuevo la tabla, $T[2,=]$ es **shift 4**:
+
+    Symbols ::    A =|i + i $
+    States  ::  0 2 4|
+    Trees   :: A(i) =|
+
+Consultamos de nuevo, $T[4,i]$ es **shift 7**. En la pila de árboles se nos han ido acumulando sub-árboles distintos, que serán mezclados en el futuro:
+
+    Symbols ::    A = i|+ i $
+    States  ::  0 2 4 7|
+    Trees   :: A(i) = i|
+
+Ahora $T[7,+]$ nos dice **shift 10**:
+
+    Symbols ::    A = i +|i $
+    States  :: 0 2 4 7 10|
+    Trees   :: A(i) = i +|
+
+Por último, $T[10,i]$ nos dice nuevamente **shift 7**:
+
+    Symbols ::    A = i + i|$
+    States  :: 0 2 4 7 10 7|
+    Trees   :: A(i) = i + i|
+
+Volvemos entonces al estado $I_7$, pero ahora con *look-ahead* `$` la operación indicada es **reduce** `A -> i`. El nuevo estado será $Goto(10,A) = 11$.
+
+    Symbols ::       A = i + A|$
+    States  ::   0 2 4 7 10 11|
+    Trees   :: A(i) = i + A(i)|
+
+Ahora $T[11,$]$ también nos indica **reduce** pero en este caso en `A -> i + A`. Vamos a sacar entonces 3 elementos de cada pila. En la pila de símbolos, sustituímos `i + A` por `A`. En la pila de estados, sacamos los tres últimos elementos, y ponemos $Goto(4, A) = 6$. En la pila de árboles, sacamos los tres árboles del tope y creamos un nuevo árbol $A$ con esos tres como hijos:
+
+    Symbols ::              A = A|$
+    States  ::            0 2 4 6|
+    Trees   :: A(i) = A(i,+,A(i))|
+
+Hemos dado un gran salto de fé, pues al sacar los últimos tres estados, hemos confiado en que la pila de estados nos recordará dónde estaba el autómata justo antes de hacer el primer **shift** que dio paso a toda la forma oracional `i + A`. Continuemos entonces con $T[6,\$]$ que nos dice justo lo que esperábamos: **reduce** `E -> A = A`. Repetimos toda la operación de reducción que ya conocemos, siendo $Goto(0,E) = 1$ el último estado que tendremos que analizar:
+
+    Symbols ::                     E|$
+    States  ::                   0 1|
+    Trees   :: E(A(i),=,A(i,+,A(i)))|
+
+Finalmente, $T[1,E]$ nos dice que la cadena ha sido parseada. En el tope de la pila de símbolos queda el símbolo inicial, y en la pila de árboles hay un solo árbol que contiene la derivación que hemos construido. Honestamente, en una implementación computacional concreta la pila de símbolos es innecesaria, pues todas las decisiones se toman mirando solamente la pila de estados, y el resultado necesario se computa en la pila de árboles. De cierta forma, esta pila de árboles es un *upgrade* de la pila de símbolos. Hemos hecho la distinción en este ejemplo por cuestiones puramente didácticas, pero en la práctica, la pila de símbolos no se usa.
+
+## Comparaciones entre LL, SLR, LR y LALR
+
+Hemos visto hasta el momento los dos paradigmas fundamentales para el parsing determinista de gramáticas libres del contexto. Hagamos entonces una reflexión final sobre los resultados que hemos obtenido, y las herramientas que hemos desarrollado.
+
+El parser LL es posiblemente el más sencillo de todos los parsers que es útil. En muchos contextos donde se tiene que diseñar un lenguaje bien sencillo (por ejemplo, un DSL integrado en un sistema más complejo), este parser puede brindar una solución fácil y eficiente. La mayor ventaja es que se puede escribir directamente, sin necesidad de usar un generador de parser. Los conjuntos First y Follow se computan a mano, y luego se escriben cada uno de los métodos recursivos asociados a las producciones. Para cualquier lenguaje de complejidad algo mayor, recurriremos entonces a construir un parser LR.
+
+De manera general, el autómata SLR tiene una cantidad considerablemente menor de estados que el autómata LR correspondiente. En los casos donde la gramática es SLR(1) es preferible usar dicho autómata. Desgraciadamente, la mayoría de las construcciones sintácticas de interés para los lenguajes de programación usuales tienen gramáticas "naturales" que no son SLR, pero sí LR, y generalmente LALR. Por este motivo, el parser LR(1) es, en la práctica, el más usado. Su mayor desventaja radica en el elevado número de estados, que dificultan su almacenamiento. Este problema era especialmente complejo en el año 1965, cuando Donald Knuth propuso este parser. Por tal motivo, aunque teóricamente es una solución adecuada, en la práctica no se usó hasta que en 1969 James DeRemer propuso el parser LALR, que reduce considerablemente la cantidad de estados hasta un nivel comparable con el SLR, sin perder prácticamente en expresividad con respecto con al LR. Más adelante en 1971 el propio DeRemer propondría el SLR como una variante más sencilla de construir algo parecido al LALR de forma más sencilla.
+
+De modo que, en una situación real, la primera decisión podría ser intentar directamente construir un parser LALR. Si esto funciona, no hay nada más que hacer. En caso contrario, deberíamos probar entonces a construir un parser LR, aunque tenga una cantidad mucho mayor de estados. En el caso peor en que esto no sea posible, tendremos que modificar la gramática. En la práctica esto no sucede comúnmente. Aunque es cierto que es fácil encontrar lenguajes didácticos que no sean LR y sean bien pequeños, los lenguajes de programación reales tienen construcciones que generalmente sí son LR. Incluso en los casos en que esto no sucede, veremos más adelante que es posible "pasar" algunos de los problemas del lenguaje para la fase semántica, y simplificar la gramática, haciéndola LR.
+
+Desde el punto de vista teórico, tenemos una jerarquía de gramáticas que se comporta de la siguiente forma:
+
+    +------------------+
+    |        LR        |
+    |     +------+     |
+    |     |  LL  |     |
+    | +---|------|---+ |
+    | |   | LALR |   | |
+    | | +-|------|-+ | |
+    | | | | SLR  | | | |
+    | | +-|------|-+ | |
+    | +---|------|---+ |
+    |     +------+     |
+    +------------------+
+
+Es decir, las gramáticas LR son un conjunto estrictamente superior a las gramáticas LL, SLR y LALR. Entre las gramáticas SLR, LALR y LR hay una relación de inclusión que es un orden total. Sin embargo, aunque las gramáticas LL están estrictamente incluidas en las LR, existen gramáticas LL que no son ni SLR ni LALR.
+
+Cabe preguntarse entonces si al inventar el autómata LR hemos definitivamente terminado con el problema de parsing. Pues resulta que la respuesta teórica para esta pregunta es **sí**. En 1965 Knuth demostró que para todo lenguaje libre del contexto determinista tiene que existir una gramática LR(k). Los lenguajes libres del contexto deterministas son aquellos tales que existe un algoritmo de parsing lineal en la longitud de la cadena en caso peor. Por otro lado, toda gramática LR(k) puede ser convertida a LR(1), con la adición de nuevos no-terminales y producciones. De modo que tenemos un resultado teórico que dice: si un lenguaje puede ser parseado en tiempo lineal, entonces puede ser parseado con un parser LR(1). Aquellos lenguajes libres del contexto que no son LR(1) tienen que ser por necesidad ambiguos, o al menos es imposible diseñar un algoritmo de parsing con tiempo lineal. De cierta forma, podemos decir que hemos terminado, pues todo lenguaje "sensato" es LR(1).
+
+Este resultado es de hecho impresionante, pero la historia no acaba ahí. Incluso aunque teóricamente LR(1) es suficiente, en la práctica hay lenguajes deterministas cuyas gramáticas LR(1) son tan complicadas, que es preferible usar una gramática más flexible, incluso incluyendo algo de ambiguedad que pueda ser resuelto en una fase superior. Afortunadamente, el problema de encontrar un árbol de derivación para cualquier gramática libre del contexto tiene solución con caso peor $O(n^3)$ con respecto a la longitud de la cadena. Es decir, existen parsers generales que pueden reconocer cualquier lenguaje libre del contexto, *incluso lenguajes ambiguos*, y en estos casos se pueden obtener **todos** los árboles de derivación que existen. En la práctica sin embargo, para diseñar lenguajes de programación, queremos parsers lineales por motivos de eficiencia. Estos parsers más generales se emplean sobre todo en tareas de procesamiento de lenguaje natural (p.e. traducción automática).
