@@ -547,11 +547,7 @@ Viendo los items de este estado, ya podemos intuir dónde podría haber problema
         A -> i.
     }
 
-En este estado aperece entonces un conflicto **reduce-reduce**, ya que $Follow(E) = \{ \$ \}$, y $\$ \in Follow(A)$, puesto que `A` aparece como parte derecha de una producción de `E`. Por tanto esta gramática no es SLR(1). Sin embargo, la gramática no es ambigua, y esto es fácil de demostrar. Intuitivamente, la única cadena donde pudiera haber ambigüedad es justamente la cadena `i` (es el único token que es generado por más de un no-terminal). Sin embargo, para esta cadena, la únic.
-
-Luego tenemos que ver cómo se comporta el autómata si reemplazamos los estados originales por estos nuevos "estados combinados". Para ello, tenemos que ver que sucede con las transiciones entrantes y salientes. En principio, todas las transiciones que iban a parar a alguno de los estados originales, irán a parar al nuevo estado mezcla derivación posible es `S -> E -> i`. Aunque `A -> i` es una producción, la forma oracional `i` no es **handle** de `A`. Si combinado. Veamos entonces qué aristas entrantes tenía cada estado original:
-
-    I7 = lo existe un `i` en la pila, este tiene que ser generado por el no-terminal `E`, pues de lo contrario no sería posible reducir a `S`.
+En este estado aperece entonces un conflicto **reduce-reduce**, ya que $Follow(E) = \{ \$ \}$, y $\$ \in Follow(A)$, puesto que `A` aparece como parte derecha de una producción de `E`. Por tanto esta gramática no es SLR(1). Sin embargo, la gramática no es ambigua, y esto es fácil de demostrar. Intuitivamente, la única cadena donde pudiera haber ambiguedad es justamente la cadena `i` (es el único token que es generado por más de un no-terminal). Sin embargo, para esta cadena, la única derivación posible es `S -> E -> i`. Aunque `A -> i` es una producción, la forma oracional `i` no es **handle** de `A`. Si solo existe un `i` en la pila, este tiene que ser generado por el no-terminal `E`, pues de lo contrario no sería posible reducir a `S`.
 
 Sin embargo, nuestro parser SLR(1) no es suficientemente inteligente para determinar esto. Al encontrarse con la forma oracional `i` en la pila, en principio, el autómata dice que `A -> i` es una reducción posible. Sin embargo, sabemos que esta reducción es inválida, porque luego quedaría `A` en la pila, que no es una forma oracional válida en ninguna derivación extrema derecha. De la producción `E -> A = A` podemos ver que esta gramática nunca genera una `A` sola. En otras palabras, nuestra heurística SLR(1) para detectar **handles** (reducir en `X` para todo terminal en el `Follow(X)`) es demasiado débil para manejar esta situación, y produce un falso positivo, al determinar que la forma oracional `ì$` es un **handle** de `A`, cuando realmente no lo es.
 
@@ -564,19 +560,7 @@ Comenzamos por el estado inicial nuevamente, pero viéndolo paso a paso a medida
         ...
     }
 
-E
-    I7-9
-    -------------------------------n este  Goto(I4, ip = Goto(I10, iu
-I9 = Goto(I5, in
-
-I5 = Goto(I3, +to, el único item
-    I5-10
-    ------------------------------de este estado indica que esperamos encontrar en la cadena una forma oracional que se reduzca a `E`. Por tanto, añadimos las = Goto() producciones de `E`I9, +:
-    I10 = Goto(I7, +)
-
-    I8-11
-    ------------------
-    I8 = Goto()
+En este punto, el único item de este estado indica que esperamos encontrar en la cadena una forma oracional que se reduzca a `E`. Por tanto, añadimos las producciones de `E`:
 
     I0 = {
         S -> .E
@@ -705,7 +689,7 @@ Ahora veamos los estados que se derivan de estos. Comenzaremos a notar que apare
         A -> i.,    =
     }
 
-Como vemos, $I_7$ y $I_9$ son estados en principio idénticos, excepto porque los *look-ahead* asociados a cada item son distintos. Esta repetición de estados casi iguales será el próximo problema a resolver, pero por el momento continuemos con el autómata:
+Como vemos, $S_7$ y $S_9$ son estados en principio idénticos, excepto porque los *look-ahead* asociados a cada item son distintos. Esta repetición de estados casi iguales será el próximo problema a resolver, pero por el momento continuemos con el autómata:
 
     I10 = Goto(I7, +) = {
         A ->  i +.A, $
@@ -713,13 +697,13 @@ Como vemos, $I_7$ y $I_9$ son estados en principio idénticos, excepto porque lo
         A -> .i,     $
     }
 
-    Goto(I9, +) = I5
+    Goto(I9, +) = S5
 
     I11 = Goto(I10, A) = {
-        A -> i + A., $
+        A ->  i + A., $
     }
 
-    Goto(I10, i) = I7
+    Goto(I10, i) = S7
 
 El autómata resultante tiene 12 estados. A modo de comparación, el autómata SLR correspondiente tiene 9 estados. Como ya tenemos práctica, lo mostraremos sin más explicación:
 
@@ -775,7 +759,6 @@ El autómata resultante tiene 12 estados. A modo de comparación, el autómata S
     Goto(I7, +) = I5
 
 Los estados adicionales necesarios en LR son justamente aquellos donde existen conflictos.
-
 
 ## Parsing LALR(1)
 
