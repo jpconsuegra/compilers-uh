@@ -633,49 +633,41 @@ Calculemos finalmente los `Follow` de cada no-terminal:
 
 Ahora podemos llenar la tabla LL(1). Comencemos por la fila correspondiente a `E`. Para ello analizamos la producción `E -> T X`. Por la regla (1) podemos decir que esta producción se aplica solo para los terminales `(` y `int`.
 
-+---+-------+-------+-------+-------+-------+-------+
-|   |  int  |   +   |   *   |   (   |   )   |   $   |
-+---+-------+-------+-------+-------+-------+-------+
-| E |  T X  |       |       |  T X  |       |       |
-+---+-------+-------+-------+-------+-------+-------+
+       int     \+      \*       (       )       $
+ --- ------- ------- ------- ------- ------- -------
+  E    T X                     T X
+ --- ------- ------- ------- ------- ------- -------
 
 Veamos entonces la fila asociada a `T`. La producción `T -> int Y` solamente se aplica para el token `int` mientas que la producción `T -> (E)` se aplica solamente para `(`.
 
-+---+-------+-------+-------+-------+-------+-------+
-|   |  int  |   +   |   *   |   (   |   )   |   $   |
-+---+-------+-------+-------+-------+-------+-------+
-| T | int Y |       |       | ( E ) |       |       |
-+---+-------+-------+-------+-------+-------+-------+
+       int     \+      \*       (       )       $
+ --- ------- ------- ------- ------- ------- -------
+  T   int Y                   ( E )
+ --- ------- ------- ------- ------- ------- -------
 
 Ahora veamos las producciones de `X`. Para `X -> + E` la única entrada importante es con el token `+`. Por otro lado, la producción `X -> epsilon` se aplica en todos los tokens que pertenezcan al `Follow(X)`, es decir, `$` y `)`.
 
-+---+-------+-------+-------+-------+-------+-------+
-|   |  int  |   +   |   *   |   (   |   )   |   $   |
-+---+-------+-------+-------+-------+-------+-------+
-| X |       |  + E  |       |       |  eps  |  eps  |
-+---+-------+-------+-------+-------+-------+-------+
+       int     \+      \*       (       )       $
+ --- ------- ------- ------- ------- ------- -------
+  X           \+ E                     \ep     \ep
+ --- ------- ------- ------- ------- ------- -------
 
-Finalmente para el no-terminal `Y`, la producción `Y -> * T` es trivial, y la producción `Y -> epsilon` se aplica para `+`, `$` y `)`.
+Finalmente para el no-terminal `Y`, la producción `Y -> * T` es trivial, y la producción `Y -> \epilon` se aplica para `+`, `$` y `)`.
 
-+---+-------+-------+-------+-------+-------+-------+
-|   |  int  |   +   |   *   |   (   |   )   |   $   |
-+---+-------+-------+-------+-------+-------+-------+
-| Y |       |  eps  |  * T  |       |  eps  |  eps  |
-+---+-------+-------+-------+-------+-------+-------+
+       int     \+      \*       (       )       $
+ --- ------- ------- ------- ------- ------- -------
+  Y            \ep    \* T             \ep     \ep
+ --- ------- ------- ------- ------- ------- -------
 
 Finalmente, nos queda la tabla completa. Dado que no encontrarmos conflictos al construirla, podemos concluir que la gramática es LL(1):
 
-+---+-------+-------+-------+-------+-------+-------+
-|   |  int  |   +   |   *   |   (   |   )   |   $   |
-+---+-------+-------+-------+-------+-------+-------+
-| E |  T X  |       |       |  T X  |       |       |
-+---+-------+-------+-------+-------+-------+-------+
-| T | int Y |       |       | ( E ) |       |       |
-+---+-------+-------+-------+-------+-------+-------+
-| X |       |  + E  |       |       |  eps  |  eps  |
-+---+-------+-------+-------+-------+-------+-------+
-| Y |       |  eps  |  * T  |       |  eps  |  eps  |
-+---+-------+-------+-------+-------+-------+-------+
+       int     \+      \*       (       )       $
+ --- ------- ------- ------- ------- ------- -------
+  E    T X                     T X
+  T   int Y                   ( E )
+  X           \+ E                     \ep     \ep
+  Y            \ep    \* T             \ep     \ep
+ --- ------- ------- ------- ------- ------- -------
 
 ## Parsing Descendente No Recursivo
 
@@ -715,4 +707,4 @@ En la práctica la mayoría de las gramáticas interesantes no son LL(1). Sin em
 
 Finalmente, en el caso que la gramática no sea LL(1), este análisis nos permite reducir al mínimo necesario la cantidad de producciones a probar en cada terminal. La tabla LL(1) en estos casos pudiera tener más de una producción en cada entrada, y en esos casos implementaríamos un parser recursivo que solamente probara aquellas producciones listadas en la tabla. De esta forma, podemos obtener el parser (descendiente) más eficiente posible, sin perder en expresividad.
 
-De todas formas las gramáticas LL(1) sonson un conjunto estrictamente menor que las gramáticas libres del contexto. Más adelante veremos estrategias de parsing basadas en principios similares que permiten reconocer lenguajes y gramáticas más expresivas.
+De todas formas las gramáticas LL(1) son un conjunto estrictamente menor que las gramáticas libres del contexto. Más adelante veremos estrategias de parsing basadas en principios similares que permiten reconocer lenguajes y gramáticas más expresivas.
