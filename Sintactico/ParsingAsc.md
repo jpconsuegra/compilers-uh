@@ -930,11 +930,38 @@ Veamos que sucede tras una operación **reduce**. Sea $\alpha \beta | \omega$ el
 
 Con estas dos estrategias, podemos demostrar que tenemos un algoritmo de parsing lineal. Definamos entonces de una vez y por todas este algoritmo formalmente. Para ello vamos a construir una tabla, que llamaremos **tabla LR**, y que nos indicará en cada situación qué hacer (al estilo de la **tabla LL**). Mostraremos a continuación la **tabla LR** para el autómata construido anteriormente, y luego veremos paso a paso los detalles sobre su construcción:
 
-  Estado Items          Acción         Goto
--------- -------------- -------------- -------------
+Estado  =             +        i        $             E       A
+------- ------------- -------- -------- ------------- ------- --------
+0                              S3       S->E          1       2
+1                                       OK
+2       S4
+3       A->i                   S5                     E->i
+4                              S7                             6
+5                              S9                             8
+6                                       E -> A = A
+7                     S10               A -> i
+8       A -> i + A
+9       A -> i                 S5
+10                             S7                             11
+11                                      A -> i + A
+------- ------------- -------- -------- ------------- ------- --------
 
--------- -------------- -------------- --------------
+La tabla LR contiene una fila por cada estado del autómata, y una columna por cada símbolo (terminales y no-terminales). Usaremos la notación $T[i,x]$ para referirnos a la entrada asociada al símbolo $x$ en el estado $I_i$:
 
+* Si $S \rightarrow E \cdot, \$$ pertenece al estado $I_i$, entonces la entrada $T[i,\$] = OK$.
+* Si $Goto(I_i, X) = I_j$:
+    * Si $X \in N$, entonces $T[i,X] = j$.
+    * Si $X \in T$, entonces $T[i,X] = S_j (**shift**)$:
+* Si el item $Y \rightarrow \beta \cdot, c$ está en el estado $I_i$, entonces $T[i,c] = Y \rightarrow \beta$ (**reduce**).
+
+Para usar la tabla, veamos qué significa cada posible valor en una entrada. Sea $S = \alpha | c \omega$ el estado de la pila de símbolos, e $I_i$ el estado del autómata en el tope de la pila de estados (asumiendo una implementación basada en dos pilas paralelas). Buscamos entonces la entrada $T[i,c]$, y según su valor realizamos la siguiente operación:
+
+* Si $T[i,c] = OK$, entonces terminamos de parsear y la cadena se reconoce.
+* Si $T[i,c] = S_j$, entonces hacemos **shift**, la pila de símbolos se convierte en $\alpha c | \omega$, y ponemos el estado $I_j$ en el tope de la pila de estados.
+* Si $T[i,c] = X \rightarrow \delta$, entonces se garantiza que $\alpha = \beta \delta$. Extraemos $|\delta|$ elementos de la pila de símbolos **y** de la pila de estados. Sea $I_k$ el estado que queda en el tope de la pila de estados; colocamos a $X$ en el tope de la símbolos y colocamos $T[k,X]$ en el tope de la pila de estados.
+* En cualquier otro caso, se ha encontrado un error.
+
+Para entender por qué el algoritmo descrito anteriormente funciona, tratemos de interpretar qué significa cada entrada en la tabla. Una entrada de la forma $S_j$ significa que con el token correspondiente existe una transición hacia el estado $I_j$. Por tanto, la operación a realizar es **shift**, y como ya hemos visto anteriormente, en la pila de estados sabemos que el siguiente estado hacia el que transitar será justamente $j$. Una entrada de la forma $X \rightarrow \beta$ significa que existe un item **reduce** con el token correspondiente de *look-ahead*. Por lo tanto se realiza la operación de **reduce**. Como vimos anteriormente, en el tope de la pila de estados quedará el estado $I_j$ que habíamos transitado justo antes de reconocer la producción reducida. Por tanto, de ese estado anterior, el nuevo estado al que transitaremos es justamente $T[j,X]$.
 
 ## Comparaciones entre SLR, LR y LALR
 
