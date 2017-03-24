@@ -11,8 +11,26 @@ Hasta el momento hemos visto como obtener un árbol de derivación de un lenguaj
 * implementar el algoritmo en el árbol de derivación
 * ejecutar a mano un ejemplo
 
-## Gramáticas Atributadas
+## Adicionando atributos y reglas
 
 * comentar sobre la noción de atributos y reglas
 * formalizar el concepto de gramáticas atributadas
-* ejemplificar
+* ejemplificar en el mismo caso visto anteriormente
+
+## Resolviendo dependencias del contexto
+
+* intuir como las gramáticas atributadas resuelven problemas dependientes del contexto
+* ejemplificar con el problema clásico de $a^n b^n c^n$
+
+## Computando el valor de los atributos
+
+* definir atributos sintetizados y heredados
+* exponer el proceso de evaluación general
+* definir gramáticas s-atributadas y cómo evaluarlas
+* definir gramáticas l-atributadas y cómo evaluarlas
+
+## Evaluando atributos durante el proceso de *parsing*
+
+* comentar sobre la posibilidad de evaluar atributos *on-the-fly*
+* evaluar atributos l-atributados en una gramática LL de árboles
+* evaluar atributos s-atributados en una gramática LR de expresiones
