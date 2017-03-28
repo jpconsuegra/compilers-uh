@@ -216,6 +216,7 @@ Una vez definida una gramática atributada, nos queda pendiente el problema de c
 
 Tomemos entonces a modo de ejemplo la cadena `aabbcc` y veamos un árbol de derivación para la gramática atributada definida anteriormente:
 
+```tree
          S
        / | \
       A  B  C
@@ -225,6 +226,7 @@ Tomemos entonces a modo de ejemplo la cadena `aabbcc` y veamos un árbol de deri
     a A b B c C
       |   |   |
       e   e   e
+```
 
 Vamos entonces a construir sobre este árbol de derivación un *grafo de dependencia* de los atributos asociados. Este grafo se construye de la siguiente forma:
 

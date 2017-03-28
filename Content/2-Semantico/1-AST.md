@@ -93,14 +93,17 @@ int y = x + 1;
 
 Pudiéramos pensar en un posible árbol de derivación para este programa (para una gramática correcta del lenguaje C), donde habría necesariamente un subárbol con la forma:
 
+```tree
         <decl-assign>
         /    |  \   \
     <type> <id>  =  <expr>
                       |
                      int
+```
 
 Y por otro lado, tendríamos un subárbol con la forma:
 
+```tree
         <decl-assign>
         /    |  \   \
     <type> <id>  =  <expr>
@@ -110,6 +113,7 @@ Y por otro lado, tendríamos un subárbol con la forma:
                 <id>    <term>
                           |
                          int
+```
 
 Y ambos subárboles serían hijos de algún nodo que representa a la función correspondiente. Entonces podemos pensar en una estrategia para determinar si todas las variables son declaradas antes de su uso. En un recorrido en pre-orden por dicho árbol, podemos ir recolectando todas las declaraciones hechas en cierta estructura de datos, y luego cada vez que nos encontremos una variable referenciada en parte izquierda de una expresión, ¡simplemente consultamos dicha estructura y verificamos la existencia de una variable con dicho nombre, y de paso la consistencia de los tipos! De forma similar podemos pensar en la verificación de la cantidad de argumentos usados en una función y sus tipos.
 
@@ -138,6 +142,7 @@ Donde indicamos explícitamente el **lexema**. Durante el análisis sińtáctico
 
 Por el momento, concentrémonos nuevamente en la cadena a parsear. Esta cadena es generada **de forma única** por el siguiente árbol de derivación:
 
+```tree
         E
         |
         T
@@ -151,6 +156,7 @@ Por el momento, concentrémonos nuevamente en la cadena a parsear. Esta cadena e
        int    T
               |
              int
+```
 
 Este árbol de derivación efectivamente codifica todas las operaciones necesarias a realizar para **evaluar** la expresión (que es en última instancia el problema a resolver). Sin embargo, este árbol representa con demasiado detalle la expresión. Supongamos que queremos diseñar una jerarquía de clases para representar este árbol. Dicha jerarquía tendría varias clases innecesarias, como aquellas que representan a los nodos `(` y `)`. Por otro lado, la estructura del árbol es poco eficiente para representar la expresión, pues hay varios nodos que son redundantes. Por ejemplo, el nodo raíz `E` no nos da ninguna información sobre el tipo concreto de la expresión. De forma general podemos reconocer dos tipos de elementos innecesarios:
 
@@ -161,21 +167,25 @@ Los elementos sintácticos innecesarios, como los paréntesis, se emplean en la 
 
 Intentemos eliminar estos elementos innecesarios en el árbol de derivación anterior:
 
+```tree
         T
       / | \
     int *  E
          / | \
        int + int
+```
 
 Este árbol representa exactamente la misma expresión aritmética, y quedan explícitamente descritos el orden y el tipo de las operaciones. Una vez llegado a este punto, podemos notar que hay otro elemento innecesario en el árbol. Si nos fijamos con atención, veremos que el nodo asociado a un operador (`*` o `+`) siempre estará como hijo de exactamente el mismo tipo de nodo (`T` o `E`) respectivamente. Este hecho se desprende directamente de la gramática, pues el terminal `*` solo se genera por `T` y el terminal `+` solo se genera por `E`. Por tanto, ambos nodos respectivos (`T` y `*` o `E` y `+`) siempre aparecerán juntos, y por tanto es redundante tener ambos.
 
 Pensemos ahora en la jerarquía de clases que representa este árbol, y un posible algoritmo recursivo de evaluación. Una vez en el nodo `T`, evaluados recursivamente las expresiones izquierda y derecha, ¿qué operación es necesario aplicar? Evidentemente, dependerá del nodo que representa la operación. Pero este nodo (`*` o `+`) siempre es un terminal, por lo tanto, nunca será necesario "bajar" recursivamente para descubrir que tipo de operación hay que hacer en un nodo `T` o `E`. Podemos entonces conformarnos con un árbol donde la operación a realizar esté explícita en el nodo padre (`T` o `E`) y no como un hijo adicional:
 
+```tree
         *
       /   \
     int    +
          /   \
        int   int
+```
 
 Intuitivamente, el árbol anterior es capaz de representar con todo el detalle necesario la semántica de la expresión a evaluar, y no tiene ningún elemento innecesario.
 
