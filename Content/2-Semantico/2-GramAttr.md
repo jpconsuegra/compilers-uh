@@ -64,7 +64,7 @@ De forma general hay 3 patrones distintos en la gramática que nos generan nodos
 
 * las producciones que derivan en una expresión binaria;
 * las producciones que derivan en un solo no-terminal, incluyendo `F -> ( E )`; y
-* El símbolo `i` que es el único terminal con una función semántica asociada.
+* el símbolo `i` que es el único terminal con una función semántica asociada.
 
 Cada uno de estos tipos de producciones genera un nodo particular del AST. Por lo tanto, nuestro código consiste en identificar en qué caso nos encontrarmos, y construir el nodo correspondiente.
 
@@ -134,7 +134,7 @@ Una **gramática atributada** es una tupla $<G,A,R>$, donde:
     1. $X \cdot a = f(Y_1 \cdot a_1, \ldots, Y_n \cdot a_n)$, o
     2. $Y_i \cdot a = f(X \cdot a_0, Y_1 \cdot a_1, \ldots, Y_n \cdot a_n)$.
 
-    En el primer caso decimos que $a$ es un **atributo sintetizado**, y en el segundo caso, un atributo **heredado**.
+    En el primer caso decimos que $a$ es un **atributo sintetizado**, y en el segundo caso, un **atributo heredado**.
 
 
 Hablemos ahora sobre la notación. Aunque en la definición formal hemos especificado los atributos y reglas como elementos adicionales a la gramática, desde el punto de vista notacional es conveniente especificar las reglas y los atributos directamente asociados a la producción que corresponden:
@@ -164,8 +164,8 @@ Definiremos un atributo de nombre `ast` en cada símbolo, que almacenará el ár
        | T / F { T0.ast = exp(/, T1.ast, F.ast) }
        | F     { T0.ast = F.ast }
 
-    F -> ( E ) { F.ast = E.ast }
-       | i     { F.ast = n }
+    F -> ( E ) {  F.ast = E.ast }
+       | i     {  F.ast = n }
 
 Puede parecer que no hemos logrado mucho, más allá de formalizar en una notación una idea que ya sabíamos manejar. Y de alguna manera es cierto, lo que hemos hecho ha sido simplemente formalizar en una notación la idea intuitiva de cómo construir a partir de un árbol de derivación una representación más conveniente. La ventaja de tener esta notación formalizada, además de permitirnos razonar y comunicarnos al respecto, es que hemos simplificado considerablemente la cantidad de "código" a escribir para construir el AST. Hemos quitado del medio toda la sintaxis superflua de definición de métodos, parámetros, variables temporales, etc, y solamente hemos puesto en cada producción exactamente la "línea de código" que iría dentro del `if` correspondiente. De hecho, esta notación es tan conveniente, que la mayoría de los generadores de *parsers* usan una sintaxis similar para describir justamente cómo se construye el AST, y generan todo el engranaje de métodos recursivos, variables, paso de parámetros y demás que son necesarios para hacer funcionar este mecanismo.
 
