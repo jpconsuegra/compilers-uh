@@ -58,39 +58,76 @@ Estas preguntas, aunque no serán directamente respondidas en los siguientes cap
 
 ## Contenido
 
-Para intentar responder algunas de las interrogantes planteadas arriba, hemos dividido el contenido del curso en 6 temas fundamentales, aunque existen muchos elementos que son trans-temáticos y por tanto no quedarían bien ubicados en ningún lugar particular. Por este mismo motivo, estos temas no deben tomarse como particiones rígidas del contenido, sino más bien guías a grandes razgos que giran alrededor de un concepto común. Cada uno de los temas presentados a continuación tiene un capítulo para sí, divido en varias secciones según sea conveniente. Aunque no es una guía absoluta, la división entre las secciones se ha hecho teniendo en cuenta que sea útil para organizar conferencias. De modo que consideramos que una conferencia sobre un tema particular no debería comenzar ni terminar por el medio de una sección, sino abarcar una, dos o más secciones completas de un mismo tema.
+Para intentar responder algunas de las interrogantes planteadas arriba, hemos dividido el contenido del curso en 6 temas fundamentales, aunque existen muchos elementos que son trans-temáticos y por tanto no quedarían bien ubicados en ningún lugar particular. Por este mismo motivo, estos temas no deben tomarse como particiones rígidas del contenido, sino más bien guías a grandes razgos que giran alrededor de un concepto común. De hecho, estos temas no son presentados estrictamente en orden, sino que se van entrelazando a medida que avanza el curso. Los motivos para esto quedarán más claros adelante.
 
-### Teoría de Lenguajes
+Teoría de lenguajes:
+:   En este tema trataremos sobre los aspectos teóricos de la teoría de lenguajes formales, entre otras cuestiones:
 
-En este tema trataremos
+    - Definiciones matemáticas y computacionales
+    - Tipos de lenguajes y características
+    - Equivalencias y relaciones entre lenguajes
+    - Problemas interesantes sobre lenguajes
+    - Relación entre la teoría de lenguajes y la computabilidad
 
-  - Definiciones matemáticas y computacionales
-  - Tipos de lenguajes y características
-  - Equivalencias y relaciones entre lenguajes
-  - Problemas interesantes sobre lenguajes
-  - Relación entre la teoría de lenguajes y la computabilidad
-- Mecanismos de generación (gramáticas)
-  - Jerarquía de gramáticas de Chomsky
-  - Gramáticas atributadas
-  - Formas normales y algoritmos de conversión
-- Mecanismos de reconocimiento (autómatas)
-  - Tipos de autómatas según el tipo de lenguaje
-  - Conversión entre autómatas y expresiones regulares
-  - Autómatas para el problema de *parsing*
-- Semántica
-  - Representaciones semánticas y problemas típicos
-  - Solución de referencias y *aliases*
-  - Inferencia de tipos y expresiones
-  - Validación de pre- y post-condiciones e invariantes
-- Generación de código
-  - Semánticas operacionales
-  - Arquitecturas de generación código
-  - Optimizaciones
-- Ejecución de código
-  - Intérpretes y máquinas virtuales
-  - Manejo de excepciones
-  - Recolección de basura
+Mecanismos de generación:
+:   En este tema trataremos las diferentes clases de gramáticas, sus propiedades, los tipos de lenguajes que pueden generar, y algunos algoritmos de conversión entre ellas:
 
-## Estructura del Documento
+    - Jerarquía de gramáticas de Chomsky
+    - Gramáticas atributadas
+    - Formas normales y algoritmos de conversión
 
-Las 4 preguntas presentadas anteriormente constituyen para nosotros una guía transversal a todo el diseño del curso. Empleamos estas preguntas para analizar el contenido general a impartir, pero también para decidir en cada conferencia, cada clase práctica, incluso cada proyecto o ejercicio particular, qué proveer y qué esperar. Por este motivo, a lo largo de todo este documento, estaremos regresando a estas preguntas una y otra vez, cada vez que surga la necesidad. Las presentaremos al inicio de cada capítulo para explicar la concepción general de ese conjunto de conocimientos.
+Mecanismos de reconocimiento:
+:   En este tema trataremos sobre los autómatas como reconocedores de lenguajes, sus propiedades, y los algoritmos de construcción a partir de las gramáticas correspondientes:
+
+    - Tipos de autómatas según el tipo de lenguaje
+    - Conversión entre autómatas y expresiones regulares
+    - Autómatas para el problema de *parsing*
+
+Análisis semántico:
+:   En este tema trataremos los problemas fundamentales de semántica en el contexto de los compiladores y las estrategias de modelación y solución:
+
+    - Representaciones semánticas y problemas típicos
+    - Solución de referencias y *aliases*
+    - Inferencia de tipos y expresiones
+    - Validación de pre- y post-condiciones e invariantes
+
+Generación de código:
+:   En este tema trataremos las diferentes arquitecturas de código de máquina y los problemas asociados:
+
+    - Semánticas operacionales
+    - Arquitecturas de generación código
+    - Optimizaciones
+
+Ejecución de código:
+:   En este tema trataremos los problemas que surgen o son resueltos posterior a la generación de código, y que dependen de operaciones especiales por parte del mecanismo de ejecución:
+
+    - Intérpretes y máquinas virtuales
+    - Manejo de excepciones
+    - Recolección de basura
+
+La guía general del curso será orientada a la tarea canónica de construir un compilador. Para ello usaremos el lenguaje `COOL` diseñado específicamente para este propósito. Con esta guía en mente, iremos presentando los contenidos en el orden que sean necesarios para ir avanzando en el propósito de construir el compilador. Por este motivo, a diferencia de otros cursos, no daremos primero toda la teoría de lenguajes formales y luego los algoritmos de *parsing*, sino que iremos introduciendo elementos teóricos y prácticos según lo vaya requiriendo el compilador que estamos diseñando en clase.
+
+El objetivo de esta forma de ordenar los contenidos es, en primer lugar, brindar una visión más unificada de todo el proceso de compilación y todas las técnicas, elementos teóricos y cuestiones de diseño. Por otro lado, aspiramos con esto a lograr que los estudiantes realmente obtengan las habilidades planteadas al inicio, al tener que poner desde el principio del curso todo el conocimiento en función de un proyecto práctico.
+
+## Evaluación y retroalimentación
+
+Una vez que los estudiantes saben que habilidades obtendrán, entonces se plantea el problema de la evaluación.
+En este curso consideramos la evaluación como una necesidad y una ventaja para los estudiantes, no como una obligación o una arbitrariedad del profesor. Por eso hemos diseñado un sistema de evaluación que permita a los estudiantes reconocerlo como un mecanismo de retroalimentación que les permite entender su propio avance y optimizar su estudio. Claro que la evaluación tiene un valor externo, que le permite a la sociedad saber quienes están preparados o no. Pero las notas particulares obtenidas en una asignatura no significan nada fuera del sistema educacional. A nadie se le ofrece un trabajo por las notas que obtuvo. Lo que cuenta es graduarse o no. Entonces, ¿por qué se toma tanto trabajo en cuantificar la evaluación? La respuesta es que el número obtenido en una evaluación es una métrica de retroalimentación para que el estudiante sepa en qué grado fue capaz de cumplir las expectativas del profesor.
+
+Teniendo esta máxima en cuenta, hemos planteado algunos principios básicos que creemos deben guiar el sistema de evaluación del curso. En primer lugar, la idea de que todos los estudiantes deben tener tantas oportunidades como sea posible para experimentar y aprender. Esto significa que deben permitirse fallar sin miedo a ser recriminados. Por tanto, no consideramos ninguna práctica que penalice a los estudiantes por fallar en una evaluación, en particular, todos los estudiantes tienen derecho a todos los exámenes independientemente de los resultados obtenidos anteriormente.
+
+Por otro lado, queremos incentivar un estudio constante y consistente en vez de un maratón de última hora, por lo que sí aprobamos las prácticas que premien por el trabajo continuado, incluso teniendo en cuenta los posibles errores que hayan cometido. De modo que hemos dividido el curso en 3 grandes conjuntos de habilidades:
+
+- Habilidades teóricas de modelación con lenguajes formales.
+- Habilidades en el uso y diseño de algoritmos relacionados con lenguajes.
+- Habilidades en el diseño de arquitecturas y patrones para sistemas de procesamiento de lenguajes.
+
+De forma aproximada podemos incluir todo contenido dado en el curso en uno de estos conjuntos de habilidades. Consideramos en un estudiante que domine de forma efectiva estos tres conjuntos de habilidades, está preparado para enfrentarse a las preguntas y problemáticas típicas de este campo de estudio. Por el mismo motivo, considerammos que es imprescindible haber vencido las tres habilidades para poder aprobar el curso.
+
+Por tanto, hemos concebido un sistema de evaluación que se compone de 3 exámenes parciales y tres proyectos opcionales, cada par respectivamente orientado a evaluar uno de los tres conjuntos de habilidades mencionados. Los estudiantes que obtienen resultados satisfactorios en cada caso se considera que vencieron dicha habilidad. Al finalizar el curso hay un exámen final que permite a los estudiantes complementar sus resultados hasta el momento, en caso de no haber cumplido todos los objetivos en las evaluaciones parciales.
+
+Así mismo, se orientarán a menudo tareas de menor envergadura que pueden ayudar también a complementar la comprensión (y la consecuente evaluación) en cualquiera de los temas presentados.
+
+## Conclusiones
+
+Este curso es un viaje, un viaje por una de las ramas más espectaculares de la historia de la computación, una rama que definió a la computación como ciencia, y que creó algunos de sus héroes más famosos. Es un viaje lleno de dificultades, pero detrás de cada obstáculo hay algo increíble que descubrir. Los que hemos pasado por este viaje les podemos prometer que vale la pena. Pero la mejor forma de experimentarlo no es como espectador, como un simple pasajero. La mejor forma de experimentarlo es coger el timón y decidir ustedes cuáles son los lugares que quieren explorar. Nosotros haremos el mejor esfuerzo por llevarlos allí, pero no les podemos mantener los ojos abiertos. Mirar, oler y tocar todo lo que puedan es responsabilidad de ustedes.
