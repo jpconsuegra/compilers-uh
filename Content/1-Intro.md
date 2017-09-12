@@ -1,25 +1,34 @@
 # Anatomía de un Compilador
 
-Presentamos entonces la estructura básica de un compilador, es decir, "abrimos la caja negra". Por motivos que se irán haciendo evidentes a medida que avance el curso, los estudiantes entenderán que esta estructura es la manera más "natural" de diseñar un compilador.
+Comenzaremos este viaje diseccionando el sistema computacional canónico de la teoría de lenguajes formales: un compilador. A grandes razgos, un compilador no es más que un programa, cuya entrada y salida resultan ser también programas. La entrada es un programa en un lenguaje que llamaremos "de alto nivel", y la salida en un lenguaje de "bajo nivel", que es equivalente al primero. Exactamente qué es alto y bajo nivel dependerá de muchos factores, y no existe una definición formal. De forma general, un lenguaje de alto nivel es aquel que nos es cómodo a los programadores para expresar las operaciones que nos interesa ejecutar. Así mismo, un lenguaje de bajo nivel es aquel que un dispositivo de cómputo puede ejecutar de forma eficiente. Tal vez los ejemplos más típicos sean un lenguaje orientado a objetos y un lenguaje ensamblador respectivamente, pero existen muchas otras combinaciones de lenguaje de entrada y salida de interés.
 
-Aquí podemos desvelar la maquinaria paso a paso, intentando descubrir intuitivamente por qué estas fases son justamente así. Las 4 fases en que se divide un compilador son:
+Ahora bien, antes de zambullirnos de lleno en la anatomía de un compilador, es conveniente mencionar algunas sistemas de procesamiento de lenguajes relacionados. Podemos intentar categorizarlos según el "tipo" del lenguaje de entrada y salida. En primer lugar, el ejemplo clásico es cuando queremos convertir un lenguaje de alto nivel a otro de bajo nivel, y justamente llamamos a este sistema un **compilador**. El caso contrario, cuando queremos convertir de un lenguaje en bajo nivel a otro en alto nivel, podemos llamarle por analogía un **decompilador**. Este tipo de herramientas son útiles para analizar y realizar ingeniería inversa en programas para los que, tal vez, ya no tenemos el código fuente, y necesitamos entender o modificar. Los otros dos casos, de alto nivel a alto nivel y de bajo nivel a nivel son básicamente **traductores**; y en ocasiones se les llama también **transpiladores**. Por ejemplo, TypeScript es un lenguaje de alto nivel que se "transpila" a JavaScript, otro lenguaje también de alto nivel. Entre lenguajes de bajo nivel podemos tener también traductores. Un ejemplo son los llamados **compiladores JIT** (*just-in-time*), que se usan para traducir un programa compilado a un lenguaje de bajo nivel genérico (por ejemplo **IL**) a un lenguaje de máquina específico para la arquitectura donde se ejecuta.
 
-* Análisis sintáctico
-* Análisis semántico
-* Optimización
-* Generación de código
+Volvamos entonces al caso clásico, el **compilador**. o este curso vamos a usar como una guía didáctica el diseño de un compilador para el lenguaje COOL, que compilará a un lenguaje de máquina denominado MIPS. Los detalles de ambos lenguajes serán introducidos a medida que sea conveniente, pero por el momento cabe decir que COOL es un lenguaje orientado a objetos, con recolección automática de basura, herencia simple, polimorfismo, y un sistema de tipos unificado. MIPS es un lenguaje ensamblador de pila para una arquitectura de 32 bits con registros y operaciones aritméticas, lógicas y orientadas a cadenas.
 
-Recordar que el objetivo de estas cuatro fases es llegar desde un programa en un lenguaje en alto nivel (código C# por ejemplo) a un lenguaje de máquina.
+Intentemos entonces definir esta maquinaria paso a paso. De forma abstracta nuestro compilador es una "caja negra" con convierte programas escritos en COOL a programas escritos en MIPS:
 
-           /-------\     /------\     /------\     /------\
-    C# ==> | Sint. | ==> | Sem. | ==> | Opt. | ==> | Gen. | ==> ASM
-        |  \-------/  |  \------/     \------/     \------/  |
-        |             |                                      |
-        *- Gramática -*------ Lenguaje Intermedio (AST) -----*
+             +------------+
+    COOL ==> | Compilador | ==> MIPS
+             +------------+
 
-Las primeras dos fases en desvelar son evidentes: el análisis sintáctico y el generador de código. Para ello se introduce primero la idea de un lenguaje intermedio, que permite representar al código en una estructura (semi) independiente de ambos lenguajes. Esto además permite separar ambas fases e implementar compiladores para múltiples lenguajes origen y múltiples plataformas objetivo. Entonces el análisis sintáctico es justamente el que convierte del lenguaje origen a la representación intermedia, y la generación de código convierte de la representación intermedia al lenguaje objetivo.
+Para comenzar a destapar esta caja negra, notemos que al menos tenemos dos componentes independientes: uno que opera en lenguaje COOL y otro que opera en lenguaje MIPS. Necesitamos ser capaces de "leer" un programa en COOL y "escribirlo" en MIPS. Al primer módulo, que "lee", le llamaremos *parser*, por motivos históricos que veremos más adelante. Al segundo componente le llamaremos simplemente el *generador*.
 
-Aquí se introduce la idea de que las gramáticas, con toda su teoría de reconocimiento, pueden ser útiles para la primera fase. Ya se tienen algoritmos que permiten resolver el problema de la palabra, aunque por supuesto como se verá hace falta mucho más que eso para obtener una estructura interna.
+             +--------+     +-----------+
+    COOL ==> | PARSER | ==> | GENERADOR | ==> MIPS
+             +--------+     +-----------+
+
+De aquí surge immediatamente una pregunta: ¿qué protocolo de comunicación tienen estos módulos? Es necesario diseñar una especie de lenguaje intermedio, un mecanismo de representación que no sea ni COOL ni MIPS, sino algo que esté "a medio camino" entre ambos. Es decir, hace falta traducir el programa en COOL a alguna forma de representación abstracta, independiente de la sintaxis, que luego pueda ser interpretada por el generador y escrita en MIPS. Llamésmole de momento *representación intermedia (IR)*.
+
+             +--------+           +-----------+
+    COOL ==> | PARSER | = (IR) => | GENERADOR | ==> MIPS
+             +--------+           +-----------+
+
+Pasemos entonces a analizar qué forma debe tener esta representación intermedia. En principio, debe ser totalmente independiente de COOL o de MIPS, en términos de sintaxis. A fin de cuentas, podemos estar generando para cualquier otra plataforma, no solo MIPS. Por otro lado, tiene que ser capaz de capturar todo lo qué es posible expresar en COOL. A este tipo de representación, independiente de la sintaxis, pero que captura todo el significado, le vamos a llamar indistintamente *representación semántica* en ocasiones, justamente por este motivo. ¿Qué va en una representación semántica? Pues todos los conceptos que son expresables en un programa, dígase clases, métodos, variables, expresiones, ciclos. ¿Qué no va? Pues todo lo que sea "superfluo" al significado. Por ejemplo, el hecho de que un método tiene un nombre, pertenece a una clase, y tiene ciertos argumentos de ciertos tipos, es importante semánticamente. Dos métodos se diferencian por alguno de estos elementos. Por otro lado, el hecho de que un método se escribe primero por su nombre, luego por los argumentos entre paréntesis seguidos por los nombres de sus tipos, es poco importante *en este momento*. Daría lo mismo que los tipos fueran delante o detrás de los nombres de los argumentos, ya en esta fase del procesamiento lo que me interesa es de qué tipo es un argumento, y no si ese tipo se declara antes o después textualmente.
+
+Definir exactamente qué es semánticamente importante en un lenguaje particular no es una tarea fácil, y veremos una vez llegados a ese punto algunas ideas para atacar este problema (qué es en última instancia un problema de diseño, y por lo tanto es más un arte que una ciencia, al menos en el sentido artístico de Donald Knuth). Lo que sí es interesante de momento, es analizar qué tipo de procesamiento es importante, o al menos conveniente, realizar sobre esta representación intermedia.
+
+
 
 El siguiente problema es que existen estructuras linguísticas que no son fáciles de reconocer, porque son dependientes del contexto. Por ejemplo, la expresión `x = y + z` es muy sencilla de reconocer sintácticamente, pero en un lenguaje con tipado estático esta expresión puede no pertenecer al lenguaje según los tipos de cada variable. Este es un problema clásico de dependencia del contexto, donde la expresión `x = y + z` es válida si existe en el contexto donde, por ejemplo existe, `int x, int y, int z` pero no donde el contexto es `int x, int y, object z`. Hay muchos problemas que son dependientes del contexto, entre ellos:
 
