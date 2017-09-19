@@ -233,11 +233,17 @@ A modo de resumen, tenemos entonces cinco fases fundamentales:
 Análisis Lexicográfico (*lexer*)
 :   donde se realiza la conversión de una secuencia de caracteres a una secuencia de *tokens*.
 
+    En esta fase se detectan los errores relacionados con la escritura incorrecta de símbolos, por ejemplo, un número decimal con más dígitos de los permitidos, una cadena de texto que no termina en `"`, un identificador que usa un caracter inválido (e.j. `$`).
+
 Análisis Sintáctico (*parser*)
 :   donde se determina la estructura sintáctica del programa a partir de los *tokens* y se obtiene una estructura intermedia.
 
+    En esta fase se detectan los errores relacionados con la sintaxis, por ejemplo, un paréntesis no balanceado, una función que no tiene cuerpo, un `if-else` con la parte `else` vacía.
+
 Análisis Semántico
 :   donde se verifican las condiciones semánticas del programa y se valida el uso correcto de todos los símbolos definidos.
+
+    En esta fase se determinan los errores relacionados con los símbolos y tipos, por ejemplo, variables no declaradas o usadas antes de su declaración o funciones invocadas con un número o un tipo incorrecto de los argumentos.
 
 Optimización
 :   donde se eliminan o simplifican secciones del programa en función de la arquitectura de máquina hacian donde se vaya a compilar.
