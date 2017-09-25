@@ -78,12 +78,51 @@ De modo que podemos pensar en una especie de **máquina de estados**, donde mode
 Formalizando, un autómata finito determinista es un quíntuplo $A = <Q,q_0,V,F,f>$ con las siguientes características:
 
 * $Q$ es un conjunto finito de estados ($Q = \{ q_0, \ldots, q_n \}$), de ahí el adjetivo de **finito**.
-* $V$ es un conjunto finito de símbolos que pueden aparecer en la cinta.
 * $q_0 \in Q$ es el estado inicial.
+* $V$ es un conjunto finito de símbolos que pueden aparecer en la cinta.
 * $F \subseteq Q$ es un subconjunto de estados que denominaremos *estados finales*.
-* $f: Q \times V \to Q$ es una *función de transición*, que determina, para cada par posible de estados y símbolos, cuál es el estado de destino. Se denomina un **determinista** justamente porque en un estado particular, para un símbolo particular, existe solamente un estado posible de destino (o ninguno), por lo tanto, siempre existe una única decisión que tomar.
+* $f: Q \times V \to Q$ es una *función de transición*, que determina, para cada par posible de estados y símbolos, cuál es el estado de destino. Se denomina un autómata **determinista** justamente porque en un estado particular, para un símbolo particular, existe solamente un estado posible de destino (o ninguno), por lo tanto, siempre existe una única decisión que tomar.
 
-El modo de funcionamiento de un autómata finito determinista es el siguiente. Tenemos una cadena de entrada, que no es más que una secuencia de símbolos de $V$, o sea, un elemento $\omega \in V^k$ para algún valor de $k$ (que será la longitud de la cadena). El estado inicial del autómata es $q^0 = q_0$. Por cada símbolo en $\omega_i \in \omega$, realizamos la operación $q^i = f(q^{i-1}, \omega_i)$. Al concluir, si $q^k \in V$, decimos que el autómata **acepta** o **reconoce** la cadena $\omega$.
+El modo de funcionamiento de un autómata finito determinista es el siguiente. Tenemos una cadena de entrada, que no es más que una secuencia de símbolos de $V$, o sea, un elemento $\omega \in V^k$ para algún valor de $k$ (que será la longitud de la cadena). El estado inicial del autómata es $q^{(0)} = q_0$. Por cada símbolo en $\omega_i \in \omega$, realizamos la operación $q^{(i)} = f(q^{(i-1)}, \omega_i)$. Al concluir, si $q^{(k)} \in V$, decimos que el autómata **acepta** o **reconoce** la cadena $\omega$.
+
+Si en un caso particular la función $f(q_i,a_i)$ no estuviera definida, entonces diremos que el autómata "se traba", y no reconoce la cadena. Este convenio lo tomamos para evitar tener que definir un autómata completamente cuando existen muchos estados "superfluos". Siempre es posible convertir un autómata con algunas transiciones no definidas (*parcialmente especificado*) a un autómata con todas las transiciones definidas (*completamente especificado*), si añadimos un estado adicional $q_{error}$, a dónde apuntan todas las transiciones faltantes, y de donde salen además para el propio estado $q_{error}$ todas transiciones con todos los símbolos. Este estado sirve como especie de "sumidero".
+
+Veamos entonces un ejemplo. Para representar gráficamente un autómata, usaremos un grafo dirigido para visualizar la función de transición, donde el nodo $i$ representa al estado $q_i$, y la artista $(i,j)$ está etiquetada con el símbolo $a_k$ si $f(q_i,a_k) = q_j$. Los estados finales se representan con un borde doble, y el resto de los estados con un borde normal.
+
+Por ejemplo, si tenemos el siguiente autómata $A=<Q,q_0,V,F,f>$, donde:
+
+* $Q = {q_0, q_1, q_2}$
+* $V = \{a,b\}$
+* $F = \{q_2\}$
+* $f$ se define por la siquiente tabla:
+
+    Estado | Símbolo | $f$
+   --------+---------+-------
+    $q_0$  |  $a$    | $q_1$
+    $q_0$  |  $b$    | $q_0$
+    $q_1$  |  $a$    | $q_2$
+    $q_1$  |  $b$    | $q_0$
+    $q_2$  |  $a$    | $q_2$
+    $q_2$  |  $b$    | $q_0$
+
+Podemos representar gráficamente el autómata anterior con el siguiente gráfico:
+
+\begin{center}
+\begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto]
+   \node[state] (q_0) {$q_0$};
+   \node[state,right=of q_0] (q_1) {$q_1$};
+   \node[state,accepting,right=of q_1] (q_2) {$q_2$};
+   \path[->]
+    (q_0) edge [bend left]  node        {$a$} (q_1)
+          edge [loop above] node        {$b$} (q_0)
+    (q_1) edge [bend left]  node        {$a$} (q_2)
+          edge [bend left]  node [swap] {$b$} (q_0)
+    (q_2) edge [loop above] node        {$a$} (q_2)
+          edge [bend left]  node        {$b$} (q_0) ;
+\end{tikzpicture}
+\end{center}
+
+En este gráfico queda completamente representado el autómata, sin necesidad de especificar el resto, pues de la función de transición se pueden inferir los estados y el alfabeto, y se toma el convenio de que el estado $q_0$ siempre es el estado inicial.
 
 Cabe preguntarnos entonces la siguiente interrogante:
 
@@ -113,19 +152,23 @@ Pasemos entonces a describir algunos ejemplos de lenguajes regulares, que nos da
 
 ## Lenguajes Regulares
 
-El más simple de todos los lenguajes que podemos definir sobre un alfabeto $V$ es justamente $V^*$, el lenguaje de todas las cadenas que se pueden construir con los símbolos de $V$. A este lenguaje le llamamos *universo*. Para construir un autómata para este lenguaje, simplemente necesitamos un estado que será a la vez inicial y final, y una transición para cada símbolo del alfabeto desde este estado hacia el propio estado. Por ejemplo, si $V = \{ a_1, \ldots, a_n \}$, tenemos el siguiente autómata:
+El más simple de todos los lenguajes que podemos definir sobre un alfabeto $V$ es justamente $V^*$, el lenguaje de todas las cadenas que se pueden construir con los símbolos de $V$. A este lenguaje le llamamos *universo*. Para construir un autómata para este lenguaje, simplemente necesitamos un estado que será a la vez inicial y final, y una transición para cada símbolo del alfabeto desde este estado hacia el propio estado. Por ejemplo, si $V = \{ a, b, c \}$, tenemos el siguiente autómata:
 
+\begin{center}
 \begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto]
-   \node[state,initial,accepting] (q_0) {$q_0$};
+   \node[state,accepting] (q_0) {$q_0$};
    \path[->]
-    (q_0) edge [loop above] node {$a_1$} ()
-          edge [loop right] node {$\ldots$} ()
-          edge [loop below] node {$a_n$} () ;
+    (q_0) edge [loop above] node {$a$} ()
+          edge [loop right] node {$b$} ()
+          edge [loop below] node {$c$} () ;
 \end{tikzpicture}
+\end{center}
 
-Con este autómata podemos demostrar nuestro primer teorema en la teoría de lenguajes formales:
+Con esta idea podemos demostrar nuestro primer teorema en la teoría de lenguajes formales:
 
 > **Teorema:** El lenguaje *universo* $L = V^*$ es regular.
+
+La demostración se realiza por construcción. Sea $V = \{ a_1, \ldots, a_n \}$ el alfabeto, sea $A$ el autómata $<Q,q_0,F,V,f>$, donde $Q = F = \{ q_0\}$ y $f(q_0, a_i) = q_0$ para todo símbolo $a_i \in V$; entonces $A$ reconoce el lenguaje $V^*$.
 
 Yendo al extremo contrario, vamos a definir el lenguaje que contiene exactamente las palabras claves **if**, **then**, **else**, **fi**. Para este lenguaje también es fácil definir un autómata. Creamos dos estados, uno inicial y uno final, y por cada palabra del lenguaje creamos un camino entre el estado inicial y final con un estado intermedio para cada símbolo de la palabra correspondiente (menos el último, claro):
 
@@ -137,3 +180,10 @@ La demostración es muy sencilla, simplemente necesitamos construir un autómata
 
 Para nuestro siguiente ejemplo, vamos a complejizar un poco el lenguaje a reconocer, y de paso veremos una estrategia general para la construcción de autómatas. El lenguaje que queremos reconocer es el lenguaje de las cadenas sobre el alfabeto $V = \{a, b\}$, con exactamente $3$ letras $a$. Antes de lanzarnos a construir el autómata, tratemos de pensar en una solución algorítmica para este problema. De forma general, la estrategia de solución sería algo así:
 
+**INCOMPLETO**
+
+## Expresiones Regulares
+
+Ahora que ya sabemos cómo construir autómatas para cualquier lenguaje regular, y sabemos (intuitivamente) que el lenguaje de los *tokens* de un lenguaje de programación se puede definir como un lenguaje regular, nos dedicamos a la pregunta de cómo es mejor definir ese lenguaje. Evidentemente, podemos diseñar un autómata, de forma manual, que reconozca los *tokens*, pero esta tarea, incluso para los lenguajes más sencillos, es muy engorrosa. El problema radica en los autómatas son un mecanismo de cómputo, podemos decir, un mecanismo *procedural* o *imperativo*, para definir lenguajes. Para definir un autómata hay que decidir una cantidad de estados, el conjunto de estados finales y las transiciones. Todo esto no parece intuitivo de antemano. Por otro lado, un autómata es muy difícil de "leer" para un humano. Al mirar un autómata, identificar rápidamente el lenguaje que reconoce no es una tarea sencilla, mucho menos intuitiva.
+
+ De forma alternativa, pudiéramos desear tener un mecanismo *declarativo* que nos permita definir lenguajes de forma más sencilla, y de dónde sea posible de forma automática obtener el autómata correspondiente. Como sabemos de la experiencia anterior en otros lenguajes de programación, los humanos somos muchos mejores mientras mayor sea el nivel de abstracción, y las máquinas son mucho mejores mientras menor sea el nivel abstracción. ¡Justamente por esta diferencia es que surgió la ciencia de la compilación en sí misma! Estamos volviendo a enfrentarnos al mismo problema original, pero en una escala menor. Cabe preguntarnos entonces si podemos crear un mecanismo de "alto nivel" para definir lenguajes regulares, y una especie de compilador que transforme este mecanismo de alto nivel al autómata correspondiente.
