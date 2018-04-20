@@ -1,0 +1,172 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="TOC">
+<ul>
+<li><a href="#análisis-lexicográfico">Análisis Lexicográfico</a><ul>
+<li><a href="#autómatas-finitos-deterministas">Autómatas Finitos Deterministas</a></li>
+<li><a href="#lenguajes-regulares">Lenguajes Regulares</a></li>
+<li><a href="#expresiones-regulares">Expresiones Regulares</a></li>
+</ul></li>
+</ul>
+</div>
+<h1 id="análisis-lexicográfico">Análisis Lexicográfico</h1>
+<p>En este capítulo vamos a atacar el problema de implementar un <em>lexer</em>, y todos los elementos teóricos que nos ayudarán en esta tarea, y que nos servirán además para resolver problemas independientes pero relacionados con esta fase. Vamos a comenzar definiendo formalmente el problema que queremos resolver, y luego veremos como desarrollar una teoría que nos permita atacar su solución.</p>
+<p>Comenzaremos por definir el concepto de <em>token</em>, básicamente, como una secuencia de caracteres con cumple con cierta estructura sintáctica. Más adelante impondremos restricciones sobre qué tipos de estructuras son válidas. De momento, pondremos algunos ejemplos:</p>
+<ul>
+<li>Las palabras claves de un lenguaje: <strong>if</strong>, <strong>else</strong>, <strong>function</strong>, <strong>class</strong>, etc.</li>
+<li>Los literales numéricos: <code>42</code>, <code>3.1415</code>, <code>0.123e-44</code>, etc.</li>
+<li>Los literales de cadena: <code>&quot;hello world!&quot;</code>, etc.</li>
+<li>Los literales booleanos: <code>True</code>, <code>False</code>.</li>
+<li>Los operadores: <code>+</code>, <code>-</code>, <code>*</code>, <code>&lt;</code>, <code>&lt;=</code>, etc.</li>
+<li>Identificadores: <code>x</code>, <code>value</code>, <code>someMethodName</code>, etc.</li>
+</ul>
+<p>De modo que queremos idear un mecanismo que reciba como entrada una descripción del conjunto de <em>tokens</em> de nuestro lenguaje, y una cadena de caracteres, y nos devuelva la secuencia de <em>tokens</em> que aparecen en la cadena.</p>
+<p>Un primer análisis nos puede llevar a pensar idea similar a dividir la cadena por espacios en blanco y quedarnos con cada elemento como un <em>token</em>, pero es muy sencillo ver por qué esta idea no es suficiente. En primer lugar, existen <em>tokens</em> que no necesariamente aparecen separados por espacio, como en el caso de <code>value&lt;=0.001</code>. Además, existen <em>tokens</em> que son prefijos de otros <em>tokens</em>, como <code>&lt;</code> y <code>&lt;=</code>; o <code>class</code> que es una palabra clave y <code>class1</code> que es un identificador cualquiera. Esto quiere decir que necesitamos realizar un análisis un poco más complejo para determinar qué parte de una secuencia de caracteres corresponde a un <em>token</em> o a <em>otro</em>.</p>
+<p>Veamos el problema entonces desde el siguiente punto de vista: supongamos que escaneamos la secuencia de caracteres de inicio a fin, un caracter a la vez, y lo que deseamos es en cada momento ser capaces de determinar si estamos en el medio de un <em>token</em>, o si acabamos de reconocer un <em>token</em> completo. Por ejemplo, tomemos nuevamente la cadena de ejemplo del capítulo anterior:</p>
+<pre><code>if a&lt;=0 then b else c</code></pre>
+<p>Vamos a simbolizar con el símbolo <code>|</code> el punto que divide el fragmento de la cadena que hemos analizado, de la parte de la cadena que falta por analizar. Es decir, al inicio de nuestro procesamiento, estamos en el siguiente estado:</p>
+<pre><code>|if a&lt;=0 then b else c</code></pre>
+<p>Que simboliza que aún no hemos visto ningún caracter de la cadena. Queremos entonces idear una maquinaria que &quot;avance&quot; por la cadena, caracter a caracter, y en cada instante sepa determinar si con los caracteres vistos hasta el momento ya tiene un <em>token</em> construido, o si necesita seguir avanzando. Veamos paso a paso cómo podría funcionar un mecanismo así. Comenzamos con el inicio de la cadena, y vamos además a almacenar el fragmento de <em>token</em> que estamos construyendo, y la lista de <em>tokens</em> que vamos reconociendo como salida:</p>
+<pre><code>CADENA: |if a&lt;=0 then b else c
+ TOKEN:
+SALIDA:</code></pre>
+<p>El primer paso consiste en analizar el caracter <code>i</code>. Cómo acabamos de empezar, no tenemos nada almacenado, entonces la única posibilidad es que este caracter <code>i</code> sea parte del <em>token</em> que estamos intentando reconocer.</p>
+<pre><code>CADENA: i|f a&lt;=0 then b else c
+ TOKEN: i
+SALIDA:</code></pre>
+<p>Ahora vemos el caracter <code>f</code>. Cómo viene immediatamente después de otro caracter, pudiera ser que estemos viendo un <em>token</em> de tipo identificador. Por otro lado, pudiera ser que estuviéramos viendo particularmente el <em>token</em> <code>if</code>, que es una palabra clave. De momento, lo tomamos.</p>
+<pre><code>CADENA: if| a&lt;=0 then b else c
+ TOKEN: if
+SALIDA:</code></pre>
+<p>Nos encontramos entonces con un espacio en blanco, lo que nos permite decidir que efectivamente hemos encontrado el <em>token</em> <code>if</code>, por lo que podemos devolverlo en la secuencia de salida.</p>
+<pre><code>CADENA: if |a&lt;=0 then b else c
+ TOKEN:
+SALIDA: [if]</code></pre>
+<p>Ahora nos encontramos un caracter <code>a</code>, que pudiera ser un identificador, pero todavía no podemos decir nada al respecto pues es posible que el identificador tenga más letras.</p>
+<pre><code>CADENA: if a|&lt;=0 then b else c
+ TOKEN: a
+SALIDA: [if]</code></pre>
+<p>En este paso nos encontramos un caracter <code>&lt;</code>, y como estábamos tratando de reconocer un identificador que empieza con <code>a</code>, y nuestras reglas dicen que <code>&lt;</code> no puede ser parte del nombre de ningún identificador, entonces podemos concluir que el <em>token</em> anterior es justamente <code>a</code>, y comenzar un nuevo <em>token</em>:</p>
+<pre><code>CADENA: if a&lt;|=0 then b else c
+ TOKEN: &lt;
+SALIDA: [if] [a]</code></pre>
+<p>Del mismo modo, hemos comenzado a construir un <em>token</em> <code>&lt;</code>, que pudiera ser el operador en sí, o pudiera ser el operador <code>&lt;=</code>, todo depende de lo que le siga. Al ver a continuación el caracter <code>=</code>, concluimos que tenemos el <em>token</em> <code>&lt;=</code> sin necesidad de seguir buscando, pues no existe ningún <em>token</em> con prefijo <code>&lt;=</code>.</p>
+<pre><code>CADENA: if a&lt;=|0 then b else c
+ TOKEN:
+SALIDA: [if] [a] [&lt;=]</code></pre>
+<p>Es fácil ver como continúa este proceso, llevando finalmente a la secuencia de <em>tokens</em> correcta:</p>
+<pre><code>[if] [a] [&lt;=] [0] [then] [b] [else] [c]</code></pre>
+<p>La pregunta consiste entonces en cómo implementamos este mecanismo computacionalmente. De modo general, la decisión que hemos tomado en cada paso depende únicamente de dos factores: el caracter que estamos examinando, y lo que hemos hecho hasta el paso anterior. Para modelar este segundo factor de &quot;lo que hemos hecho hasta el paso anterior&quot;, analizemos primero de cuántas formas posibles podemos hablar de lo que hemos hecho hasta el paso anterior. Básicamente, tenemos un conjunto finito de clases de <em>tokens</em>, y lo que necesitamos saber es simplemente que clase de <em>token</em> estamos intentando construir, para saber si el nuevo caracter puede completar esta clase o no.</p>
+<p>De modo que podemos pensar en una especie de <strong>máquina de estados</strong>, donde modelaremos con los estados el hecho de llevar la cuenta de qué clase de <em>token</em> estamos construyendo, y por ende, cuáles son los posibles caracteres a esperar a continuación. Esta máquina de estados es una clase particular de máquina de <em>Turing</em>, que tiene la característica de que solo puede moverse hacia la izquierda en la cinta y solo puede leer (no está permitido escribir). A las máquinas de estado que solo se mueven en una dirección en la cinta se les llama <strong>autómatas</strong>. Distintos tipos de autómatas se diferencian entonces por los tipos de transiciones que le son permitidas, y los tipos de análisis que pueden realizar para tomar una decisión. En este caso particular, estaremos definiendo la clase más sencilla de autómata, un <strong>autómata finito determinista</strong>.</p>
+<h2 id="autómatas-finitos-deterministas">Autómatas Finitos Deterministas</h2>
+<p>Formalizando, un autómata finito determinista es un quíntuplo <span class="math inline"><em>A</em> = &lt;<em>Q</em>, <em>q</em><sub>0</sub>, <em>V</em>, <em>F</em>, <em>f</em>&gt;</span> con las siguientes características:</p>
+<ul>
+<li><span class="math inline"><em>Q</em></span> es un conjunto finito de estados (<span class="math inline"><em>Q</em> = {<em>q</em><sub>0</sub>, …, <em>q</em><sub><em>n</em></sub>}</span>), de ahí el adjetivo de <strong>finito</strong>.</li>
+<li><span class="math inline"><em>q</em><sub>0</sub> ∈ <em>Q</em></span> es el estado inicial.</li>
+<li><span class="math inline"><em>V</em></span> es un conjunto finito de símbolos que pueden aparecer en la cinta.</li>
+<li><span class="math inline"><em>F</em> ⊆ <em>Q</em></span> es un subconjunto de estados que denominaremos <em>estados finales</em>.</li>
+<li><span class="math inline"><em>f</em> : <em>Q</em> × <em>V</em> → <em>Q</em></span> es una <em>función de transición</em>, que determina, para cada par posible de estados y símbolos, cuál es el estado de destino. Se denomina un autómata <strong>determinista</strong> justamente porque en un estado particular, para un símbolo particular, existe solamente un estado posible de destino (o ninguno), por lo tanto, siempre existe una única decisión que tomar.</li>
+</ul>
+<p>El modo de funcionamiento de un autómata finito determinista es el siguiente. Tenemos una cadena de entrada, que no es más que una secuencia de símbolos de <span class="math inline"><em>V</em></span>, o sea, un elemento <span class="math inline"><em>ω</em> ∈ <em>V</em><sup><em>k</em></sup></span> para algún valor de <span class="math inline"><em>k</em></span> (que será la longitud de la cadena). El estado inicial del autómata es <span class="math inline"><em>q</em><sup>(0)</sup> = <em>q</em><sub>0</sub></span>. Por cada símbolo en <span class="math inline"><em>ω</em><sub><em>i</em></sub> ∈ <em>ω</em></span>, realizamos la operación <span class="math inline"><em>q</em><sup>(<em>i</em>)</sup> = <em>f</em>(<em>q</em><sup>(<em>i</em> − 1)</sup>, <em>ω</em><sub><em>i</em></sub>)</span>. Al concluir, si <span class="math inline"><em>q</em><sup>(<em>k</em>)</sup> ∈ <em>V</em></span>, decimos que el autómata <strong>acepta</strong> o <strong>reconoce</strong> la cadena <span class="math inline"><em>ω</em></span>.</p>
+<p>Si en un caso particular la función <span class="math inline"><em>f</em>(<em>q</em><sub><em>i</em></sub>, <em>a</em><sub><em>i</em></sub>)</span> no estuviera definida, entonces diremos que el autómata &quot;se traba&quot;, y no reconoce la cadena. Este convenio lo tomamos para evitar tener que definir un autómata completamente cuando existen muchos estados &quot;superfluos&quot;. Siempre es posible convertir un autómata con algunas transiciones no definidas (<em>parcialmente especificado</em>) a un autómata con todas las transiciones definidas (<em>completamente especificado</em>), si añadimos un estado adicional <span class="math inline"><em>q</em><sub><em>e</em><em>r</em><em>r</em><em>o</em><em>r</em></sub></span>, a dónde apuntan todas las transiciones faltantes, y de donde salen además para el propio estado <span class="math inline"><em>q</em><sub><em>e</em><em>r</em><em>r</em><em>o</em><em>r</em></sub></span> todas transiciones con todos los símbolos. Este estado sirve como especie de &quot;sumidero&quot;.</p>
+<p>Veamos entonces un ejemplo. Para representar gráficamente un autómata, usaremos un grafo dirigido para visualizar la función de transición, donde el nodo <span class="math inline"><em>i</em></span> representa al estado <span class="math inline"><em>q</em><sub><em>i</em></sub></span>, y la artista <span class="math inline">(<em>i</em>, <em>j</em>)</span> está etiquetada con el símbolo <span class="math inline"><em>a</em><sub><em>k</em></sub></span> si <span class="math inline"><em>f</em>(<em>q</em><sub><em>i</em></sub>, <em>a</em><sub><em>k</em></sub>)=<em>q</em><sub><em>j</em></sub></span>. Los estados finales se representan con un borde doble, y el resto de los estados con un borde normal.</p>
+<p>Por ejemplo, si tenemos el siguiente autómata <span class="math inline"><em>A</em> = &lt;<em>Q</em>, <em>q</em><sub>0</sub>, <em>V</em>, <em>F</em>, <em>f</em>&gt;</span>, donde:</p>
+<ul>
+<li><span class="math inline"><em>Q</em> = <em>q</em><sub>0</sub>, <em>q</em><sub>1</sub>, <em>q</em><sub>2</sub></span></li>
+<li><span class="math inline"><em>V</em> = {<em>a</em>, <em>b</em>}</span></li>
+<li><span class="math inline"><em>F</em> = {<em>q</em><sub>2</sub>}</span></li>
+<li><p><span class="math inline"><em>f</em></span> se define por la siquiente tabla:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Estado</th>
+<th>Símbolo</th>
+<th><span class="math inline"><em>f</em></span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline"><em>q</em><sub>0</sub></span></td>
+<td><span class="math inline"><em>a</em></span></td>
+<td><span class="math inline"><em>q</em><sub>1</sub></span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline"><em>q</em><sub>0</sub></span></td>
+<td><span class="math inline"><em>b</em></span></td>
+<td><span class="math inline"><em>q</em><sub>0</sub></span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline"><em>q</em><sub>1</sub></span></td>
+<td><span class="math inline"><em>a</em></span></td>
+<td><span class="math inline"><em>q</em><sub>2</sub></span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline"><em>q</em><sub>1</sub></span></td>
+<td><span class="math inline"><em>b</em></span></td>
+<td><span class="math inline"><em>q</em><sub>0</sub></span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline"><em>q</em><sub>2</sub></span></td>
+<td><span class="math inline"><em>a</em></span></td>
+<td><span class="math inline"><em>q</em><sub>2</sub></span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline"><em>q</em><sub>2</sub></span></td>
+<td><span class="math inline"><em>b</em></span></td>
+<td><span class="math inline"><em>q</em><sub>0</sub></span></td>
+</tr>
+</tbody>
+</table></li>
+</ul>
+<p>Podemos representar gráficamente el autómata anterior con el siguiente gráfico:</p>
+
+<p>En este gráfico queda completamente representado el autómata, sin necesidad de especificar el resto, pues de la función de transición se pueden inferir los estados y el alfabeto, y se toma el convenio de que el estado <span class="math inline"><em>q</em><sub>0</sub></span> siempre es el estado inicial.</p>
+<p>Cabe preguntarnos entonces la siguiente interrogante:</p>
+<blockquote>
+<p>¿Qué lenguajes es capaz de reconocer un autómata finito determinista?</p>
+</blockquote>
+<p>A responder esta pregunta dedicaremos la mayor parte del resto de este capítulo. Para comenzar, debemos formalizar primeramente la pregunta planteada. Necesitamos definir qué es un <strong>lenguaje</strong>, y qué significa que un autómata <strong>reconozca</strong> cierto lenguaje.</p>
+<p>Para definir un lenguaje, comenzaremos con la definición de <strong>alfabeto</strong>. Un alfabeto <span class="math inline"><em>V</em></span> no es más que un conjunto de símbolos, que son elementos básicos indivisibles. Por ejemplo, <span class="math inline"><em>V</em> = {<em>a</em>, <em>b</em>}</span> es el alfabeto que contiene los símbolos <span class="math inline"><em>a</em></span> y <span class="math inline"><em>b</em></span>. El &quot;significado&quot; de cada símbolo no nos interesa en la teoría de lenguajes formales, solamente nos interesa diferenciar un símbolo de otro. Dejaremos el problema del &quot;significado&quot; para cuando lleguemos a la fase semántica.</p>
+<p>Una vez armados con el concepto de alfabeto, podemos definir el concepto de <strong>cadena</strong>. Una cadena <span class="math inline"><em>ω</em></span> es un elemento del conjunto <span class="math inline"><em>V</em><sup><em>k</em></sup></span> para algún valor de <span class="math inline"><em>k</em></span> arbitrario. Por ejemplo, la cadena <span class="math inline"><em>a</em><em>b</em><em>b</em><em>a</em></span> es un elemento del conjunto <span class="math inline">{<em>a</em>, <em>b</em>}<sup>4</sup></span>. Se llama <em>longitud</em> de la cadena justamente al valor <span class="math inline"><em>k</em></span>. Si <span class="math inline"><em>k</em> = 0</span>, tenemos la <em>cadena vacía</em>, que se simboliza generalmente como <span class="math inline"><em>ϵ</em></span> independientemente del conjunto <span class="math inline"><em>V</em></span>.</p>
+<p>Finalmente, definiremos un <strong>lenguaje</strong> <span class="math inline"><em>L</em></span>, como un conjunto de cadenas sobre un alfabeto particular, o alternativamente, como un subconjunto de la clausura del producto cartesiano de dicho de alfabeto. Es decir, <span class="math inline"><em>L</em> ⊆ <em>V</em><sup>*</sup></span>, donde:</p>
+<p><br /><span class="math display">$$
+V^* = \bigcup_{k=0}^{\infty} V^k
+$$</span><br /></p>
+<p>Vamos a introducir entonces algo de notación adicional. Sea <span class="math inline"><em>A</em></span> un autómata finito determinista, denominaremos <span class="math inline"><em>L</em><sub><em>A</em></sub></span> al lenguaje de todas las cadenas reconocidas por <span class="math inline"><em>A</em></span>. Es decir, <span class="math inline"><em>ω</em> ∈ <em>L</em><sub><em>A</em></sub></span> si y solo <span class="math inline"><em>A</em></span> reconoce <span class="math inline"><em>ω</em></span>. Cabe entonces preguntarnos qué tipos de lenguajes pueden ser reconocidos por este mecanismo. Podemos entonces definir la interrogante anterior de manera más precisa cómo:</p>
+<blockquote>
+<p>¿Qué características tienen los lenguajes que son posibles de reconocer por algún autómata finito determinista?</p>
+</blockquote>
+<p>A este tipo de lenguajes les llamaremos <strong>lenguajes regulares</strong>, por motivos históricos que veremos más adelante. A modo definición:</p>
+<blockquote>
+<p>Sea <span class="math inline"><em>L</em></span> un lenguaje sobre el alfabeto <span class="math inline"><em>V</em></span>, se dice que <span class="math inline"><em>L</em></span> es <strong>regular</strong> si y solo si existe un autómata finito determinista <span class="math inline"><em>A</em> = &lt;<em>Q</em>, <em>q</em><sub>0</sub>, <em>V</em>, <em>F</em>, <em>f</em>&gt;</span> (sobre el mismo alfabeto), tal que <span class="math inline"><em>L</em> = <em>L</em><sub><em>A</em></sub></span>.</p>
+</blockquote>
+<p>Pasemos entonces a describir algunos ejemplos de lenguajes regulares, que nos darán una idea intuitiva del poder de cómputo de estos autómatas.</p>
+<h2 id="lenguajes-regulares">Lenguajes Regulares</h2>
+<p>El más simple de todos los lenguajes que podemos definir sobre un alfabeto <span class="math inline"><em>V</em></span> es justamente <span class="math inline"><em>V</em><sup>*</sup></span>, el lenguaje de todas las cadenas que se pueden construir con los símbolos de <span class="math inline"><em>V</em></span>. A este lenguaje le llamamos <em>universo</em>. Para construir un autómata para este lenguaje, simplemente necesitamos un estado que será a la vez inicial y final, y una transición para cada símbolo del alfabeto desde este estado hacia el propio estado. Por ejemplo, si <span class="math inline"><em>V</em> = {<em>a</em>, <em>b</em>, <em>c</em>}</span>, tenemos el siguiente autómata:</p>
+
+<p>Con esta idea podemos demostrar nuestro primer teorema en la teoría de lenguajes formales:</p>
+<blockquote>
+<p><strong>Teorema:</strong> El lenguaje <em>universo</em> <span class="math inline"><em>L</em> = <em>V</em><sup>*</sup></span> es regular.</p>
+</blockquote>
+<p>La demostración se realiza por construcción. Sea <span class="math inline"><em>V</em> = {<em>a</em><sub>1</sub>, …, <em>a</em><sub><em>n</em></sub>}</span> el alfabeto, sea <span class="math inline"><em>A</em></span> el autómata <span class="math inline">&lt;<em>Q</em>, <em>q</em><sub>0</sub>, <em>F</em>, <em>V</em>, <em>f</em>&gt;</span>, donde <span class="math inline"><em>Q</em> = <em>F</em> = {<em>q</em><sub>0</sub>}</span> y <span class="math inline"><em>f</em>(<em>q</em><sub>0</sub>, <em>a</em><sub><em>i</em></sub>)=<em>q</em><sub>0</sub></span> para todo símbolo <span class="math inline"><em>a</em><sub><em>i</em></sub> ∈ <em>V</em></span>; entonces <span class="math inline"><em>A</em></span> reconoce el lenguaje <span class="math inline"><em>V</em><sup>*</sup></span>.</p>
+<p>Yendo al extremo contrario, vamos a definir el lenguaje que contiene exactamente las palabras claves <strong>if</strong>, <strong>then</strong>, <strong>else</strong>, <strong>fi</strong>. Para este lenguaje también es fácil definir un autómata. Creamos dos estados, uno inicial y uno final, y por cada palabra del lenguaje creamos un camino entre el estado inicial y final con un estado intermedio para cada símbolo de la palabra correspondiente (menos el último, claro):</p>
+<p>Este autómata nos da una idea para demostrar nuestro segundo teorema:</p>
+<blockquote>
+<p><strong>Teorema:</strong>, Sea <span class="math inline"><em>L</em> = {<em>ω</em><sub>1</sub>, …, <em>ω</em><sub><em>n</em></sub>}</span> un lenguaje <em>finito</em>, entonces <span class="math inline"><em>L</em></span> es regular.</p>
+</blockquote>
+<p>La demostración es muy sencilla, simplemente necesitamos construir un autómata que contenga un camino por cada cadena del lenguaje. Si existen cadenas con prefijos comunes, los estados correspondientes a los símbolos que participan en los prefijos se comparten (para mantener el determinismo).</p>
+<p>Para nuestro siguiente ejemplo, vamos a complejizar un poco el lenguaje a reconocer, y de paso veremos una estrategia general para la construcción de autómatas. El lenguaje que queremos reconocer es el lenguaje de las cadenas sobre el alfabeto <span class="math inline"><em>V</em> = {<em>a</em>, <em>b</em>}</span>, con exactamente <span class="math inline">3</span> letras <span class="math inline"><em>a</em></span>. Antes de lanzarnos a construir el autómata, tratemos de pensar en una solución algorítmica para este problema. De forma general, la estrategia de solución sería algo así:</p>
+<p><strong>INCOMPLETO</strong></p>
+<h2 id="expresiones-regulares">Expresiones Regulares</h2>
+<p>Ahora que ya sabemos cómo construir autómatas para cualquier lenguaje regular, y sabemos (intuitivamente) que el lenguaje de los <em>tokens</em> de un lenguaje de programación se puede definir como un lenguaje regular, nos dedicamos a la pregunta de cómo es mejor definir ese lenguaje. Evidentemente, podemos diseñar un autómata, de forma manual, que reconozca los <em>tokens</em>, pero esta tarea, incluso para los lenguajes más sencillos, es muy engorrosa. El problema radica en los autómatas son un mecanismo de cómputo, podemos decir, un mecanismo <em>procedural</em> o <em>imperativo</em>, para definir lenguajes. Para definir un autómata hay que decidir una cantidad de estados, el conjunto de estados finales y las transiciones. Todo esto no parece intuitivo de antemano. Por otro lado, un autómata es muy difícil de &quot;leer&quot; para un humano. Al mirar un autómata, identificar rápidamente el lenguaje que reconoce no es una tarea sencilla, mucho menos intuitiva.</p>
+<p>De forma alternativa, pudiéramos desear tener un mecanismo <em>declarativo</em> que nos permita definir lenguajes de forma más sencilla, y de dónde sea posible de forma automática obtener el autómata correspondiente. Como sabemos de la experiencia anterior en otros lenguajes de programación, los humanos somos muchos mejores mientras mayor sea el nivel de abstracción, y las máquinas son mucho mejores mientras menor sea el nivel abstracción. ¡Justamente por esta diferencia es que surgió la ciencia de la compilación en sí misma! Estamos volviendo a enfrentarnos al mismo problema original, pero en una escala menor. Cabe preguntarnos entonces si podemos crear un mecanismo de &quot;alto nivel&quot; para definir lenguajes regulares, y una especie de compilador que transforme este mecanismo de alto nivel al autómata correspondiente.</p>
+</body>
+</html>

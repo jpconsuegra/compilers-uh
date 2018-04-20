@@ -1,0 +1,700 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+</head>
+<body>
+<div id="TOC">
+<ul>
+<li><a href="#parsing-descendente-top-down">Parsing Descendente (<em>Top-Down</em>)</a><ul>
+<li><a href="#parsing-recursivo-descendente">Parsing Recursivo Descendente</a></li>
+<li><a href="#parsing-predictivo-descendente">Parsing Predictivo Descendente</a></li>
+<li><a href="#gramáticas-ll1">Gramáticas LL(1)</a></li>
+<li><a href="#parsing-descendente-no-recursivo">Parsing Descendente No Recursivo</a></li>
+</ul></li>
+</ul>
+</div>
+<h1 id="parsing-descendente-top-down">Parsing Descendente (<em>Top-Down</em>)</h1>
+<p>Hasta el momento hemos visto el proceso de compilación a grandes razgos, y hemos definido que la primera fase consiste en el análisis sintáctico. Esta fase a su vez la hemos divido en 2 procesos secuenciales: el análisis lexicográfico (<em>tokenización</em> o <em>lexing</em>), y el análisis sintáctico en sí (<em>parsing</em>). En esta sección nos concentraremos en este segundo proceso.</p>
+<p>Recordemos que el proceso de parsing consiste en analizar una secuencia de tokens, y producir un árbol de derivación, lo que es equivalente a producir una derivación extrema izquierda o derecha de la cadena a reconocer. Tomemos la siguiente gramática, que representa expresiones aritméticas (sin ambigüedad):</p>
+<pre><code>E = T
+  | T + E
+
+T = int * T
+  | int
+  | (E)</code></pre>
+<p>Tomemos la cadena siguiente:</p>
+<pre><code>2 * (3 + 5)</code></pre>
+<p>Que una vez procesada por la fase lexicográfica produce la siguiente secuencia de <em>tokens</em>.</p>
+<pre><code>int  *  (  int  +  int  )</code></pre>
+<p>Intentemos producir una derivación (en principio, extrema izquierda, por comodidad) de esta cadena. Como sabemos, si existe una derivación extrema izquierda, es porque se cumple que:</p>
+<pre><code>[1]  E -*-&gt; int * ( int + int )</code></pre>
+<p>Preguntémonos entonces, ¿de cuántas formas pudiera <code>E</code> derivar en la cadena? Evidentemente, hay exactamente dos formas en que <code>E</code> es capaz de producir esta cadena, es decir, hay solamente dos producciones posibles que pudieran seguir en la derivación extrema izquierda. O bien <code>E -&gt; T</code> o bien <code>E -&gt; T + E</code>. Probemos entonces con la primera de ellas:</p>
+<pre><code>[2]  E -*-&gt; T -*-&gt; int * ( int + int )</code></pre>
+<p>Como estamos produciendo una derivación extrema izquierda, tenemos que expandir a continuación el símbolo <code>T</code>. Nuevamente, hay varias opciones, probemos con la primera:</p>
+<pre><code>[3]  E -*-&gt; int * T -*-&gt; int * ( int + int )</code></pre>
+<p>De momento parece que vamos por buen camino, pues hemos logrado producir los primeros 2 <em>tokens</em> de la cadena. Expandimos entonces nuevamente el no-terminal más a la izquierda con la primera producción posible <code>T -&gt; int * T</code>:</p>
+<pre><code>[4]  E -*-&gt; int * int * T -*-&gt; int * ( int + int )</code></pre>
+<p>En este punto, podemos darnos cuenta de que hemos tomado el camino equivocado. Como estamos produciendo una derivación extrema izquierda, y los terminales no derivan en ningún símbolo, sabemos que todo lo que esté a la izquierda del primer no-terminal no va a cambiar en el futuro. Luego, es evidentemente que ya no seremos capaces de generar la cadena, pues estos terminales (<code>int * int *</code>) no son prefijo de la cadena a reconocer. Deshagamos entonces la última producción (volviendo al paso 3) y probemos otro camino (<code>T -&gt; int</code>):</p>
+<pre><code>[4]  E -&gt; int * int -*-&gt; int * ( int + int )</code></pre>
+<p>Nuevamente, hemos generado una secuencia de <em>tokens</em> que no es prefijo de la cadena. Probamos de nuevo:</p>
+<pre><code>[4]  E -*-&gt; int * ( E ) -*-&gt; int * ( int + int )</code></pre>
+<p>Parece que en este punto hemos hecho un avance, pues logramos reconocer tres <em>tokens</em> de prefijo. Expandimos entonces el nodo <code>E -&gt; T</code> nuevamente, y de ahí probamos la próxima producción (<code>T -&gt; int * T</code>), que también falla:</p>
+<pre><code>[5]  E -*-&gt; int * ( T ) -*-&gt; int * ( int + int )
+[6]  E -*-&gt; int * ( int * T ) -*-&gt; int * ( int + int )</code></pre>
+<p>Probando con cualquiera de las producciones de <code>T</code> nunca podremos generar el <em>token</em> <code>+</code> que falta, por lo tanto eventualmente volveremos a probar con <code>E -&gt; T + E</code>:</p>
+<pre><code>[5]  E -*-&gt; int * ( T + E ) -*-&gt; int * ( int + int )</code></pre>
+<p>Una vez llegados a este punto, ya podemos hacernos una idea de cómo funciona este proceso. Eventualmente, tendremos que derivar <code>T -&gt; int</code> y <code>E -&gt; T -&gt; int</code> para lograr producir la cadena final. Finalmente obtenemos la derivación extrema izquierda siguiente:</p>
+<pre><code>E -&gt; T
+  -&gt; int * T
+  -&gt; int * ( E )
+  -&gt; int * ( T + E )
+  -&gt; int * ( int + E )
+  -&gt; int * ( int + T )
+  -&gt; int * ( int + int )</code></pre>
+<p>Básicamente, lo que hemos hecho ha sido probar todas las posibles derivaciones extrema izquierda, de forma recursiva, podando inteligentemente cada vez que era evidente que habíamos producido una derivación incorrecta. Tratemos de formalizar este proceso.</p>
+<h2 id="parsing-recursivo-descendente">Parsing Recursivo Descendente</h2>
+<p>De forma general, tenemos tres tipos de operaciones o situaciones que analizar:</p>
+<ul>
+<li>La expansión de un no-terminal en la forma oracional actual.</li>
+<li>La prueba recursiva de cada una de las producciones de este no-terminal.</li>
+<li>La comprobación de que un terminal generado coincide con el terminal esperado en la cadena.</li>
+</ul>
+<p>Para cada una de estas situaciones, vamos a tener un conjunto de métodos. Para representar la cadena a reconocer, necesitamos mantener un estado global que indique la parte reconocida de la cadena. Diseñemos una clase para ello:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="kw">interface</span> IParser {
+    <span class="dt">bool</span> <span class="fu">Parse</span>(Token[] tokens);
+}
+
+<span class="kw">class</span> RecursiveParser : IParser {
+    Token[] tokens;
+    <span class="dt">int</span> nextToken;
+
+    <span class="co">//...</span>
+}</code></pre></div>
+<p>Para reconocer un terminal, tendremos un método cuya función es a la vez decidir si se reconoce el terminal, y avanzar en la cadena:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">Match</span>(Token token) {
+    <span class="kw">return</span> tokens[nextToken++] == token;
+}</code></pre></div>
+<p>A cada no-terminal vamos a asociar un método recursivo cuya función es determinar si el no-terminal correspondiente genera una sub-cadena &quot;adecuada&quot; del lenguaje. Por ejemplo, para el caso de la gramática anterior, tenemos los siguientes métodos:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">E</span>() {
+    <span class="co">// Parsea un no-terminal E</span>
+}
+
+<span class="dt">bool</span> <span class="fu">T</span>() {
+    <span class="co">// Parsea un no-terminal T</span>
+}</code></pre></div>
+<p>La semántica de cada uno de estos métodos es que devuelven <code>true</code> si y solo si el no-terminal correspondiente genera una parte de la cadena, comenzando en la posición <code>nextToken</code>. Tratemos de escribir el código del método <code>E</code>. Para ello, recordemos que el símbolo <code>E</code> deriva en 2 producciones: <code>E -&gt; T</code> y <code>E -&gt; T + E</code>. Por tanto, de forma recursiva podemos decir que <code>E</code> genera esta cadena si y solo si la genera a partir de una de estas dos producciones. El primer caso es fácil: <code>E</code> genera la cadena a partir de derivar en <code>T</code> si y solo si <code>T</code> a su vez genera dicha cadena, y ya tenemos un método para eso:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">E1</span>() {
+    <span class="co">// E -&gt; T</span>
+    <span class="kw">return</span> <span class="fu">T</span>();
+}</code></pre></div>
+<p>Para el segundo caso, notemos que la producción <code>E -&gt; T + E</code> básicamente lo que dice es: necesitamos generar una cadena a partir de <code>E</code>, de forma tal que primero se genere una parte con <code>T</code>, luego se genere un <code>+</code> y luego se genere otra parte con <code>E</code>. Dado que ya tenemos todos los métodos necesarios:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">E2</span>() {
+    <span class="co">// E -&gt; T + E</span>
+    <span class="kw">return</span> <span class="fu">T</span>() &amp;&amp; <span class="fu">Match</span>(Token.<span class="fu">Plus</span>) &amp;&amp; <span class="fu">E</span>();
+}</code></pre></div>
+<p>Aprovechamos el operador <code>&amp;&amp;</code> con cortocircuito para podar lo antes posible el intento de generar la cadena, de forma que el primero de estos tres métodos que falle ya nos permite salir de esa rama recursiva. Ahora que tenemos métodos para cada producción, podemos finalmente develar el cuerpo del método <code>E</code>:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">E</span>() {
+    <span class="dt">int</span> currToken = nextToken;
+    <span class="kw">if</span> (<span class="fu">E1</span>()) <span class="kw">return</span> <span class="kw">true</span>;
+
+    nextToken = currToken;
+    <span class="kw">if</span> (<span class="fu">E2</span>()) <span class="kw">return</span> <span class="kw">true</span>;
+
+    <span class="kw">return</span> <span class="kw">false</span>;
+}</code></pre></div>
+<p>Este método simplemente prueba cada una de las producciones en orden, teniendo cuidado de retornar <code>nextToken</code> a su valor original tras cada llamado recursivo fallido. Así mismo, podemos escribir el método asociado al símbolo <code>T</code>, basado en los métodos correspondientes a cada producción:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">T1</span>() {
+    <span class="co">// T -&gt; int * T</span>
+    <span class="kw">return</span> <span class="fu">Match</span>(Token.<span class="fu">Int</span>) &amp;&amp; <span class="fu">Match</span>(Token.<span class="fu">Times</span>) &amp;&amp; <span class="fu">T</span>();
+}
+
+<span class="dt">bool</span> <span class="fu">T2</span>() {
+    <span class="co">// T -&gt; int</span>
+    <span class="kw">return</span> <span class="fu">Match</span>(Token.<span class="fu">Int</span>);
+}
+
+<span class="dt">bool</span> <span class="fu">T3</span>() {
+    <span class="co">// T -&gt; (E)</span>
+    <span class="kw">return</span> <span class="fu">Match</span>(Token.<span class="fu">Open</span>) &amp;&amp; <span class="fu">E</span>() &amp;&amp; <span class="fu">Match</span>(Token.<span class="fu">Closed</span>)
+}</code></pre></div>
+<p>Y el método general para <code>T</code> queda así:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">T</span>() {
+    <span class="dt">int</span> currToken = nextToken;
+    <span class="kw">if</span> (<span class="fu">T1</span>()) <span class="kw">return</span> <span class="kw">true</span>;
+
+    nextToken = currToken;
+    <span class="kw">if</span> (<span class="fu">T2</span>()) <span class="kw">return</span> <span class="kw">true</span>;
+
+    nextToken = currToken;
+    <span class="kw">if</span> (<span class="fu">T3</span>()) <span class="kw">return</span> <span class="kw">true</span>;
+
+    <span class="kw">return</span> <span class="kw">false</span>;
+}</code></pre></div>
+<p>Es posible hacer estos métodos más compactos introduciendo un nuevo método auxiliar:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">Reset</span>(<span class="dt">int</span> pos) {
+    nextToken = pos;
+    <span class="kw">return</span> <span class="kw">true</span>;
+}</code></pre></div>
+<p>Este método nos permite reescribir cada método con una sola expresión, haciendo uso del operador <code>||</code> con cortocircuito:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">E</span>() {
+    <span class="dt">int</span> n = nextToken;
+    <span class="kw">return</span> <span class="fu">E1</span>() || <span class="fu">Reset</span>(n) &amp;&amp; <span class="fu">E2</span>();
+}
+
+<span class="dt">bool</span> <span class="fu">T</span>() {
+    <span class="dt">int</span> n = nextToken;
+    <span class="kw">return</span> <span class="fu">T1</span>() || <span class="fu">Reset</span>(n) &amp;&amp; <span class="fu">T2</span>() || <span class="fu">Reset</span>(n) &amp;&amp; <span class="fu">T3</span>();
+}</code></pre></div>
+<p>Finalmente, para reconocer la cadena completa, solo nos queda garantizar que se hayan consumido todos los <em>tokens</em>:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">Parse</span>(Token[] tokens) {
+    <span class="kw">this</span>.<span class="fu">tokens</span> = tokens;
+    nextToken = <span class="dv">0</span>;
+
+    <span class="kw">return</span> <span class="fu">E</span>() &amp;&amp; nextToken == tokens.<span class="fu">Length</span>;
+}</code></pre></div>
+<p>Usualmente por comodidad se asume que existe un terminal especial <code>$</code> generado directamente por el Lexer al final de toda cadena. Esto se hace para poder generalizar desde el punto de vista teórico, y no tener que especificar siempre si estamos al final de la cadena o no. Si nuestro Lexer produce este token, al que llamaremos <code>Token.EOF</code> en el código, entonces podemos reescribir el método anterior de la siguiente forma:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">Parse</span>(Token[] tokens) {
+    <span class="kw">this</span>.<span class="fu">tokens</span> = tokens;
+    nextToken = <span class="dv">0</span>;
+
+    <span class="kw">return</span> <span class="fu">E</span>() &amp;&amp; <span class="fu">Match</span>(Token.<span class="fu">EOF</span>); <span class="co">// &lt;-- Este es el cambio</span>
+}</code></pre></div>
+<p>Esta metodología para crear parsers recursivos descendentes puede ser aplicada fácilmente a cualquier gramática libre del contexto. Sin embargo, no todas las gramáticas pueden ser reconocidas de esta forma. Según la estructura de la gramática, es posible que el parser definido no funcione correctamente.</p>
+<p>Por ejemplo, para gramáticas ambigüas, el parser (si termina) dará alguna de las derivaciones extrema izquierda posibles, en función del orden en que hayan sido definidas las producciones. Esto se debe al uso de operadores con cortocircuito. Es posible modificar este tipo de parsers fácilmente para generar no solo la primera sino todas las derivaciones extrema izquierda disponibles, simplemente reemplazando los operadores <code>||</code> más externos.</p>
+<p>Consideremos ahora la siguiente gramática:</p>
+<pre><code>S -&gt; Sa | b</code></pre>
+<p>Para esta gramática, el parser recursivo descendente queda de la siguiente forma (simplificada):</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">S</span>() {
+    <span class="dt">int</span> c = nextToken;
+    <span class="kw">return</span> <span class="fu">S</span>() &amp;&amp; <span class="fu">Match</span>(Token.<span class="fu">A</span>) || <span class="fu">Reset</span>(n) &amp;&amp; <span class="fu">Match</span>(Token.<span class="fu">B</span>);
+}</code></pre></div>
+<p>El problema evidente con este parser es que al intentar reconocer el símbolo <code>S</code> el algoritmo cae en una recursión infinita. Este tipo de gramáticas se denominan gramáticas con recursión izquierda, que definiremos así:</p>
+<blockquote>
+<p><strong>Definición:</strong> Una gramática libre del contexto <code>G=&lt;S,N,T,P&gt;</code> se dice recursiva izquierda si y solo si <code>S -*-&gt; Sw</code> (donde <code>w</code> es una forma oracional).</p>
+</blockquote>
+<p>La forma más sencilla de las gramáticas recursivas izquierdas es cuando existe directamente una producción <code>S -&gt; Sw</code>. A este caso le llamamos <em>recursión izquierda directa</em>. Para este caso, es posible eliminar la recursión izquierda de forma sencilla. Tomemos nuevamente la gramática anterior:</p>
+<pre><code>S -&gt; Sa | b</code></pre>
+<p>Es fácil ver que esta gramática general el lenguaje <code>ba*</code>. Otra gramática que genera dicho lenguaje sin recursión izquierda es:</p>
+<pre><code>S -&gt; bX
+X -&gt; aX | epsilon</code></pre>
+<p>Aún cuando <code>a</code> y <code>b</code> son formas oracionales en general, y no simplemente terminales, el patrón anterior es válido. De forma general, si una gramática tiene recursión izquierda de la forma:</p>
+<pre><code>S -&gt; Sa1 | Sa2 | ... San | b1 | b2 | ... | bm</code></pre>
+<p>Es posible eliminar la recursión izquierda con la transformación:</p>
+<pre><code>S -&gt; b1X | b2X | ... | bmX
+X -&gt; a1X | a2X | ... | anX | epsilon</code></pre>
+<p>Para el caso más general de recursión izquierda indirecta, también existe un algoritmo para su eliminación, pero de momento no lo presentaremos :(.</p>
+<p>El algoritmo de parsing que hemos desarrollado resuelve, al menos de forma teórica, el problema de construir el árbol de derivación. Aunque el código presentado no construye explícitamente el árbol de derivación, es bastante fácil modificarlo al respecto. Sin embargo, aunque en principio el problema ha sido resuelto, el algoritmo recursivo descendente es extremadamente ineficiente. El problema es que, en principio, es necesario probar con todos los árboles de derivación posibles antes de encontrar el árbol correcto. De cierta forma, para resolver el problema de parsing lo que hemos hecho es buscar entre todos los posibles programas, cuál de ellos tiene una representación textual igual a la cadena deseada.</p>
+<h2 id="parsing-predictivo-descendente">Parsing Predictivo Descendente</h2>
+<p>Idealmente, quisiéramos un algoritmo de parsing que construya el árbol de derivación con un costo lineal con respecto a la cadena de entrada. Para ello, necesitamos poder &quot;adivinar&quot;, en cada método recursivo, cuál es la rama adecuada a la que descender. Con vistas a resolver este problema, consideremos nuevamente la gramática vista en la sección anterior:</p>
+<pre><code>E -&gt; T | T + E
+T -&gt; int * T | int | (E)</code></pre>
+<p>Analicemos ahora nuevamente la cadena de <em>tokens</em> <code>int * ( int + int )</code>, y tratemos de &quot;adivinar&quot; en cada paso de una derivación extrema izquierda qué producción es necesario aplicar. Tengamos en cuenta que en cada paso del proceso de parsing, hay al menos un <em>token</em> que conocemos tiene que ser generado de inmediato (dado que la gramática no puede &quot;intercambiar&quot; <em>tokens</em> una vez generados). Por tanto, observando el siguiente <em>token</em> que es necesario generar (<code>nextToken</code> en nuestra implementación), tenemos una pista de cuáles producciones no son posibles. En el caso anterior, el primer <em>token</em> a generar es <code>int</code>. Por tanto, es evidente que ninguna producción que derive en <code>(E)</code> funciona, pues el <code>(</code> no coincidirá con el <em>token</em> <code>int</code>. La primera producción a aplicar tiene que derivar en una forma oracional que comience por <code>int</code>.</p>
+<p>Desafortunadamente existen varias producciones que generan un <code>int</code> al inicio. Tanto <code>T -&gt; int</code> como <code>T -&gt; int * T</code> pudieran ser escogidas. Aún más, a cualquiera de estas dos producciones se llega tanto por <code>E -&gt; T</code> como por <code>E -&gt; T + E</code>. Por tanto, hay varios caminos por los cuáles se pudiera generar el primer <em>token</em> <code>int</code>. Intuitivamente, esto se debe a que la gramática no está <strong>factorizada</strong>. Informalmente, llamaremos a una gramática <strong>factorizada a la izquierda</strong> si las producciones de cualquier símbolo, dos a dos, no comparten ningún prefijo.</p>
+<p>En muchas ocasiones es fácil factorizar una gramática. Se introduce un no-terminal nuevo por cada grupo de producciones que compartan un prefijo común. Se reemplazan dichas producciones por una sola producción nueva que contiene el prefijo común, y el nuevo no-terminal se hace derivar en todos los posibles sufijos:</p>
+<pre><code>E -&gt; T X
+X -&gt; + E | epsilon
+T -&gt; int Y | (E)
+Y -&gt; * T | epsilon</code></pre>
+<p>Por supuesto, es posible que la relación entre los prefijos sea más complicada, y una vez que se realice la transformación anterior aún queden producciones no factorizadas (e.j. <code>X -&gt; abC | abD | aY</code>). Incluso en estos casos es posible factorizar la gramática aplicando varias veces el proceso de factorización anterior.</p>
+<p>Esta modificación evidentemente no cambia el lenguaje, y ni siquiera cambia la ambigüedad o no de la gramática. Simplemente nos permite delegar la decisión de qué producción tomar un <em>token</em> hacia adelante. Si antes no sabíamos cuando venía <code>int</code> que producción tomar, porque podía ser <code>T -&gt; int</code> o <code>T -&gt; int * T</code>, ahora simplemente reconocemos el primer <code>int</code>, y delegamos la decisión de generar <code>epsilon</code> o <code>* T</code> a un nuevo no-terminal.</p>
+<p>Desde el punto de vista del diseño de lenguajes, el beneficio de este cambio es discutible. Por un lado nos permite aplicar un algoritmo que de otra forma no funcionaría. Sin embargo, por otra parte, estamos provocando un cambio en el diseño de la gramática, que es una cuestión de &quot;alto nivel&quot;, para poder usar un algoritmo particular, que es una cuestión de &quot;bajo nivel&quot;. En otras palabras, estamos cambiando el diseño en función de la implementación. Este cambio puede tener efectos adversos. Por ejemplo, nuestra gramática para expresiones aritméticas es ahora más difícil de entender, pues contiene símbolos &quot;extraños&quot; que no significan nada desde el punto de vista semántico, solamente están ahí para simplificar la implementación. El árbol de derivación ahora es más complejo. Más adelante discutiremos esta problemática en mayor profundidad.</p>
+<p>Consideremos ahora nuevamente el proceso de parsing, y tratemos de ver si es posible adivinar en todo caso cuál producción aplicar. Tomemos como ejemplo la cadena <code>int * ( int + int )</code>, y tratemos de generar la derivación extrema izquierda:</p>
+<pre><code>E -*-&gt; int * ( int + int )</code></pre>
+<p>La primera producción tiene que ser necesariamente <code>E -&gt; T X</code> pues es la única disponible:</p>
+<pre><code>E -*-&gt; T X -*-&gt; int * ( int + int )</code></pre>
+<p>Ahora, tenemos que expandir el primer símbolo <code>T</code>. Afortunadamente, sabemos que esta expansión obligatoriamente genera un <em>token</em> a continuación, ya sea <code>int</code> o <code>(</code>. Por tanto es trivial escoger la única producción posible:</p>
+<pre><code>E -*-&gt; int Y X -*-&gt; int * ( int + int )</code></pre>
+<p>El nuevo símbolo a expandir es <code>Y</code>, y ahora se nos complica un poco el análisis. <code>Y</code> bien pudiera desaparecer (<code>Y -&gt; epsilon</code>) o generar un <code>* T</code>. Sabemos que la producción <code>* T</code> nos genera el token que queremos. Pero la pregunta es, ¿cómo sabemos que la producción <code>Y -&gt; epsilon</code> no pudiera redundar en que eventualmente aparezca ese <code>*</code> por otro lado? Observando la gramática, intuitivamente, podemos ver que si <code>Y</code> desaparece, <code>X</code> nunca podrá poner un <code>*</code> justamente en esa posición, ya que <code>X</code> tiene que generar primero un <code>+</code> (<code>X -&gt; + E</code>) antes de que aparezca otro no-terminal que pudiera generar el <code>*</code>. Por tanto, la única producción posible es <code>Y -&gt; * T</code>:</p>
+<pre><code>E -*-&gt; int * T X -*-&gt; int * ( int + int )</code></pre>
+<p>En este punto es fácil ver que la única solución es derivar <code>T -&gt; ( E )</code>, pues <code>T</code> nunca desaparece:</p>
+<pre><code>E -*-&gt; int * ( E ) X -*-&gt; int * ( int + int )</code></pre>
+<p>Ahora volvemos al punto inicial:</p>
+<pre><code>E -*-&gt; int * ( T X ) X -*-&gt; int * ( int + int )</code></pre>
+<p>Nuevamente <code>T</code> tiene que generar un <code>int</code>:</p>
+<pre><code>E -*-&gt; int * ( int Y X ) X -*-&gt; int * ( int + int )</code></pre>
+<p>Evidentemente <code>Y</code> no puede generar el token <code>+</code> que hace falta, así que solo puede desaparecer:</p>
+<pre><code>E -*-&gt; int * ( int X ) X -*-&gt; int * ( int + int )</code></pre>
+<p>Volvemos entonces a la situación complicada anterior. Es cierto que <code>X -&gt; + E</code> nos sirve, pero ¿cómo sabemos que es la única opción? ¿Es posible que de <code>X -&gt; epsilon</code> se logre en algún momento que aparezca un <code>+</code>. Si miramos la forma oracional generada hasta el momento, vemos que no nos queda otra <code>X</code> dentro los paréntesis que pueda poner el <code>+</code> que falta. Sin embargo, este análisis no lo puede hacer nuestro algoritmo, que solamente conoce el no-terminal actual, y el siguiente token que es necesario generar. Tratemos de hacer un razonamiento un poco más generalizable. La pregunta que estamos haciendo aquí básicamente es si es conveniente eliminar <code>X</code> con la esperanza de que aparezca un <code>+</code> de lo que sea que venga detrás. Más adelante formalizaremos este concepto, pero por ahora baste decir que, intuitivamente, podemos ver que detrás de una <code>X</code> solamente puede venir o bien un <code>)</code> o bien el fin de la cadena. Por tanto, no queda otra opción que derivar <code>X -&gt; + E</code>:</p>
+<pre><code>E -*-&gt; int * ( int + E ) X -*-&gt; int * ( int + int )</code></pre>
+<p>Generar el siguiente <code>int</code> es fácil:</p>
+<pre><code>E -*-&gt; int * ( int + T X ) X -*-&gt; int * ( int + int )
+E -*-&gt; int * ( int + int Y X ) X -*-&gt; int * ( int + int )</code></pre>
+<p>Finalmente nos queda por generar un <code>)</code>. Claro que si miramos la forma oracional generada, sabemos que es necesario eliminar <code>Y</code> y <code>X</code>, pero recordemos que nuestro algoritmo no puede ver tan hacia adelante. De todas formas, no hace falta mirar más, ni <code>Y</code> ni <code>X</code> son capaces de generar nunca un <code>)</code>, así que ambos símbolos desaparecen:</p>
+<pre><code>E -*-&gt; int * ( int + int X ) X -*-&gt; int * ( int + int )
+E -*-&gt; int * ( int + int ) X -*-&gt; int * ( int + int )</code></pre>
+<p>Y finalmente la última <code>X</code> debe desaparecer también pues se ha generado toda la cadena. Finalmente nos queda:</p>
+<pre><code>E -&gt; T X
+  -&gt; int Y X
+  -&gt; int * T X
+  -&gt; int * ( E ) X
+  -&gt; int * ( T X ) X
+  -&gt; int * ( int Y X ) X
+  -&gt; int * ( int X ) X
+  -&gt; int * ( int + E ) X
+  -&gt; int * ( int + T X ) X
+  -&gt; int * ( int + int Y X ) X
+  -&gt; int * ( int + int X ) X
+  -&gt; int * ( int + int ) X
+  -&gt; int * ( int + int )</code></pre>
+<p>La derivación extrema izquierda producida es considerablemente mayor con esta gramática factorizada, dado que existen más producciones. Sin embargo, ganamos en un factor exponencial al eliminar el <em>backtrack</em> por completo. Intuitivamente, el largo de esta derivación debe ser lineal con respecto a la longitud de la cadena de entrada, pues a lo sumo en cada paso o bien generamos un nuevo <em>token</em> o derivamos el símbolo más izquierdo en nuevos símbolos. Dado que no tenemos recursión izquierda, estas operaciones con cada símbolo no pueden ser &quot;recursivas&quot;. Es decir, si el no-terminal más izquierdo es <code>Y</code>, y empezamos a derivarlo, eventualmente terminaremos con ese <code>Y</code>, ya sea produciendo un terminal o derivando en <code>epsilon</code>. De forma general, el costo está acotado superiormente por <code>|w| * |N|</code>, pues no es posible que para generar un <em>token</em> sea necesario usar <code>|N| + 1</code> no terminales, ya que en ese caso tendríamos un no-terminal derivando en sí mismo (al menos de forma indirecta), lo que contradice que la gramática no tenga recursión izquierda.</p>
+<p>Tratemos ahora de formalizar este proceso de &quot;adivinación&quot; de qué producción aplicar en cada caso. De forma general nos hemos enfrentado a dos interrogantes fundamentalmente distintas:</p>
+<ul>
+<li>Saber si alguna de las producciones de X puede derivar en una forma oracional cuyo primer símbolo sea el terminal que toca generar.</li>
+<li>Si <code>X -&gt; epsilon</code>, saber si esta derivación puede potencialmente redundar en que &quot;lo que sea que venga detrás&quot; de <code>X</code> genere el terminal que toca.</li>
+</ul>
+<p>Si para las preguntas anteriores obtenemos una sola producción como respuesta, entonces podemos estar seguros de la decisión a tomar. En caso de que obtengamos más de una respuesta, nuestro algoritmo no podrá decidir qué producción tomar, y será inevitable el <em>backtrack</em>. Para encontrar una respuesta a estas preguntas, intentemos formalizar estos conceptos de &quot;<code>X</code> puede derivar en...&quot; y &quot;lo que venga detrás de <code>X</code>...&quot;.</p>
+<p>Llamaremos <code>First(W)</code> al conjunto de todos los terminales que pueden ser generados por <code>W</code> como primer elemento (siendo <code>W</code> una forma oracional cualquiera, no solamente un no-terminal). Formalmente:</p>
+<blockquote>
+<p><strong>Definición</strong>: Sea <span class="math inline"><em>G</em> = &lt;<em>S</em>, <em>N</em>, <em>T</em>, <em>P</em>&gt;</span> una gramática libre del contexto, <span class="math inline"><em>W</em> ∈ <em>N</em> ∪ <em>T</em><sup>*</sup></span> una forma oracional, y <span class="math inline"><em>x</em> ∈ <em>T</em></span> un terminal. Decimos que <span class="math inline"><em>x</em> ∈ <em>F</em><em>i</em><em>r</em><em>s</em><em>t</em>(<em>W</em>)</span> si y solo si <span class="math inline"><em>W</em> − * − &gt;<em>x</em><em>Z</em></span> (donde <span class="math inline"><em>Z</em> ∈ <em>N</em> ∪ <em>T</em>*</span> es otra forma oracional).</p>
+</blockquote>
+<p>Este concepto captura formalmente la noción de &quot;comenzar por&quot;. De forma intuitiva, si logramos computar el conjunto <code>First(W)</code> para todas las producciones <code>X -&gt; W</code> de nuestra gramática, y cada uno de estos conjuntos de las producciones del mismo símbolo son disjuntos dos a dos, entonces podremos decir inequívocamente qué producción aplicar para generar el terminal que toca (o cuando no es posible generarlo). Notemos que fue necesario definir <code>First(W)</code> no solo para un no-terminal, sino para una forma oracional en general, pues necesitamos computarlo en toda parte derecha de una producción.</p>
+<p>Por otro lado, la noción de &quot;lo que viene detrás&quot; se formaliza en un concepto similar, denominado <code>Follow(X)</code>. En este caso solo necesitamos definirlo para un no-terminal, pues solo nos interesan las producciones <code>X -&gt; epsilon</code>. Informalmente diremos que el <code>Follow(X)</code> son todos aquellos terminales que pueden aparecer en cualquier forma oracional, detrás de un no-terminal <code>X</code>. Formalmente:</p>
+<blockquote>
+<p><strong>Definición</strong>: Sea <code>G=&lt;S,N,T,P&gt;</code> una gramática libre del contexto, <code>X \in N</code> un no-terminal, y <code>x \in T</code> un terminal. Decimos que <code>x \in Follow(X)</code> si y solo si <code>S -*-&gt; WXxZ</code> (donde <code>W, Z \in { N \cup T }*</code> son formas oracionales cualesquiera).</p>
+</blockquote>
+<p>La definición de <code>Follow(X)</code> básicamente nos dice que si en algún momento el terminal que queremos generar <code>x</code> está justo detrás del no-terminal <code>X</code> que toca expandir, entonces <code>X -&gt; epsilon</code> es una producción válida a aplicar, porque existe la posibilidad de que otro no-terminal genere a <code>x</code> justo en esa posición (aunque en la cadena particular que se está reconociendo puede que esto no sea posible).</p>
+<p>Supongamos entonces que tenemos todos estos conjuntos calculados (o potencialmente calculables en cualquier momento). ¿Cómo podemos utilizarlos para guiar la búsqueda del árbol de derivación correcto? Veamos como podría quedar el método recursivo descendente para generar <code>T</code> en esta nueva gramática:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">T</span>() {
+    <span class="co">// T -&gt; int Y</span>
+    <span class="kw">if</span> (tokens[currToken] == Token.<span class="fu">Int</span>)
+        <span class="kw">return</span> <span class="fu">Match</span>(Token.<span class="fu">Int</span>) &amp;&amp; <span class="fu">Y</span>();
+
+    <span class="co">// T -&gt; ( E )</span>
+    <span class="kw">else</span> <span class="kw">if</span> (tokens[currToken] == Token.<span class="fu">Open</span>)
+        <span class="kw">return</span> <span class="fu">Match</span>(Token.<span class="fu">Open</span>) &amp;&amp; <span class="fu">E</span>() &amp;&amp; <span class="fu">Match</span>(Token.<span class="fu">Close</span>);
+
+    <span class="kw">return</span> <span class="kw">false</span>;
+}</code></pre></div>
+<p>Como <code>T</code> siempre genera un token, es fácil decidir qué camino escoger. Por otro lado, en la expansión de <code>X</code>, es posible que sea necesario escoger <code>X -&gt; epsilon</code>. En este caso, el método recursivo sería:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">X</span>() {
+    <span class="co">// X -&gt; + E</span>
+    <span class="kw">if</span> (tokens[nextToken] == Token.<span class="fu">Plus</span>)
+        <span class="kw">return</span> <span class="fu">Match</span>(Token.<span class="fu">Plus</span>) &amp;&amp; <span class="fu">E</span>()
+
+    <span class="co">// X -&gt; epsilon</span>
+    <span class="kw">else</span> <span class="kw">if</span> (<span class="fu">Follow</span>(<span class="st">&quot;X&quot;</span>).<span class="fu">Contains</span>(tokens[currToken]))
+        <span class="kw">return</span> <span class="kw">true</span>;
+
+    <span class="kw">return</span> <span class="kw">false</span>;
+}</code></pre></div>
+<p>En el caso de <code>X -&gt; epsilon</code>, simplemente retornamos <code>true</code> de inmediato y no consumimos el terminal correspondiente.</p>
+<p>De forma general, podemos escribir cualquier método recursivo descendente de la siguiente forma (asumimos algunos métodos y clases utilitarios que no presentaremos formalmente):</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">Expand</span>(NonTerminal N) {
+    <span class="kw">foreach</span>(var p <span class="kw">in</span> N.<span class="fu">Productions</span>) {
+        <span class="kw">if</span> (!p.<span class="fu">IsEpsilon</span> &amp;&amp; <span class="fu">First</span>(p).<span class="fu">Contains</span>(tokens[nextToken]))
+            <span class="kw">return</span> <span class="fu">MatchProduction</span>(p);
+
+        <span class="kw">if</span> (p.<span class="fu">IsEpsilon</span> &amp;&amp; <span class="fu">Follow</span>(N).<span class="fu">Contains</span>(tokens[nextToken]))
+            <span class="kw">return</span> <span class="kw">true</span>;
+    }
+
+    <span class="kw">return</span> <span class="kw">false</span>;
+}</code></pre></div>
+<p>El método <code>MatchProduction</code> puede a grandes razgos implementarse de la siguiente forma:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">MatchProduction</span>(Production p) {
+    <span class="kw">foreach</span>(var symbol <span class="kw">in</span> p.<span class="fu">Symbols</span>) {
+        <span class="kw">if</span> (symbol.<span class="fu">IsTerminal</span> &amp;&amp; !<span class="fu">Match</span>(symbol <span class="kw">as</span> Token))
+            <span class="kw">return</span> <span class="kw">false</span>;
+
+        <span class="kw">if</span> (!symbol.<span class="fu">IsTerminal</span> &amp;&amp; !<span class="fu">Expand</span>(symbol <span class="kw">as</span> NonTerminal))
+            <span class="kw">return</span> <span class="kw">false</span>;
+    }
+
+    <span class="kw">return</span> <span class="kw">true</span>;
+}</code></pre></div>
+<p>En todos estos casos hemos asumido que la primera producción aplicable era la única posible. Para ello deben cumplirse ciertas restricciones entre los conjuntos <code>First</code> y <code>Follow</code> que formalizaremos a continuación.</p>
+<h2 id="gramáticas-ll1">Gramáticas LL(1)</h2>
+<p>Llamaremos gramáticas LL(1) justamente a aquellas gramáticas para las cuales el proceso de cómputo de <code>First</code> y <code>Follow</code> descrito informalmente en la sección anterior nos permite construir un parser que nunca tenga que hacer <em>backtrack</em>. El nombre LL(1) significa <em>left-to-right left-derivation look-ahead 1</em>. Es decir, la cadena se analiza de izquierda a derecha, se construye una derivación extrema izquierda, y se analiza un solo <em>token</em> para decidir que producción aplicar. De forma general, existen las gramáticas LL(k), donde son necesarios k <em>tokens</em> para poder predecir que producción aplicar. Aunque los principios son los mismos, el proceso de construcción de estos conjuntos es más complejo, y por lo tanto no analizaremos estas gramáticas por el momento :(.</p>
+<p>Para poder formalizar este concepto, será conveniente primero encontrar algoritmos explícitos para computar los conjuntos <code>First</code> y <code>Follow</code>. Comencemos por el <code>First</code> ;). Veamos primero algunos hechos interesantes que se cumplen en este conjunto, y luego veremos cómo se diseña un algoritmo para su cómputo. No presentaremos demostración para estos hechos, pues la mayoría son intuitivos.</p>
+<ul>
+<li>Si <code>X -&gt; W1 | W2 | ... | Wn</code> entonces por definición, <code>First(X) = \cup First(W_i)</code>.</li>
+<li>Si <code>X -*-&gt; epsilon</code> entonces <code>epsilon \in First(X)</code>.</li>
+<li>Si <code>W = xZ</code> donde <code>x</code> es un terminal, entonces trivialmente <code>First(W) = { x }</code>.</li>
+<li>Si <code>W = YZ</code> donde <code>Y</code> es un no-terminal y <code>Z</code> una forma oracional, entonces <code>First(Y) \subseteq First(W)</code>.</li>
+<li>Si <code>W = YZ</code> y <code>Y -*-&gt; epsilon</code> entonces <code>First(Z) \subseteq First(W)</code>.</li>
+</ul>
+<p>Las observaciones anteriores nos permiten diseñar un algoritmo para calcular todos los conjuntos <code>First(X)</code> para cada no-terminal <code>X</code>. Como de forma general pueden existir producciones recursivas, calcularemos todos los conjuntos <code>First</code> a la vez, aplicando cada una de las &quot;reglas&quot; anteriores, hasta que no se modifique ninguno de los conjuntos <code>First</code>. Nuevamente abusaremos de la imaginación y creatividad para introducir métodos y clases utilitarias sin definirlos de manera formal.</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs">Firsts <span class="fu">CalculateFirsts</span>(Grammar G) {
+    <span class="dt">var</span> Firsts = <span class="kw">new</span> <span class="fu">Firsts</span>(); <span class="co">// Parecido a un Diccionario</span>
+
+    <span class="co">// Calculamos el First de cada terminal</span>
+    <span class="kw">foreach</span>(var t <span class="kw">in</span> G.<span class="fu">Terminals</span>) {
+        Firsts[t] = <span class="kw">new</span> <span class="fu">FirstSet</span>() { t };
+    }
+    <span class="kw">foreach</span>(var T <span class="kw">in</span> G.<span class="fu">NonTerminals</span>) {
+        Firsts[T] = <span class="kw">new</span> <span class="fu">FirstSet</span>(); <span class="co">// Parecido a un HashSet</span>
+    }
+
+    <span class="dt">bool</span> changed;
+
+    <span class="kw">do</span> {
+        changed = <span class="kw">false</span>;
+
+        <span class="co">// Vamos por cada producción</span>
+        <span class="kw">foreach</span>(var p <span class="kw">in</span> G.<span class="fu">Productions</span>) {
+            <span class="co">// X -&gt; W</span>
+            <span class="dt">var</span> X = p.<span class="fu">Left</span>;
+            <span class="dt">var</span> W = p.<span class="fu">Right</span>;
+
+            <span class="kw">if</span> (p.<span class="fu">IsEpsilon</span>) { <span class="co">// X -&gt; epsilon</span>
+                changed = Firsts[X].<span class="fu">Add</span>(epsilon);
+            }
+            <span class="kw">else</span> {
+                <span class="dt">bool</span> allEpsilon = <span class="kw">true</span>;
+
+                <span class="kw">foreach</span>(var s <span class="kw">in</span> W) {
+                    <span class="co">// Agregamos todo en el First(s)</span>
+                    changed = Firsts[X].<span class="fu">AddAll</span>(Firsts[s]);
+
+                    <span class="co">// Si s_i deriva en epsilon,</span>
+                    <span class="co">// agregamos también el First(s_i+1)</span>
+                    <span class="kw">if</span> (!Firsts[s].<span class="fu">Contains</span>(epsilon)) {
+                        allEpsilon = <span class="kw">false</span>;
+                        <span class="kw">break</span>;
+                    }
+                }
+
+                <span class="co">// Si todos los s_i derivan en epsilon</span>
+                <span class="co">// entonces epsilon pertenece al First(X)</span>
+                <span class="kw">if</span> (allEpsilon) {
+                    changed = Firsts[X].<span class="fu">Add</span>(epsilon);
+                }
+            }
+        }
+    } <span class="kw">while</span> (changed);
+
+    <span class="kw">return</span> Firsts;
+}</code></pre></div>
+<p>El algoritmo anterior computa todos los conjuntos <code>First</code> de todos los terminales y no-terminales a la vez. Hemos supuesto la existencia de estructuras de datos <code>Firsts</code> y <code>FirstSet</code> con operaciones convenientes para ello. Estas estructuras se implementan fácilmente usando diccionarios y conjuntos. Una vez obtenidos todos los <code>First</code> anteriores, podemos calcular fácilmente el <code>First</code> de cualquier forma oracional.</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs">FirstSet <span class="fu">CalculateFirst</span>(Symbol[] p, Firsts firsts) {
+    FirstSet result = <span class="kw">new</span> <span class="fu">FirstSet</span>();
+    <span class="dt">bool</span> allEpsilon = <span class="kw">true</span>;
+
+    <span class="kw">foreach</span>(var s <span class="kw">in</span> p) {
+        result.<span class="fu">AddAll</span>(Firsts[s]);
+
+        <span class="kw">if</span> (!Firsts[s].<span class="fu">Contains</span>(epsilon)) {
+            allEpsilon = <span class="kw">false</span>;
+            <span class="kw">break</span>;
+        }
+    }
+
+    <span class="kw">if</span> (allEpsilon) {
+        result.<span class="fu">Add</span>(epsilon);
+    }
+
+    <span class="kw">return</span> result;
+}</code></pre></div>
+<p>Básicamente este nuevo algoritmo consiste en repetir la parte más interna del algoritmo anterior, así que no son necesarias más explicaciones.</p>
+<p>Pasemos entonces a calcular el conjunto <code>Follow</code> de cada no-terminal. Para ello, veamos también algunos hechos que nos ayudarán a entender como está formado este conjunto:</p>
+<ul>
+<li><code>$</code> pertenece al <code>Follow(S)</code>.</li>
+<li>Por definición <code>epsilon</code> nunca pertenece al <code>Follow(X)</code> para todo <code>X</code>.</li>
+<li>Si <code>X -&gt; WAZ</code> siendo <code>W</code> y <code>Z</code> formas oracionales, y <code>A</code> un no-terminal cualquiera, entonces <code>First(Z) - { epsilon } \subseteq Follow(A)</code>.</li>
+<li>Si <code>X -&gt; WAZ</code> y <code>Z -*-&gt; epsilon</code> (o igualmente <code>epsilon</code> está en el <code>First(Z)</code>), entonces <code>Follow(X) \subseteq Follow(A)</code>.</li>
+</ul>
+<p>De la misma forma que en el caso del conjunto <code>First</code>, dado que las relaciones entre los <code>Follow</code> de cualquier par de no-terminales pueden ser recursivas, diseñaremos un algoritmo que los computa a todos a la misma vez:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs">Follows <span class="fu">CalculateFollows</span>(Grammar G, Firsts firsts) {
+    <span class="dt">var</span> Follows = <span class="kw">new</span> <span class="fu">Follows</span>();
+
+    Follows[S] = <span class="kw">new</span> <span class="fu">FollowSet</span>() { Token.<span class="fu">EOF</span> };
+
+    <span class="kw">foreach</span>(var X <span class="kw">in</span> G.<span class="fu">NonTerminals</span>) {
+        Follows[X] = <span class="kw">new</span> <span class="fu">FollowSet</span>();
+    }
+
+    <span class="dt">bool</span> changed;
+
+    <span class="kw">do</span> {
+        changed = <span class="kw">false</span>;
+
+        <span class="kw">foreach</span>(var p <span class="kw">in</span> G.<span class="fu">Productions</span>) {
+            <span class="co">// X -&gt; W</span>
+            <span class="dt">var</span> X = p.<span class="fu">First</span>;
+            <span class="dt">var</span> W = p.<span class="fu">Last</span>;
+
+            <span class="kw">for</span>(<span class="dt">int</span> i=<span class="dv">0</span>; i &lt; W.<span class="fu">Length</span>; i++) {
+                <span class="dt">var</span> S = W[i];
+
+                <span class="kw">if</span> (S.<span class="fu">IsTerminal</span>)
+                    <span class="kw">continue</span>;
+
+                <span class="dt">var</span> first = <span class="fu">CalculateFirst</span>(W.<span class="fu">Sufix</span>(i+<span class="dv">1</span>));
+                changed = Follows[S].<span class="fu">AddAll</span>(first.<span class="fu">Remove</span>(epsilon));
+
+                <span class="kw">if</span> (first.<span class="fu">Contains</span>(epsilon) || i == W.<span class="fu">Length</span> - <span class="dv">1</span>) {
+                    changed = Follows[S].<span class="fu">AddAll</span>(Follows[X]);
+                }
+            }
+        }
+
+    } <span class="kw">while</span> (changed);
+}</code></pre></div>
+<p>Una vez tenemos todos los conjuntos <code>First</code> y <code>Follow</code> calculados, podemos decir formalmente en qué consiste una gramática LL(1). Para ello, construiremos una tabla <code>T</code>, donde asociaremos a cada par no-terminal <code>X</code> / token <code>t</code> una producción (a lo sumo). Dicha producción es la única que tiene sentido aplicar si se debe expandir el no-terminal <code>X</code> y el token actual es <code>t</code>.</p>
+<p>Las reglas generales para generar esta tabla son las siguientes:</p>
+<ol style="list-style-type: decimal">
+<li>Si <code>X -&gt; W</code> y <code>t</code> pertenece al <code>First(W)</code> entonces <code>T[X,t] = X -&gt; W</code>.</li>
+<li>Si <code>X -&gt; epsilon</code> y <code>t</code> pertenece al <code>Follow(X)</code> entonces <code>T[X,t] = X -&gt; epsilon</code>.</li>
+</ol>
+<p>Si al aplicar estas reglas, en cada posición <code>T[X,t]</code> obtenemos a lo sumo una producción, entonces decimos que una gramática es LL(1). En caso contrario, tenemos al menos un conflicto, pues hay más de una producción que tiene sentido utilizar en algún caso. Formalmente:</p>
+<blockquote>
+<p><strong>Definición:</strong> Sea <span class="math inline"><em>G</em> = &lt;<em>S</em>, <em>N</em>, <em>T</em>, <em>P</em>&gt;</span> una gramática libre del contexto. <span class="math inline"><em>G</em></span> es LL(1) si y solo si para todo no-terminal <span class="math inline"><em>X</em> ∈ <em>N</em></span>, tal que <span class="math inline"><em>X</em> ← <em>W</em><sub>1</sub>|<em>W</em><sub>2</sub>|...|<em>W</em><sub><em>n</em></sub></span> se cumple que:</p>
+<ul>
+<li><p><span class="math inline"><em>F</em><em>i</em><em>r</em><em>s</em><em>t</em>(<em>W</em><em>i</em>)⋂<em>F</em><em>i</em><em>r</em><em>s</em><em>t</em>(<em>W</em><em>j</em>)=∅∀<em>i</em> ≠ <em>j</em></span>`</p></li>
+<li><p><span class="math inline"><em>e</em><em>p</em><em>s</em><em>i</em><em>l</em><em>o</em><em>n</em> ∈ <em>F</em><em>i</em><em>r</em><em>s</em><em>t</em>(<em>W</em><em>i</em>)= &gt; <em>F</em><em>i</em><em>r</em><em>s</em><em>t</em>(<em>W</em><em>j</em>)⋂<em>F</em><em>o</em><em>l</em><em>l</em><em>o</em><em>w</em>(<em>X</em>)=∅∀<em>j</em> ≠ <em>i</em></span></p></li>
+</ul>
+</blockquote>
+<p>Esta definición nos garantiza que en toda entrada de la tabla LL(1) exista a lo sumo una producción a aplicar. Ahora podemos demostrar que la gramática anterior para expresiones, una vez factorizada, es LL(1):</p>
+<pre><code>E -&gt; T X
+X -&gt; + E | epsilon
+T -&gt; int Y | ( E )
+Y -&gt; * T | epsilon</code></pre>
+<p>Comencemos por calcular todos los conjuntos <code>First</code>. Para los terminales es trivial:</p>
+<pre><code>First( int ) = { int }
+First( + )   = { + }
+First( * )   = { * }
+First( ( )   = { ( }
+First( ) )   = { ) }</code></pre>
+<p>Ahora calculemos los <code>First</code> de cada no-terminal:</p>
+<pre><code>First(E) = { (, int }
+First(X) = { +, epsilon }
+First(T) = { (, int }
+First(Y) = { *, epsilon }</code></pre>
+<p>Luego podemos calcular los <code>First</code> de cada parte derecha de cada producción:</p>
+<pre><code>First( T X ) = { (, int }
+First( + E ) = { + }
+First(int Y) = { int }
+First( (E) ) = { ( }
+First( * T ) = { * }</code></pre>
+<p>Calculemos finalmente los <code>Follow</code> de cada no-terminal:</p>
+<pre><code>Follow(E) = { $, ) }
+Follow(X) = { $, ) }
+Follow(T) = { +, $, ) }
+Follow(Y) = { +, $, ) }</code></pre>
+<p>Ahora podemos llenar la tabla LL(1). Comencemos por la fila correspondiente a <code>E</code>. Para ello analizamos la producción <code>E -&gt; T X</code>. Por la regla (1) podemos decir que esta producción se aplica solo para los terminales <code>(</code> y <code>int</code>.</p>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="center">int</th>
+<th align="center">+</th>
+<th align="center">*</th>
+<th align="center">(</th>
+<th align="center">)</th>
+<th align="center">$</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>E</td>
+<td align="center">T X</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">T X</td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+</tbody>
+</table>
+<p>Veamos entonces la fila asociada a <code>T</code>. La producción <code>T -&gt; int Y</code> solamente se aplica para el token <code>int</code> mientas que la producción <code>T -&gt; (E)</code> se aplica solamente para <code>(</code>.</p>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="center">int</th>
+<th align="center">+</th>
+<th align="center">*</th>
+<th align="center">(</th>
+<th align="center">)</th>
+<th align="center">$</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>T</td>
+<td align="center">int Y</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">( E )</td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+</tbody>
+</table>
+<p>Ahora veamos las producciones de <code>X</code>. Para <code>X -&gt; + E</code> la única entrada importante es con el token <code>+</code>. Por otro lado, la producción <code>X -&gt; epsilon</code> se aplica en todos los tokens que pertenezcan al <code>Follow(X)</code>, es decir, <code>$</code> y <code>)</code>.</p>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="center">int</th>
+<th align="center">+</th>
+<th align="center">*</th>
+<th align="center">(</th>
+<th align="center">)</th>
+<th align="center">$</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>X</td>
+<td align="center"></td>
+<td align="center">+ E</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+</tbody>
+</table>
+<p>Finalmente para el no-terminal <code>Y</code>, la producción <code>Y -&gt; * T</code> es trivial, y la producción <code>Y -&gt; \epilon</code> se aplica para <code>+</code>, <code>$</code> y <code>)</code>.</p>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="center">int</th>
+<th align="center">+</th>
+<th align="center">*</th>
+<th align="center">(</th>
+<th align="center">)</th>
+<th align="center">$</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Y</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">* T</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+</tbody>
+</table>
+<p>Finalmente, nos queda la tabla completa. Dado que no encontrarmos conflictos al construirla, podemos concluir que la gramática es LL(1):</p>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="center">int</th>
+<th align="center">+</th>
+<th align="center">*</th>
+<th align="center">(</th>
+<th align="center">)</th>
+<th align="center">$</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>E</td>
+<td align="center">T X</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">T X</td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr class="even">
+<td>T</td>
+<td align="center">int Y</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">( E )</td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr class="odd">
+<td>X</td>
+<td align="center"></td>
+<td align="center">+ E</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr class="even">
+<td>Y</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">* T</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="parsing-descendente-no-recursivo">Parsing Descendente No Recursivo</h2>
+<p>Una vez obtenida la tabla LL(1) podemos escribir un algoritmo de parsing descendente no recursivo. La idea general consiste en emplear una pila de símbolos, donde iremos construyendo la forma oracional que eventualmente derivará en la cadena a reconocer. Si leemos la pila desde el tope hasta el fondo, en todo momento tendremos una forma oracional que debe generar la parte de la cadena no reconocida.</p>
+<p>El símbolo en el tope de la pila representa el terminal o no-terminal a analizar. En caso de ser un terminal, debe coincidir con el token analizado. En caso de ser un no-terminal, se consulta la tabla LL(1) y se ejecuta la producción correspondiente, insertando en la pila (en orden inverso) la forma oracional en que deriva el no-terminal extraído:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">bool</span> <span class="fu">NonRecursiveParse</span>(Grammar G, Token[] tokens) {
+    Stack&lt;Symbol&gt; stack = <span class="kw">new</span> Stack&lt;Symbol&gt;() { G.<span class="fu">Start</span> };
+    <span class="dt">int</span> nextToken = <span class="dv">0</span>;
+    LLTable table = <span class="fu">BuildLLTable</span>(G);
+
+    <span class="kw">while</span> (stack.<span class="fu">Count</span> &gt; <span class="dv">0</span> &amp;&amp; nextToken &lt; tokens.<span class="fu">Length</span>) {
+        <span class="dt">var</span> symbol = stack.<span class="fu">Pop</span>();
+
+        <span class="kw">if</span> (symbol.<span class="fu">IsTerminal</span> &amp;&amp; tokens[nextToken++] != symbol.<span class="fu">Value</span>) {
+            <span class="kw">return</span> <span class="kw">false</span>;
+        }
+        <span class="kw">else</span> <span class="kw">if</span> (symbol.<span class="fu">IsNonTerminal</span>) {
+            <span class="dt">var</span> prod = LLTable[symbol, tokens[nextToken]];
+
+            <span class="kw">if</span> (prod == <span class="kw">null</span>)
+                <span class="kw">return</span> <span class="kw">false</span>;
+
+            <span class="kw">for</span>(var s <span class="kw">in</span> prod.<span class="fu">Reverse</span>()) {
+                stack.<span class="fu">Push</span>(s);
+            }
+        }
+    }
+
+    <span class="kw">return</span> stack.<span class="fu">Count</span> == <span class="dv">0</span> &amp;&amp; nextToken == tokens.<span class="fu">Length</span>;
+}</code></pre></div>
+<p>En la práctica la mayoría de las gramáticas interesantes no son LL(1). Sin embargo, con suficiente esfuerzo pueden lograrse gramáticas LL(k) para un valor k &gt; 1, que también pueden ser parseadas con técnicas similares. Por otro lado, para gramáticas suficientemente simples (como las expresiones aritméticas) este parser es muy eficiente, y fácil de implementar.</p>
+<p>Finalmente, en el caso que la gramática no sea LL(1), este análisis nos permite reducir al mínimo necesario la cantidad de producciones a probar en cada terminal. La tabla LL(1) en estos casos pudiera tener más de una producción en cada entrada, y en esos casos implementaríamos un parser recursivo que solamente probara aquellas producciones listadas en la tabla. De esta forma, podemos obtener el parser (descendiente) más eficiente posible, sin perder en expresividad.</p>
+<p>De todas formas las gramáticas LL(1) son un conjunto estrictamente menor que las gramáticas libres del contexto. Más adelante veremos estrategias de parsing basadas en principios similares que permiten reconocer lenguajes y gramáticas más expresivas.</p>
+</body>
+</html>
