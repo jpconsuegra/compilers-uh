@@ -1,3 +1,5 @@
 *.pdf
 ast.json
 .ipynb_checkpoints
+notebooks/*.ipynb
+notebooks/solutions/*.ipynb
