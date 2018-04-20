@@ -68,8 +68,8 @@ function f2 {
 
 ```
 function f1 {
-    ARG x;   # argumentos (que vienen de afuera)
-    ARG y;
+    PARAM x;   # argumentos (que vienen de afuera)
+    PARAM y;
 
     LOCAL a; # variables locales (memoria propia)
     LOCAL b;
@@ -217,7 +217,7 @@ IF x GOTO label ;         IF x GOTO label ;
 
 # Hola Mundo
 
-```
+```cil
 .DATA
 
 msg = "Hello World!\n" ;
@@ -237,7 +237,7 @@ function main {
 
 Este es el código en COOL:
 
-```
+```cool
 class Main: IO {
     msg : string = "Hello World!\n";
 
@@ -251,7 +251,7 @@ class Main: IO {
 
 Primero los tipos:
 
-```
+```cil
 .TYPES
 
 type Main {
@@ -268,9 +268,9 @@ s1 = "Hello World!\n";
 
 Esta es la función main
 
-```
+```cil
 .CODE
-<...> # aquí falta algo
+# <...> aquí falta algo
 
 function f1 {
     PARAM self ;
@@ -286,7 +286,7 @@ function f1 {
 
 # Hola Mundo (desde COOL)
 
-```
+```cil
 .CODE
 
 function entry {
@@ -307,13 +307,13 @@ function entry {
 
 # Convenios para generación de código
 
-```
+```cool
 let x : Integer = 5 in   # esto es parte de un
     x + 1                # programa de COOL más
 end                      # largo
 ```
 
-```
+```cil-template
 function f {
     ...
     LOCAL x ;
@@ -328,13 +328,13 @@ function f {
 
 # Convenios para generación de código
 
-```
+```cool-template
 let x : Integer = 5 in
     x + <expr>      # expresión arbitraria
 end
 ```
 
-```
+```cil-template
 function f {
     ...
     <expr.locals>   # recursivamente, generar

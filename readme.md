@@ -4,7 +4,7 @@ Este proyecto contiene las notas de conferencias, preparaciones metodológicas, 
 
 ## Estructura del proyecto
 
-Este proyecto está diseñado para ser compilado con `pandoc`. El archivo `compile.sh` compila todo el documento y genera un PDF final. Para conocer los requisitos de compilación, consulta la ayuda de `pandoc`.
+Este proyecto está diseñado para ser compilado con `pandoc`. Ejecutando `make` en la carpeta raíz se obtendrán todos los documentos necesarios. Para conocer los requisitos de compilación, consulta la ayuda de `pandoc`.
 
 ## Colaboración
 

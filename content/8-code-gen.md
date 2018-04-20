@@ -14,7 +14,7 @@ Un programa en CIL tiene 3 secciones:
 
 La primera es una sección (opcional) de declaración de tipos:
 
-```
+```cil
 .TYPES
 
 type A {
@@ -44,7 +44,7 @@ El orden de los atributos es muy importante, ya que luego veremos instrucciones 
 
 En la sección de datos se declaran todas las cadenas de texto constantes que serán usadas durante todo el programa.
 
-```
+```cil
 .DATA
 
 msg = "Hello World";
@@ -54,7 +54,7 @@ msg = "Hello World";
 
 > Se toma como convenio que la primera función declarada es la función que se ejecuta al iniciar el programa.
 
-```
+```cil
 .CODE
 
 function f1 {
@@ -70,7 +70,7 @@ El cuerpo de cada función se divide a su vez
 en dos secciones. Primero se definen todos los parámetros
 y variables locales, y luego las instrucciones en sí:
 
-```
+```cil
 function f1 {
     ARG x;
     ARG y;
@@ -90,13 +90,13 @@ Entre las instrucciones básicas tenemos:
 
 ### Asignación simple
 
-```
+```cil
 x = y ;
 ```
 
 ### Operaciones aritméticas
 
-```
+```cil
 x = y + z ;
 ```
 
@@ -104,13 +104,13 @@ x = y + z ;
 
 El acceso a atributos se utiliza para obtener el valor de un atributo almacenado en un lugar de la memoria en una variable temporal.
 
-```
+```cil
 x = GETATTR y b ;
 ```
 
 Es equivalente a `x = y.b`.
 
-```
+```cil
 SETATTR y b x ;
 ```
 
@@ -122,13 +122,13 @@ Es equivalente a `y.b = x`.
 
 Cuando una variable es de un tipo array (o `string`), se puede acceder al iésimo elemento:
 
-```
+```cil
 x = GETINDEX a i ;
 ```
 
 O asignar un valor:
 
-```
+```cil
 SETINDEX a i x ;
 ```
 
@@ -136,7 +136,7 @@ SETINDEX a i x ;
 
 Para crear un nuevo objeto existe una instrucción de alocación de memoria:
 
-```
+```cil
 x = ALLOCATE T ;
 ```
 
@@ -144,13 +144,13 @@ Esta instrucción crea en memoria espacio suficiente para alojar un tipo `T` y d
 
 Para obtener el tipo dinámico de una variable se utiliza la sintaxis:
 
-```
+```cil
 t = TYPEOF x ;
 ```
 
 Para crear arrays se utiliza una sintaxis similar:
 
-```
+```cil
 x = ARRAY y ;
 ```
 
@@ -160,7 +160,7 @@ Donde `y` es una variable de tipo numérico (como todas) que define el tamaño d
 
 Para invocar un método se debe indicar el tipo donde se encuentra el método, además del método en concreto que se desea ejecutar.
 
-```
+```cil
 x = CALL f ;
 ```
 
@@ -168,14 +168,14 @@ Este llamado es una invocación estática, es decir, se llama exactamente al mé
 
 Además existe un llamado dinámico, donde el método `f` se buscan en el tipo `T` y se resuelve la dirección del método real al que invocar:
 
-```
+```cil
 x = VCALL T f ;
 ```
 
 Todos los parámetros deben ser pasados de antemano, con la siguiente instrucción:
 
-```
-PARAM a ;
+```cil
+ARG a ;
 ```
 
 Cada método espera que los parámetros estén ubicados en la memoria en el mismo orden en que están declarados en el método. Es responsabilidad del que invoca pasar los parámetros de forma adecuada.
@@ -186,25 +186,25 @@ En particular, para todos los métodos "de instancia", que tiene un argumento `s
 
 Los saltos condicionales en CIL siempre tienen una condición y una instrucción de salto:
 
-```
+```cil
 IF x GOTO label ;
 ```
 
 Donde `label` tiene que ser una etiqueta declarada en algún lugar de la propia función. La etiqueta puede estar declarada después de su uso. Si la etiqueta no está declarada correctamente, el resultado de la operación no está definido.
 
-```
+```cil
 LABEL label ;
 ```
 
 Los saltos incondicionales simplemente se ejecutan con:
 
-```
+```cil
 GOTO label ;
 ```
 
 Como en CIL no existen variables *booleanas*, el valor de verdad de una expresión es realmente que la expresión sea distinta de cero, por lo tanto, los siguientes saltos son equivalentes:
 
-```
+```cil
 x = y != z;
 IF x GOTO label ;
 
@@ -216,13 +216,13 @@ IF x GOTO label ;
 
 Finalmente todas las funciones deben tener una instrucción de retorno:
 
-```
+```cil
 RETURN x ;
 ```
 
 Esta instrucción pone el valor de `x` en la dirección de retorno de `f` y además termina la ejecución de la función. Si esta instrucción no se ejecuta en el cuerpo de una función el resultado de la invocación de la función no está bien definido. Si no importa el valor de retorno de la función, simplemente se puede usar cualquiera de las siguientes dos variantes, (que son equivalentes):
 
-```
+```cil
 RETURN ;
 
 RETURN 0 ;
@@ -232,20 +232,20 @@ RETURN 0 ;
 
 Las cadenas de texto se pueden manipular con funciones especiales. Primero es necesario obtener una dirección a la cadena:
 
-```
+```cil
 x = LOAD msg ;
 ```
 
 Luego se puede operar sobre una cadena con instrucciones
 tales como `LENGTH`, `CONCAT` y `SUBSTRING`, con la semántica esperada:
 
-```
+```cil
 y = LENGTH x ;
 ```
 
 Además hay una función STR que computa la representación textual de un valor numérico y devuelve la dirección en memoria:
 
-```
+```cil
 z = STR y ;
 ```
 
@@ -253,13 +253,13 @@ z = STR y ;
 
 Finalmente, hay 2 instrucciones de entrada-salida, `READ` que lee de la entrada estándar hasta el siguiente cambio de línea (incluído):
 
-```
+```cil
 x = READ ;
 ```
 
 Y `PRINT` que imprime en la salida estándar, sin incluir el cambio de línea.
 
-```
+```cil
 PRINT z ;
 ```
 
@@ -271,7 +271,7 @@ Veamos algunos programas de ejemplo directamente escritos en CIL antes de pasar 
 
 El "Hola Mundo" en CIL es muy sencillo:
 
-```
+```cil
 .DATA
 
 msg = "Hello World!\n" ;
@@ -289,7 +289,7 @@ function main {
 
 Ahora, este programa si lo fuéramos a generar desde COOL realmente sería un poco más complejo. En COOL sería necesario tener una clase con un método `main`, y algunos detalles adicionales:
 
-```
+```cool
 class Main: IO {
     msg : string = "Hello World!\n";
 
@@ -301,7 +301,7 @@ class Main: IO {
 
 El programa completo en CIL que representa al programa anterior de COOL sería el siguiente. Hemos tenido cuidado de usar convenios de nombres que luego nos será útil respetar durante la generación de código.
 
-```
+```cil
 .TYPES
 
 type Main {
@@ -354,7 +354,7 @@ Para ejemplificar y documentar nuestras reglas de generación de código vamos a
 
 Supongamos que tenemos una expresión en COOL de la forma:
 
-```
+```cool
 let x : Integer = 5 in
     x + 1
 end
@@ -362,7 +362,7 @@ end
 
 Esta expresión puede ser parte del cuerpo de un método cualquiera, rodeada por cualquier contexto. Asumamos que el método se denomina `f`, a falta de un nombre mejor. Como no hemos especificado exactamente aquí todo el contexto de la expresión, tendremos que ser vagos con la generación de código. Permitiremos entonces obviar las partes "poco importantes" y concentrarnos solo en la parte que nos interesa. Sin más, presentamos el código CIL:
 
-```
+```cil-template
 function f {
     ...
     LOCAL x ;
@@ -379,7 +379,7 @@ Aquí hemos tomado por convenio que el valor de la expresión lo guardamos en un
 
 Por otro lado, supongamos que tenemos una expresión de la forma:
 
-```
+```cil-template
 let x : Integer = 5 in
     x + <expr>
 end
@@ -387,7 +387,7 @@ end
 
 En esta expresión también estamos abusando de la notación, con el uso de `<expr>` para indicar que en COOL aquí va una expresión válida cuya forma exacta no nos interesa. Podemos entonces tomar un convenio como el siguiente:
 
-```
+```cil-template
 function f {
     ...
     <expr.locals>
@@ -409,7 +409,7 @@ Esperamos que esta notación se vaya haciendo más clara a medida que veamos má
 
 Sea la expresión genérica de COOL `let-in` con la forma:
 
-```
+```cool-template
 let <var> : <type> = <init> in
     <body>
 end
@@ -417,7 +417,7 @@ end
 
 Supongamos que esta expresión ocurre dentro de un método `f` arbitrario. Podemos entonces definir la generación de código de esta instrucción de la siguiente forma:
 
-```
+```cil-template
 function f {
     ...
     <init.locals>

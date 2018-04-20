@@ -160,10 +160,10 @@ Definir exactamente qué es semánticamente importante en un lenguaje particular
 
 Cómo justificaremos más adelante, existen estructuras linguísticas que no son fáciles de reconocer, porque son dependientes del contexto. Por ejemplo, la expresión `x = y + z` es muy sencilla de reconocer sintácticamente, pero en un lenguaje con tipado estático esta expresión puede no pertenecer al lenguaje según los tipos de cada variable. Este es un problema clásico de dependencia del contexto, donde la expresión `x = y + z` es válida si existe en el contexto donde, por ejemplo existe, `int x, int y, int z` pero no donde el contexto es `int x, int y, object z`. Hay muchos problemas que son dependientes del contexto, entre ellos:
 
-* Declaración de variables antes de su uso
-* Consistencia en los tipos declarados y las operaciones realizadas
-* Consistencia entre la declaración de una función y su invocación
-* Retornos en todos los caminos de ejecución
+- Declaración de variables antes de su uso
+- Consistencia en los tipos declarados y las operaciones realizadas
+- Consistencia entre la declaración de una función y su invocación
+- Retornos en todos los caminos de ejecución
 
 La solución de estos problemas empleando las técnicas de la teoría de lenguajes solamente es en general no polinomial, y a veces no computable. Pero muchos de estos problemas se pueden resolver de forma más sencilla analizando la estructura computacional intermedia. ¿Por qué? Veremos más adelante que esta estructura tiene generalmente forma arbórea, y en una estructura arbórea es fácil analizar la consistencia de los tipos y problemas similares recorriendo cada uno de los nodos. De forma recursiva, el nodo raíz (o programa) estará correcto si cada hijo está correcto. Para realizar este tipo de procesamiento, introduciremos una nueva fase, que llamaremos *chequeo semántico*, y que opera justamente sobre la representación semántica del programa.
 
@@ -173,10 +173,10 @@ La solución de estos problemas empleando las técnicas de la teoría de lenguaj
 
 Finalmente, justo antes de generar el código ejecutable final, cabe preguntarse si existe algún tipo de procesamiento adicional conveniente. Descubriremos más adelante varios tipos de optimizaciones que se pueden aplicar en este punto, entre ellas:
 
-* Eliminar código no alcanzable
-* Expandir expresiones constantes
-* Elimiar asignaciones superfluas
-* Desenrrollar ciclos con extremos constantes
+- Eliminar código no alcanzable
+- Expandir expresiones constantes
+- Elimiar asignaciones superfluas
+- Desenrrollar ciclos con extremos constantes
 
 Estas optimizaciones a menudo son convenientes de realizar sobre una estructura del programa mucho más cercana al código de máquina que al código original. Son muchos los factores que influyen en esto y que veremos más adelante, pero de forma intuitiva, es fácil entender que optimizar un programa debe ser un proceso muy cercano al código de máquina, pues la propia naturaleza de la optimización requiere explotar características propias de la maquinaria donde será ejecutado el código. Introduciremos entonces una fase de optimización, que de momento visualizaremos de forma *paralela* al proceso de generación, pues en la práctica ambas fases comparten la misma representación y ambos procesos ocurren de forma más o menos simultánea.
 
