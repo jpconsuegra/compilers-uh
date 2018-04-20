@@ -66,15 +66,17 @@ def split_solution(content):
 
 
 def main():
-    final_folder = Path("Notebooks")
-    templates_folder = final_folder / "Templates"
-    solutions_folder = final_folder / "Solutions"
+    final_folder = Path("notebooks")
+    templates_folder = final_folder / "templates"
+    solutions_folder = final_folder / "solutions"
 
     for filename in os.listdir(templates_folder):
         template_file = templates_folder / filename
 
         if not str(template_file).endswith('.ipynb'):
             continue
+
+        print(f"Making {template_file}")
 
         fd = template_file.open()
         content = json.load(fd)
