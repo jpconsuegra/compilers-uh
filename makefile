@@ -75,3 +75,7 @@ clean: clean-images
 
 clean-images:
 	rm -f $(GRAPHICS_PNG)
+
+dependencies:
+	pip install pweave
+	apt install pandoc
