@@ -1,6 +1,8 @@
+# Input
 CONTENT_DIR = content
 SLIDES_DIR = slides
 
+# Output
 BUILD_DIR = build
 
 CONTENT_MD_DIR = $(BUILD_DIR)/markdown
@@ -8,43 +10,53 @@ CONTENT_PDF_DIR = $(BUILD_DIR)/pdf
 CONTENT_PDF = $(CONTENT_PDF_DIR)/compilers.pdf
 
 SLIDES_MD_DIR = $(BUILD_DIR)/slides/markdown
-SLIDES_MD_DIR = $(BUILD_DIR)/slides/pdf
+SLIDES_PDF_DIR = $(BUILD_DIR)/slides/pdf
 
+HTML_DIR = docs
+
+## Output files collections
 CONTENT_SOURCE = $(wildcard $(CONTENT_DIR)/*.pmd)
 CONTENT_MD = $(patsubst $(CONTENT_DIR)/%.pmd, $(CONTENT_MD_DIR)/%.md, $(CONTENT_SOURCE))
+CONTENT_HTML = $(patsubst $(CONTENT_DIR)/%.pmd, $(HTML_DIR)/%.html, $(CONTENT_SOURCE))
 
-all: $(CONTENT_PDF)
+SLIDES_SOURCE = $(wildcard $(SLIDES_DIR)/*.pmd)
+SLIDES_MD = $(patsubst $(SLIDES_DIR)/%.pmd, $(SLIDES_MD_DIR)/%.md, $(SLIDES_SOURCE))
+SLIDES_PDF = $(patsubst $(SLIDES_DIR)/%.pmd, $(SLIDES_PDF_DIR)/%.pdf, $(SLIDES_SOURCE))
 
-$(CONTENT_PDF): folders $(CONTENT_MD) meta/header.tex meta/metadata.yaml
+# Main build rules
+all: main html slides
+
+## Main content
+main: folders $(CONTENT_PDF)
+
+$(CONTENT_PDF): $(CONTENT_MD) meta/header.tex meta/metadata.yaml
 	pandoc --toc -H meta/header.tex -V lang=es -o $(CONTENT_PDF) meta/metadata.yaml `ls $(CONTENT_MD_DIR)/*.md`
 
 $(CONTENT_MD_DIR)/%.md: $(CONTENT_DIR)/%.pmd
 	pweave -f markdown -i markdown -o $@ $<
 
+### HTML version
+html: folders $(CONTENT_HTML)
+
+$(HTML_DIR)/%.html: $(CONTENT_MD_DIR)/%.md
+	pandoc --toc -s -o $@ $<
+
+## Slides
+slides: folders $(SLIDES_PDF)
+
+$(SLIDES_PDF_DIR)/%.pdf: $(SLIDES_MD_DIR)/%.md
+	pandoc -t beamer -o $@ $<
+
+$(SLIDES_MD_DIR)/%.md: $(SLIDES_DIR)/%.pmd
+	pweave -f markdown -i markdown -o $@ $<
+
+
+# Utility rules
 folders:
 	mkdir -p $(CONTENT_MD_DIR)
 	mkdir -p $(CONTENT_PDF_DIR)
 	mkdir -p $(SLIDES_MD_DIR)
-
-# SOURCES = $(wildcard $(MD_DIR)/*.md)
-# TEX_FILES = $(patsubst $(MD_DIR)/%.md, $(TEX_DIR)/%.tex, $(SOURCES))
-# PDF_FILES = $(patsubst $(MD_DIR)/%.md, $(PDF_DIR)/%.pdf, $(SOURCES))
-
-# pdf: folders $(PDF_FILES)
-
-# tex: folders $(TEX_FILES)
-
-# folders:
-# 	mkdir -p $(TEX_DIR) $(PDF_DIR)
-
-# $(TEX_DIR)/%.tex: $(MD_DIR)/%.md
-# 	pandoc -t latex -o $@ $<
-
-# $(PDF_DIR)/%.pdf: $(TEX_DIR)/%.tex
-# 	pandoc -t beamer -o $@ $<
+	mkdir -p $(SLIDES_PDF_DIR)
 
 clean:
 	rm -rf $(BUILD_DIR)
-
-# compilers.pdf: content/*.md meta/header.tex meta/metadata.yaml
-# 	pandoc --toc -H meta/header.tex -V lang=es -o Compilers.pdf meta/metadata.yaml `ls content/*.md`
