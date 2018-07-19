@@ -2,6 +2,7 @@
 CONTENT_DIR = content
 SLIDES_DIR = slides
 GRAPHICS_DIR = graphics
+NOTEBOOKS_DIR = notebooks
 
 # Output
 BUILD_DIR = build
@@ -15,6 +16,9 @@ HTML_DIR = $(BUILD_DIR)/html
 SLIDES_MD_DIR = $(BUILD_DIR)/slides/markdown
 SLIDES_PDF_DIR = $(BUILD_DIR)/slides/pdf
 
+NOTEBOOKS_FINAL_DIR = $(BUILD_DIR)/notebooks
+NOTEBOOKS_SOLUTIONS_DIR = $(BUILD_DIR)/notebooks/solutions
+
 ## Output files collections
 CONTENT_SOURCE = $(wildcard $(CONTENT_DIR)/*.pmd)
 CONTENT_MD = $(patsubst $(CONTENT_DIR)/%.pmd, $(CONTENT_MD_DIR)/%.md, $(CONTENT_SOURCE))
@@ -27,8 +31,11 @@ SLIDES_SOURCE = $(wildcard $(SLIDES_DIR)/*.pmd)
 SLIDES_MD = $(patsubst $(SLIDES_DIR)/%.pmd, $(SLIDES_MD_DIR)/%.md, $(SLIDES_SOURCE))
 SLIDES_PDF = $(patsubst $(SLIDES_DIR)/%.pmd, $(SLIDES_PDF_DIR)/%.pdf, $(SLIDES_SOURCE))
 
+NOTEBOOKS_SOURCE = $(wildcard $(NOTEBOOKS_DIR)/*.ipynb)
+NOTEBOOKS_FINAL = $(patsubst $(NOTEBOOKS_DIR)/%.ipynb, $(NOTEBOOKS_FINAL_DIR)/%.ipynb, $(NOTEBOOKS_SOURCE))
+
 # Main build rules
-all: main html slides
+all: main html slides notebooks
 
 ## Main content
 main: folders $(CONTENT_PDF) clean-images
@@ -61,6 +68,12 @@ $(SLIDES_PDF_DIR)/%.pdf: $(SLIDES_MD_DIR)/%.md
 $(SLIDES_MD_DIR)/%.md: $(SLIDES_DIR)/%.pmd
 	pweave -f markdown -i markdown -o $@ $<
 
+## Notebooks
+notebooks: folders $(NOTEBOOKS_FINAL)
+
+$(NOTEBOOKS_FINAL_DIR)/%.ipynb: $(NOTEBOOKS_DIR)/%.ipynb
+	python notebooks/make.py $< $@ $(patsubst $(NOTEBOOKS_DIR)/%.ipynb, $(NOTEBOOKS_SOLUTIONS_DIR)/%.ipynb, $<)
+
 
 # Utility rules
 folders:
@@ -69,6 +82,8 @@ folders:
 	mkdir -p $(SLIDES_MD_DIR)
 	mkdir -p $(SLIDES_PDF_DIR)
 	mkdir -p $(HTML_DIR)
+	mkdir -p $(NOTEBOOKS_FINAL_DIR)
+	mkdir -p $(NOTEBOOKS_SOLUTIONS_DIR)
 
 clean: clean-images
 	rm -rf $(BUILD_DIR)

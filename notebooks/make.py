@@ -1,5 +1,6 @@
 # coding: utf8
 
+import sys
 import os
 import json
 from pathlib import Path
@@ -65,34 +66,20 @@ def split_solution(content):
     return solution, final
 
 
-def main():
-    final_folder = Path("notebooks")
-    templates_folder = final_folder / "templates"
-    solutions_folder = final_folder / "solutions"
+def main(template_file, final_file, solution_file):
+    print(f"Making {template_file}")
 
-    for filename in os.listdir(templates_folder):
-        template_file = templates_folder / filename
+    fd = open(template_file)
+    content = json.load(fd)
 
-        if not str(template_file).endswith('.ipynb'):
-            continue
+    solution, final = split_solution(content)
 
-        print(f"Making {template_file}")
+    with open(solution_file, 'w') as fd:
+        json.dump(solution, fd, indent=1)
 
-        fd = template_file.open()
-        content = json.load(fd)
-
-        solution, final = split_solution(content)
-
-        solution_file = solutions_folder / filename
-
-        with open(solution_file, 'w') as fd:
-            json.dump(solution, fd, indent=1)
-
-        final_file = final_folder / filename
-
-        with open(final_file, 'w') as fd:
-            json.dump(final, fd, indent=1)
+    with open(final_file, 'w') as fd:
+        json.dump(final, fd, indent=1)
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1], sys.argv[2], sys.argv[3])
