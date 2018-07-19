@@ -74,4 +74,4 @@ clean: clean-images
 	rm -rf $(BUILD_DIR)
 
 clean-images:
-	rm $(GRAPHICS_PNG)
+	rm -f $(GRAPHICS_PNG)
