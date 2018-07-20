@@ -1,5 +1,14 @@
 # Análisis Lexicográfico
 
+```python echo=False
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.curdir))
+
+from source.automata import Automaton
+```
+
 En este capítulo vamos a atacar el problema de implementar un *lexer*, y todos los elementos teóricos que nos ayudarán en esta tarea, y que nos servirán además para resolver problemas independientes pero relacionados con esta fase. Vamos a comenzar definiendo formalmente el problema que queremos resolver, y luego veremos como desarrollar una teoría que nos permita atacar su solución.
 
 Comenzaremos por definir el concepto de *token*, básicamente, como una secuencia de caracteres con cumple con cierta estructura sintáctica. Más adelante impondremos restricciones sobre qué tipos de estructuras son válidas. De momento, pondremos algunos ejemplos:
@@ -107,20 +116,16 @@ Por ejemplo, si tenemos el siguiente autómata $A=<Q,q_0,V,F,f>$, donde:
 
 Podemos representar gráficamente el autómata anterior con el siguiente gráfico:
 
-\begin{center}
-\begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto]
-   \node[state] (q_0) {$q_0$};
-   \node[state,right=of q_0] (q_1) {$q_1$};
-   \node[state,accepting,right=of q_1] (q_2) {$q_2$};
-   \path[->]
-    (q_0) edge [bend left]  node        {$a$} (q_1)
-          edge [loop above] node        {$b$} (q_0)
-    (q_1) edge [bend left]  node        {$a$} (q_2)
-          edge [bend left]  node [swap] {$b$} (q_0)
-    (q_2) edge [loop above] node        {$a$} (q_2)
-          edge [bend left]  node        {$b$} (q_0) ;
-\end{tikzpicture}
-\end{center}
+```python echo=False, results="plain"
+Automaton('q0', ['q2'], {
+    ('q0', 'a'): 'q1',
+    ('q0', 'b'): 'q0',
+    ('q1', 'a'): 'q2',
+    ('q1', 'b'): 'q0',
+    ('q2', 'a'): 'q2',
+    ('q2', 'b'): 'q0',
+}).print(label="example1", float=False)
+```
 
 En este gráfico queda completamente representado el autómata, sin necesidad de especificar el resto, pues de la función de transición se pueden inferir los estados y el alfabeto, y se toma el convenio de que el estado $q_0$ siempre es el estado inicial.
 
@@ -152,17 +157,13 @@ Pasemos entonces a describir algunos ejemplos de lenguajes regulares, que nos da
 
 ## Lenguajes Regulares
 
-El más simple de todos los lenguajes que podemos definir sobre un alfabeto $V$ es justamente $V^*$, el lenguaje de todas las cadenas que se pueden construir con los símbolos de $V$. A este lenguaje le llamamos *universo*. Para construir un autómata para este lenguaje, simplemente necesitamos un estado que será a la vez inicial y final, y una transición para cada símbolo del alfabeto desde este estado hacia el propio estado. Por ejemplo, si $V = \{ a, b, c \}$, tenemos el siguiente autómata:
+El más simple de todos los lenguajes que podemos definir sobre un alfabeto $V$ es justamente $V^*$, el lenguaje de todas las cadenas que se pueden construir con los símbolos de $V$. A este lenguaje le llamamos *universo*. Para construir un autómata para este lenguaje, simplemente necesitamos un estado que será a la vez inicial y final, y una transición para cada símbolo del alfabeto desde este estado hacia el propio estado. Por ejemplo, si $V = \{ a, b, c \}$, tenemos [el siguiente autómata](#simple-automaton):
 
-\begin{center}
-\begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto]
-   \node[state,accepting] (q_0) {$q_0$};
-   \path[->]
-    (q_0) edge [loop above] node {$a$} ()
-          edge [loop right] node {$b$} ()
-          edge [loop below] node {$c$} () ;
-\end{tikzpicture}
-\end{center}
+```python echo=False, results="plain"
+Automaton('q0', ['q0'], {
+    ('q0', 'a b c'): 'q0'
+}).print(label="simple-automaton")
+```
 
 Con esta idea podemos demostrar nuestro primer teorema en la teoría de lenguajes formales:
 

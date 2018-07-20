@@ -26,8 +26,15 @@ class Automaton:
     def _repr_svg_(self):
         return self.graph().create_svg().decode('utf8')
 
-    def print(self, prefix="", caption=""):
+    def print(self, label="", caption="", float=True):
         Automaton.images += 1
-        fname = f"build/graphics/{prefix}image{Automaton.images}.svg"
+        fname = f"build/graphics/{label}image{Automaton.images}.svg"
+
         self.graph().write_svg(fname)
-        print(f"![{caption}](../graphics/{prefix}image{Automaton.images}.svg)")
+
+        output = f"![{caption}](../graphics/{label}image{Automaton.images}.svg){{ #{label} }}"
+
+        if not float:
+            output += "\\"
+
+        print(output)
