@@ -1,0 +1,19 @@
+# Anexos
+
+```python echo=False, results="plain"
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.curdir))
+
+from source.automata import Automaton
+
+Automaton('q0', ['q0'], {
+    ('q0', 0) : 'q0',
+    ('q0', 1) : 'q1',
+    ('q1', 0) : 'q2',
+    ('q1', 1) : 'q0',
+    ('q2', 0) : 'q1',
+    ('q2', 1) : 'q2',
+}).print(caption="A nice automaton...")
+```

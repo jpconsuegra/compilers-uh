@@ -19,13 +19,21 @@ SLIDES_PDF_DIR = $(BUILD_DIR)/slides/pdf
 NOTEBOOKS_FINAL_DIR = $(BUILD_DIR)/notebooks
 NOTEBOOKS_SOLUTIONS_DIR = $(BUILD_DIR)/notebooks/solutions
 
+GRAPHICS_BUILD_DIR = $(BUILD_DIR)/graphics
+
 ## Output files collections
 CONTENT_SOURCE = $(wildcard $(CONTENT_DIR)/*.pmd)
 CONTENT_MD = $(patsubst $(CONTENT_DIR)/%.pmd, $(CONTENT_MD_DIR)/%.md, $(CONTENT_SOURCE))
 CONTENT_HTML = $(patsubst $(CONTENT_DIR)/%.pmd, $(HTML_DIR)/%.html, $(CONTENT_SOURCE))
 
 GRAPHICS_SOURCE = $(wildcard $(GRAPHICS_DIR)/*.svg)
-GRAPHICS_PNG = $(patsubst $(GRAPHICS_DIR)/%.svg, $(GRAPHICS_DIR)/%.png, $(GRAPHICS_SOURCE))
+GRAPHICS_SVG = $(patsubst $(GRAPHICS_DIR)/%.svg, $(GRAPHICS_BUILD_DIR)/%.svg, $(GRAPHICS_SOURCE))
+GRAPHICS_PNG = $(patsubst $(GRAPHICS_DIR)/%.svg, $(GRAPHICS_BUILD_DIR)/%.png, $(GRAPHICS_SOURCE))
+GRAPHICS_PDF = $(patsubst $(GRAPHICS_DIR)/%.svg, $(GRAPHICS_BUILD_DIR)/%.pdf, $(GRAPHICS_SOURCE))
+
+GRAPHICS_BUILD_SOURCE = $(wildcard $(GRAPHICS_BUILD_DIR)/*.svg)
+GRAPHICS_BUILD_PNG = $(patsubst $(GRAPHICS_BUILD_DIR)/%.svg, $(GRAPHICS_BUILD_DIR)/%.png, $(GRAPHICS_BUILD_SOURCE))
+GRAPHICS_BUILD_PDF = $(patsubst $(GRAPHICS_BUILD_DIR)/%.svg, $(GRAPHICS_BUILD_DIR)/%.pdf, $(GRAPHICS_BUILD_SOURCE))
 
 SLIDES_SOURCE = $(wildcard $(SLIDES_DIR)/*.pmd)
 SLIDES_MD = $(patsubst $(SLIDES_DIR)/%.pmd, $(SLIDES_MD_DIR)/%.md, $(SLIDES_SOURCE))
@@ -33,25 +41,34 @@ SLIDES_PDF = $(patsubst $(SLIDES_DIR)/%.pmd, $(SLIDES_PDF_DIR)/%.pdf, $(SLIDES_S
 
 NOTEBOOKS_SOURCE = $(wildcard $(NOTEBOOKS_DIR)/*.ipynb)
 NOTEBOOKS_FINAL = $(patsubst $(NOTEBOOKS_DIR)/%.ipynb, $(NOTEBOOKS_FINAL_DIR)/%.ipynb, $(NOTEBOOKS_SOURCE))
+NOTEBOOKS_SOLUTIONS = $(patsubst $(NOTEBOOKS_DIR)/%.ipynb, $(NOTEBOOKS_SOLUTIONS_DIR)/%.ipynb, $(NOTEBOOKS_SOURCE))
 
 # Main build rules
 all: main html slides notebooks
 
 ## Main content
-main: folders $(CONTENT_PDF) clean-images
+main: folders $(CONTENT_PDF)
 
-$(CONTENT_PDF): $(CONTENT_MD) meta/header.tex meta/metadata.yaml images
-	pandoc --toc -H meta/header.tex -V lang=es -o $(CONTENT_PDF) meta/metadata.yaml `ls $(CONTENT_MD_DIR)/*.md`
+$(CONTENT_PDF): markdown meta/header.tex meta/metadata.yaml
+	pandoc --toc --filter filters/fix_image_path.py -H meta/header.tex -V lang=es -o $(CONTENT_PDF) meta/metadata.yaml `ls $(CONTENT_MD_DIR)/*.md`
+
+markdown: folders $(CONTENT_MD)
+	make images
 
 $(CONTENT_MD_DIR)/%.md: $(CONTENT_DIR)/%.pmd
 	pweave -f markdown -i markdown -o $@ $<
 
 ## Images
-images: folders $(GRAPHICS_PNG)
-	cp -r $(GRAPHICS_DIR) $(HTML_DIR)/$(GRAPHICS_DIR)
+images: folders  $(GRAPHICS_SVG) $(GRAPHICS_PNG) $(GRAPHICS_PDF) $(GRAPHICS_BUILD_PNG) $(GRAPHICS_BUILD_PDF)
 
-$(GRAPHICS_DIR)/%.png: $(GRAPHICS_DIR)/%.svg
+$(GRAPHICS_BUILD_DIR)/%.svg: $(GRAPHICS_DIR)/%.svg
+	cp $< $@
+
+$(GRAPHICS_BUILD_DIR)/%.png: $(GRAPHICS_BUILD_DIR)/%.svg
 	inkscape -e $@ -f $<
+
+$(GRAPHICS_BUILD_DIR)/%.pdf: $(GRAPHICS_BUILD_DIR)/%.svg
+	inkscape -A $@ -f $<
 
 ### HTML version
 html: folders $(CONTENT_HTML) images
@@ -69,11 +86,10 @@ $(SLIDES_MD_DIR)/%.md: $(SLIDES_DIR)/%.pmd
 	pweave -f markdown -i markdown -o $@ $<
 
 ## Notebooks
-notebooks: folders $(NOTEBOOKS_FINAL)
+notebooks: folders $(NOTEBOOKS_FINAL) $(NOTEBOOKS_SOLUTIONS)
 
 $(NOTEBOOKS_FINAL_DIR)/%.ipynb: $(NOTEBOOKS_DIR)/%.ipynb
 	python notebooks/make.py $< $@ $(patsubst $(NOTEBOOKS_DIR)/%.ipynb, $(NOTEBOOKS_SOLUTIONS_DIR)/%.ipynb, $<)
-
 
 # Utility rules
 folders:
@@ -84,13 +100,12 @@ folders:
 	mkdir -p $(HTML_DIR)
 	mkdir -p $(NOTEBOOKS_FINAL_DIR)
 	mkdir -p $(NOTEBOOKS_SOLUTIONS_DIR)
+	mkdir -p $(GRAPHICS_BUILD_DIR)
 
-clean: clean-images
+clean:
 	rm -rf $(BUILD_DIR)
-
-clean-images:
-	rm -f $(GRAPHICS_PNG)
 
 dependencies:
 	pip install pweave
+	pip install panflute
 	apt install pandoc
