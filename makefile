@@ -47,7 +47,7 @@ NOTEBOOKS_SOLUTIONS = $(patsubst $(NOTEBOOKS_DIR)/%.ipynb, $(NOTEBOOKS_SOLUTIONS
 all: main html slides notebooks
 
 ## Main content
-main: folders $(CONTENT_PDF)
+main: $(CONTENT_PDF)
 
 $(CONTENT_PDF): markdown meta/header.tex meta/metadata.yaml
 	pandoc --toc --filter filters/fix_image_path.py -H meta/header.tex -V lang=es -o $(CONTENT_PDF) meta/metadata.yaml `ls $(CONTENT_MD_DIR)/*.md`
@@ -71,10 +71,11 @@ $(GRAPHICS_BUILD_DIR)/%.pdf: $(GRAPHICS_BUILD_DIR)/%.svg
 	inkscape -A $@ -f $<
 
 ### HTML version
-html: folders $(CONTENT_HTML) images
+html: folders $(CONTENT_HTML) images meta/style-html.css
+	cp meta/style-html.css $(HTML_DIR)/style.css
 
 $(HTML_DIR)/%.html: $(CONTENT_MD_DIR)/%.md
-	pandoc --toc -s -o $@ $<
+	pandoc -c style.css -s -o $@ $<
 
 ## Slides
 slides: folders $(SLIDES_PDF)

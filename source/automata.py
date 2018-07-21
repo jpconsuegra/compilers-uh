@@ -26,13 +26,16 @@ class Automaton:
     def _repr_svg_(self):
         return self.graph().create_svg().decode('utf8')
 
-    def print(self, label="", caption="", float=True):
-        Automaton.images += 1
-        fname = f"build/graphics/{label}image{Automaton.images}.svg"
+    def print(self, label="", caption="", float=True, width="50%"):
+        if not label:
+            label = f"image{Automaton.images}"
+            Automaton.images += 1
+
+        fname = f"build/graphics/{label}.svg"
 
         self.graph().write_svg(fname)
 
-        output = f"![{caption}](../graphics/{label}image{Automaton.images}.svg){{ #{label} }}"
+        output = f"![{caption}](../graphics/{label}.svg){{ #{label} width={width} }}"
 
         if not float:
             output += "\\"

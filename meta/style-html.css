@@ -1,0 +1,27 @@
+body {
+    font-size: larger;
+    text-align: justify;
+    width: 900px;
+    margin: auto;
+    padding: 120px;
+    border-right: 1px solid rgb(180, 180, 180);
+    border-left: 1px solid rgb(180, 180, 180);
+    background-color: white;
+}
+
+img {
+    margin: auto;
+}
+
+p.caption {
+    padding: 10px;
+    text-align: center;
+}
+
+dt {
+    font-weight: bold;
+}
+
+html {
+    background-color: whitesmoke;
+}
