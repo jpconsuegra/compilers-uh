@@ -444,11 +444,11 @@ Llamaremos gramáticas LL(1) justamente a aquellas gramáticas para las cuales e
 
 Para poder formalizar este concepto, será conveniente primero encontrar algoritmos explícitos para computar los conjuntos `First` y `Follow`. Comencemos por el `First` ;). Veamos primero algunos hechos interesantes que se cumplen en este conjunto, y luego veremos cómo se diseña un algoritmo para su cómputo. No presentaremos demostración para estos hechos, pues la mayoría son intuitivos.
 
-* Si `X -> W1 | W2 | ... | Wn` entonces por definición, `First(X) = \cup First(W_i)`.
-* Si `X -*-> epsilon` entonces `epsilon \in First(X)`.
-* Si `W = xZ` donde `x` es un terminal, entonces trivialmente `First(W) = { x }`.
-* Si `W = YZ` donde `Y` es un no-terminal y `Z` una forma oracional, entonces `First(Y) \subseteq First(W)`.
-* Si `W = YZ` y `Y -*-> epsilon` entonces `First(Z) \subseteq First(W)`.
+* Si $X \pr W1 | W2 | \ldots | Wn$ entonces por definición, $First(X) = \cup First(W_i)$.
+* Si $X \prs \ep$ entonces $\ep \in First(X)$.
+* Si $W = xZ$ donde $x$ es un terminal, entonces trivialmente $First(W) = { x }$.
+* Si $W = YZ$ donde $Y$ es un no-terminal y $Z$ una forma oracional, entonces $First(Y) \subseteq First(W)$.
+* Si $W = YZ$ y $Y \prs \ep$ entonces $First(Z) \subseteq First(W)$.
 
 Las observaciones anteriores nos permiten diseñar un algoritmo para calcular todos los conjuntos `First(X)` para cada no-terminal `X`. Como de forma general pueden existir producciones recursivas, calcularemos todos los conjuntos `First` a la vez, aplicando cada una de las "reglas" anteriores, hasta que no se modifique ninguno de los conjuntos `First`. Nuevamente abusaremos de la imaginación y creatividad para introducir métodos y clases utilitarias sin definirlos de manera formal.
 
