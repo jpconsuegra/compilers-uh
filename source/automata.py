@@ -2,10 +2,10 @@
 
 import pydot
 
+from .base import Graph
 
-class Automaton:
-    images = 0
 
+class Automaton(Graph):
     def __init__(self, start, final, states):
         self.start = start
         self.states = states
@@ -22,22 +22,3 @@ class Automaton:
 
         G.add_edge(pydot.Edge('start', self.start, label='', style='dashed'))
         return G
-
-    def _repr_svg_(self):
-        return self.graph().create_svg().decode('utf8')
-
-    def print(self, label="", caption="", float=True, width="50%"):
-        if not label:
-            label = f"image{Automaton.images}"
-            Automaton.images += 1
-
-        fname = f"build/graphics/{label}.svg"
-
-        self.graph().write_svg(fname)
-
-        output = f"![{caption}](../graphics/{label}.svg){{ #{label} width={width} }}"
-
-        if not float:
-            output += "\\"
-
-        print(output)

@@ -13,6 +13,16 @@ img {
     margin: auto;
 }
 
+pre {
+    background-color: whitesmoke;
+    border: 1px solid lightgray;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-radius: 5px;
+}
+
 p.caption {
     padding: 10px;
     text-align: center;
