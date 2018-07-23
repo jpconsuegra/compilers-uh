@@ -161,7 +161,7 @@ Vamos a introducir entonces algo de notación adicional. Sea $A$ un autómata fi
 
 A este tipo de lenguajes les llamaremos **lenguajes regulares**, por motivos históricos que veremos más adelante. A modo definición:
 
-> Sea $L$ un lenguaje sobre el alfabeto $V$, se dice que $L$ es **regular** si y solo si existe un autómata finito determinista $A=<Q,q_0,V,F,f>$ (sobre el mismo alfabeto), tal que $L = L_A$.
+> **Definición (Lenguaje Regular):** Sea $L$ un lenguaje sobre el alfabeto $V$, se dice que $L$ es **regular** si y solo si existe un autómata finito determinista $A=<Q,q_0,V,F,f>$ (sobre el mismo alfabeto), tal que $L = L_A$.
 
 Pasemos entonces a describir algunos ejemplos de lenguajes regulares, que nos darán una idea intuitiva del poder de cómputo de estos autómatas.
 
@@ -183,13 +183,94 @@ La demostración se realiza por construcción. Sea $V = \{ a_1, \ldots, a_n \}$ 
 
 Yendo al extremo contrario, vamos a definir el lenguaje que contiene exactamente las palabras claves **if**, **then**, **else**, **fi**. Para este lenguaje también es fácil definir un autómata. Creamos dos estados, uno inicial y uno final, y por cada palabra del lenguaje creamos un camino entre el estado inicial y final con un estado intermedio para cada símbolo de la palabra correspondiente (menos el último, claro):
 
+```python echo=False, results="plain"
+Automaton('q0', ['q02', 'q06', 'q10', 'q12'], {
+    ('q0',  'i'): 'q01',
+    ('q01', 'f'): 'q02',
+
+    ('q0',  't'): 'q03',
+    ('q03', 'h'): 'q04',
+    ('q04', 'e'): 'q05',
+    ('q05', 'n'): 'q06',
+
+    ('q0',  'e'): 'q07',
+    ('q07', 'l'): 'q08',
+    ('q08', 's'): 'q09',
+    ('q09', 'e'): 'q10',
+
+    ('q0' , 'f'): 'q11',
+    ('q11', 'i'): 'q12',
+}).print(width="60%", float=False)
+```
+
 Este autómata nos da una idea para demostrar nuestro segundo teorema:
 
-> **Teorema:**, Sea $L = \{ \omega_1, \ldots, \omega_n \}$ un lenguaje *finito*, entonces $L$ es regular.
+> **Teorema:** Sea $L = \{ \omega_1, \ldots, \omega_n \}$ un lenguaje *finito*, entonces $L$ es regular.
 
-La demostración es muy sencilla, simplemente necesitamos construir un autómata que contenga un camino por cada cadena del lenguaje. Si existen cadenas con prefijos comunes, los estados correspondientes a los símbolos que participan en los prefijos se comparten (para mantener el determinismo).
+La demostración es muy sencilla, simplemente necesitamos construir un autómata que contenga un camino por cada cadena del lenguaje. Si existen cadenas con prefijos comunes, los estados correspondientes a los símbolos que participan en los prefijos se comparten (para mantener el determinismo, aunque veremos pronto que esto no es estrictamente necesario).
 
 Para nuestro siguiente ejemplo, vamos a complejizar un poco el lenguaje a reconocer, y de paso veremos una estrategia general para la construcción de autómatas. El lenguaje que queremos reconocer es el lenguaje de las cadenas sobre el alfabeto $V = \{a, b\}$, con exactamente $3$ letras $a$. Antes de lanzarnos a construir el autómata, tratemos de pensar en una solución algorítmica para este problema. De forma general, la estrategia de solución sería algo así:
+
+```python
+def match(s: str) -> bool:
+    count_a = 0
+
+    for c in s:
+        if c == 'a':
+            count_a += 1
+
+    return count_a == 3
+
+assert match("abaabb") == True
+assert match("abbabb") == False
+```
+
+Esta solución es correcta, pero padece de un problema que nos hace imposible convertirla en un autómata finito. El problema es justamente que la cantidad de memoria que usa esta solución es potencialmente *infinita*, o al menos, proporcional al tamaño de la cadena. ¿Por qué? Pues, porque hemos utilizado un contador no acotado superiormente (`count_a`), por lo que, en principio, podemos necesitar hasta $log_2(n)$ bits de memoria para una cadena con longitud $|w|=n$. Claro que en la práctica sabemos que ese entero es de 32 bits, independientemente del tamaño de la cadena, pero la idea que queremos transmitir es que *no hemos acotado la cantidad de memoria*, por lo que no sabemos cuántos estados debería tener un autómata que haga lo mismo que este método.
+
+Una solución mejor consiste en notar que solamente hay 5 posibles situaciones:
+
+* Hemos visto $0$ símbolos $a$.
+* Hemos visto $1$ símbolo $a$.
+* Hemos visto $2$ símbolos $a$.
+* Hemos visto $3$ símbolos $a$.
+* Hemos visto $4$ símbolos $a$ _o más_.
+
+Una vez que hayamos visto $4$ veces una $a$ en la cadena, ya sabemos que la cadena es incorrecta, y no es posible que "se arregle" más adelante pues la cantidad de $a$ solo puede aumentar. Con esta idea en mente, cambiemos el método anterior para que solo use, a lo sumo, **5 valores diferentes** de la variable `count_a`:
+
+```python
+def match(s: str) -> bool:
+    count_a = 0
+
+    for c in s:     # esto es lo nuevo
+        if c == 'a' and count_a <= 3:
+            count_a += 1
+
+    return count_a == 3
+
+assert match("abaabb") == True
+assert match("abbabb") == False
+```
+
+Parece que no hemos hecho mucho, pero hemos logrado garantizar que nuestro método solamente tiene a lo sumo **5 valores diferentes** de la variable `count_a`, a saber, $0 \ldots 4$. ¿De qué nos sirve esto? Pues, ahora podemos diseñar un autómata tranquilamente, con la siguiente idea: contamos la cantidad posible de valores que toman *todas las variables locales*, y por *cada combinación de valores* tendremos un estado. Si este número es finito, entonces tenemos un autómata finito (que puede ser o no determinista, ya llegaremos a ese problema).
+
+En este ejemplo, tenemos entonces 5 posibles estados, desde $q_0$ hasta $q_4$. Para determinar las transiciones, veremos cómo cambian los valores en nuestro método. En todo momento, si tenemos un valor `count_a = qi`, en la siguiente iteración o bien `count_a = qi` o de lo contrario `count_a = qi + 1`, y esto solo ocurre si el símbolo recién "visto" es $a$. Esto nos dice entonces que tenemos entre los estados $q_i$ y $q_{i+1}$ siempre una transición con $a$, *excepto* en $q_4$, pues en ese caso no se cumple la condición `count_a <= 3`. Solo nos queda definir el estado final, y en este ejemplo no puede estar más claro, pues la línea `return count_a == 3` nos dice exactamente qué estado (valor de `count_a`) corresponde a un valor `True`. De modo que tenemos nuestro autómata:
+
+```python echo=False, results="plain"
+Automaton('q0', ['q3'], {
+    ('q0', 'a'): 'q1',
+    ('q1', 'a'): 'q2',
+    ('q2', 'a'): 'q3',
+    ('q3', 'a'): 'q4',
+}).print(float=False, width="60%")
+```
+
+Lo que hemos hecho es un ejemplo de lo que informalmente llamamos "programar con autómatas". La idea fundamental radica en pensar en una solución algorítmica al problema de reconocer una cadena de cierto lenguaje $L$, y luego extraer de esta solución un autómata. Para que funcione, informalmente, la solución algorítmica debe cumplir:
+
+1. Consiste en un método que recibe una cadena y devuelve verdadero o falso.
+2. El método consiste en **una sola iteración** sobre la cadena, que analiza cada símbolo exactamente una vez.
+3. La memoria local de dicho método, para cualquier cadena, *tanto si pertenece o no* al lenguaje, debe alcanzar a lo sumo una cantidad **finita** de valores diferentes (estos serán los estados de nuestro autómata).
+
+Para obtener el autómata correspondiente, simplemente contamos *todos* los posibles valores que pueden alcanzar todas las variables locales de nuestro método, y definimos un estado por cada uno. Luego, analizando cómo cambian estos valores en función del símbolo siguiente en la cadena, se definen las transiciones (asumamos que son deterministas de momento). Los estados finales estarán determinidos por las combinaciones de valores para los cuáles el método devuelve `True`.
 
 ## Expresiones Regulares {#expreg}
 
