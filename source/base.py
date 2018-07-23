@@ -1,15 +1,23 @@
 # coding: utf8
 
 import pydot
+import os
+
+
+class Globals:
+    images = 0
 
 
 class Graph:
-    images = 0
+    def _image_name(self):
+        Globals.images += 1
+        filename = os.getenv('FILENAME')
+        filename = os.path.basename(filename).split(".")[0]
+        return f"image-{filename}-{Globals.images}"
 
     def print(self, label="", caption="", float=True, width="50%"):
         if not label:
-            label = f"image{Graph.images}"
-            Graph.images += 1
+            label = self._image_name()
 
         fname = f"build/graphics/{label}.svg"
 

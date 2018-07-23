@@ -1,5 +1,14 @@
 # Análisis Semántico
 
+```python echo=False
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.curdir))
+
+from source.trees import Tree as T
+```
+
 En la mayoría de los lenguajes de programación de tercera generación existe el concepto de variable, que en última instancia se mapea a una región de la memoria donde se almacena un valor. Una de las reglas básicas del uso de variables en casi todos los lenguajes tiene que ver con la declaración y/o inicialización de una variable antes de su uso. Por ejemplo, en los lenguajes tipo C (C++, C#, Java), tenemos la siguiente construcción:
 
 ```cpp
@@ -87,26 +96,34 @@ int y = x + 1;
 
 Pudiéramos pensar en un posible árbol de derivación para este programa (para una gramática correcta del lenguaje C), donde habría necesariamente un subárbol con la forma:
 
-```tree
-        <decl-assign>
-        /    |  \   \
-    <type> <id>  =  <expr>
-                      |
-                     int
+```python echo=False, results="plain"
+T("<decl-assign>",
+    T("<type>"),
+    T("<id>"),
+    T("="),
+    T("<expr>",
+        T("int")
+    )
+).print(float=False, width="40%")
 ```
 
 Y por otro lado, tendríamos un subárbol con la forma:
 
-```tree
-        <decl-assign>
-        /    |  \   \
-    <type> <id>  =  <expr>
-                    / |  \
-               <term> + <expr>
-                  |       |
-                <id>    <term>
-                          |
-                         int
+```python echo=False, results="plain"
+T("<decl-assign>",
+    T("<type>"),
+    T("<id>"),
+    T("="),
+    T("<expr>",
+        T("<term>",
+            T("<id>")
+        ),
+        T("+"),
+        T("<term>",
+            T("<id>")
+        )
+    )
+).print(float=False, width="50%")
 ```
 
 Y ambos subárboles serían hijos de algún nodo que representa a la función correspondiente. Entonces podemos pensar en una estrategia para determinar si todas las variables son declaradas antes de su uso. En un recorrido en pre-orden por dicho árbol, podemos ir recolectando todas las declaraciones hechas en cierta estructura de datos, y luego cada vez que nos encontremos una variable referenciada en parte izquierda de una expresión, ¡simplemente consultamos dicha estructura y verificamos la existencia de una variable con dicho nombre, y de paso la consistencia de los tipos! De forma similar podemos pensar en la verificación de la cantidad de argumentos usados en una función y sus tipos.
@@ -136,20 +153,23 @@ Donde indicamos explícitamente el **lexema**. Durante el análisis sińtáctico
 
 Por el momento, concentrémonos nuevamente en la cadena a parsear. Esta cadena es generada **de forma única** por el siguiente árbol de derivación:
 
-```tree
-        E
-        |
-        T
-      / | \
-    int *  T
-         / | \
-        (  E  )
-         / | \
-        T  +  E
-        |     |
-       int    T
-              |
-             int
+```python echo=False, results="plain"
+T("E",
+    T("T",
+        T("int"),
+        T("*"),
+        T("T",
+            T("("),
+            T("E",
+                T("T",
+                    T("int")),
+                T("+"),
+                T("E",
+                    T("T",
+                        T("int")
+                    ))),
+            T(")")))
+).print(float=False, width="40%")
 ```
 
 Este árbol de derivación efectivamente codifica todas las operaciones necesarias a realizar para **evaluar** la expresión (que es en última instancia el problema a resolver). Sin embargo, este árbol representa con demasiado detalle la expresión. Supongamos que queremos diseñar una jerarquía de clases para representar este árbol. Dicha jerarquía tendría varias clases innecesarias, como aquellas que representan a los nodos `(` y `)`. Por otro lado, la estructura del árbol es poco eficiente para representar la expresión, pues hay varios nodos que son redundantes. Por ejemplo, el nodo raíz `E` no nos da ninguna información sobre el tipo concreto de la expresión. De forma general podemos reconocer dos tipos de elementos innecesarios:
@@ -161,24 +181,28 @@ Los elementos sintácticos innecesarios, como los paréntesis, se emplean en la 
 
 Intentemos eliminar estos elementos innecesarios en el árbol de derivación anterior:
 
-```tree
-        T
-      / | \
-    int *  E
-         / | \
-       int + int
+```python echo=False, results="plain"
+T("T",
+    T("int"),
+    T("*"),
+    T("E",
+        T("int"),
+        T("+"),
+        T("int"))
+).print(float=False, width="35%")
 ```
 
 Este árbol representa exactamente la misma expresión aritmética, y quedan explícitamente descritos el orden y el tipo de las operaciones. Una vez llegado a este punto, podemos notar que hay otro elemento innecesario en el árbol. Si nos fijamos con atención, veremos que el nodo asociado a un operador (`*` o `+`) siempre estará como hijo de exactamente el mismo tipo de nodo (`T` o `E`) respectivamente. Este hecho se desprende directamente de la gramática, pues el terminal `*` solo se genera por `T` y el terminal `+` solo se genera por `E`. Por tanto, ambos nodos respectivos (`T` y `*` o `E` y `+`) siempre aparecerán juntos, y por tanto es redundante tener ambos.
 
 Pensemos ahora en la jerarquía de clases que representa este árbol, y un posible algoritmo recursivo de evaluación. Una vez en el nodo `T`, evaluados recursivamente las expresiones izquierda y derecha, ¿qué operación es necesario aplicar? Evidentemente, dependerá del nodo que representa la operación. Pero este nodo (`*` o `+`) siempre es un terminal, por lo tanto, nunca será necesario "bajar" recursivamente para descubrir que tipo de operación hay que hacer en un nodo `T` o `E`. Podemos entonces conformarnos con un árbol donde la operación a realizar esté explícita en el nodo padre (`T` o `E`) y no como un hijo adicional:
 
-```tree
-        *
-      /   \
-    int    +
-         /   \
-       int   int
+```python echo=False, results="plain"
+T("*",
+    T("int"),
+    T("+",
+        T("int"),
+        T("int"))
+).print(float=False, width="25%")
 ```
 
 Intuitivamente, el árbol anterior es capaz de representar con todo el detalle necesario la semántica de la expresión a evaluar, y no tiene ningún elemento innecesario.
@@ -191,7 +215,7 @@ Por ejemplo, en nuestro lenguaje de expresiones aritméticas, existen tres tipos
 * una operación de suma, y
 * una operación de multiplicación.
 
-De modo que si árbol de sintaxis concreta (o árbol de derivación) tiene un tipo de nodo por cada tipo de **función sintáctica** diferente, entonces un árbol de sintaxis abstracta tiene un tipo de nodo por cada tipo de **función semántica** distina. Las diferentes funciones sintácticas se obtienen directamente de la gramática, y por tanto están muy influenciadas por el tipo de *parser* que se use. Las funciones semánticas, por otro lado, se diseñan a partir de la funcionalidad que se quiere obtener en el lenguaje, por lo que se tiene generalmente mayor libertad creativa.
+De modo que si el árbol de sintaxis concreta (o árbol de derivación) tiene un tipo de nodo por cada tipo de **función sintáctica** diferente, entonces un árbol de sintaxis abstracta tiene un tipo de nodo por cada tipo de **función semántica** distina. Las diferentes funciones sintácticas se obtienen directamente de la gramática, y por tanto están muy influenciadas por el tipo de *parser* que se use. Las funciones semánticas, por otro lado, se diseñan a partir de la funcionalidad que se quiere obtener en el lenguaje, por lo que se tiene generalmente mayor libertad creativa.
 
 ## Diseño de un AST
 
@@ -236,7 +260,7 @@ Formalizar estas características sintácticas es relativamente fácil con las h
      <expr-list> := <expr>
                   | <expr> "," <expr-list>
 
-La gramática anterior es bastante "natural", en el sentido de que no contiene reglas "extrañas" para resolver, por ejemplo, los problemas de ambigüedad típicos de las gramáticas LL(1). Este es el tipo de gramáticas que usualmente queremos diseñar para transmitir a otros lectores las reglas sintácticas del lenguaje. Luego, para una implementación concreta de un parser, es posible (y altamente probable), que tengamos que redefinir la gramática añadiendo producciones para convertira en LL o LR, según el caso. En cualquier modo, como ya sabemos resolver ese problema, nos conformaremos con pensar que alguien nos dará un parser para esta gramática.
+La gramática anterior es bastante "natural", en el sentido de que no contiene reglas "extrañas" para resolver, por ejemplo, los problemas de ambigüedad típicos de las gramáticas LL(1). Este es el tipo de gramáticas que usualmente queremos diseñar para transmitir a otros lectores las reglas sintácticas del lenguaje. Luego, para una implementación concreta de un parser, es posible (y altamente probable), que tengamos que redefinir la gramática añadiendo producciones para convertirla en LL o LR, según el caso. En cualquier modo, como ya sabemos resolver ese problema, nos conformaremos con pensar que alguien nos dará un parser para esta gramática.
 
 Definamos ahora informalmente las reglas **semánticas** de nuestro lenguaje:
 

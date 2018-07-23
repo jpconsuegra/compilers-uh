@@ -56,7 +56,7 @@ markdown: folders $(CONTENT_MD)
 	make images
 
 $(CONTENT_MD_DIR)/%.md: $(CONTENT_DIR)/%.pmd
-	pweave -f markdown -i markdown -o $@ $<
+	FILENAME="$<" pweave -f markdown -i markdown -o $@ $<
 
 ## Images
 images: folders  $(GRAPHICS_SVG) $(GRAPHICS_PNG) $(GRAPHICS_PDF) $(GRAPHICS_BUILD_PNG) $(GRAPHICS_BUILD_PDF)
@@ -84,7 +84,7 @@ $(SLIDES_PDF_DIR)/%.pdf: $(SLIDES_MD_DIR)/%.md
 	pandoc -t beamer -o $@ $<
 
 $(SLIDES_MD_DIR)/%.md: $(SLIDES_DIR)/%.pmd
-	pweave -f markdown -i markdown -o $@ $<
+	FILENAME="$<" pweave -f markdown -i markdown -o $@ $<
 
 ## Notebooks
 notebooks: folders $(NOTEBOOKS_FINAL) $(NOTEBOOKS_SOLUTIONS)

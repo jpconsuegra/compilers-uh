@@ -116,7 +116,6 @@ Y las operaciones siguientes:
 * **shift**: Si $S = \alpha |$ es el contenido de la pila, y $T = c \omega \$$ la secuencia de terminales, entonces tras aplicar una operación **shift** se tiene en la pila $S' = \alpha c |$, y la secuencia de terminales ahora es $T' = \omega \$$. Es decir, se mete en la pila el token $c$.
 * **reduce**: Si $S = \alpha \beta |$ el contenido de la pila, y $X \rightarrow \beta$ es una producción, entonces tras aplicar una operación **reduce $T \rightarrow \beta$** se tiene en la pila $S' = \alpha X |$. La secuencia de terminales no se modifica. Es decir, se extraen de la pila $| \beta |$ símbolos y se introduce el símbolo $X$ correspondiente.
 
-
 Podemos definir entonces el proceso de parsing como:
 
 > Sea $S = \emptyset$ la pila inicial, $T = \omega \$$ la cadena a reconocer, y $E$ el símbolo inicial, un parser shift-reduce reconoce esta cadena si y solo si existe una secuencia de operaciones **shift** y **reduce** tal que tras aplicarlas se obtiene $S = E$ y $T = \$$.
@@ -128,7 +127,6 @@ Para simplificar la notación, en ocasiones identificaremos el estado de un pars
 Este tipo de parsers son en la práctica los más usados, pues permiten reconocer una cadena (y construir la derivación) con un costo lineal en la longitud de la cadena (la misma eficiencia que los parsers LL), y permiten parsear gramáticas mucho más poderosas y expresivas que las gramáticas LL. De hecho, la mayoría de los compiladores modernos usan alguna variante de un parser shift-reduce. La diferencia entre todos ellos radica justamente en cómo se decide en cada paso qué operación aplicar. Formalicemos entonces el problema de decisión planteado. Tomemos de nuevo la gramática anterior, y recordemos que en el paso:
 
     int|* ( int + int )
-
 
 Habíamos dicho que aunque era posible reducir `T -> int`, no era convieniente hacerlo, porque caeríamos en una forma oracional que no puede ser reducida a `E`. En particular, en este caso caeríamos en:
 
