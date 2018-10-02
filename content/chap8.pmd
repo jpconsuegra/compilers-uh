@@ -1,0 +1,136 @@
+# HCL
+
+En este capítulo definimos el lenguaje **HCL** (_Havana Compiler Language_), un lenguaje de programación didáctico diseñado para este curso.
+A grandes razgos, **HCL** es un lenguaje orientado a objetos, con herencia simple, polimorfismo, y encapsulamiento a nivel de clases.
+Además en **HCL** es posible definir funciones globales fuera del contexto de cualquier clase.
+También es posible definir _una única expresión global_ que constituye el punto de entrada al programa.
+
+La mayoría de las construcciones sintácticas en **HCL** son expresiones, incluyendo las instrucciones condicionales y los ciclos.
+Por último, **HCL** es un lenguaje fuertemente tipado con _tipado progresivo_, lo que significa que algunas (o todas) las partes de un programa pueden ser anotadas con tipos, y el compilador/intéprete intentará verificar la consistencia hasta donde sea posible.
+
+## Hola Mundo
+
+El programa más sencillo en **HCL** es, por supuesto, _Hola Mundo_:
+
+```HCL
+print("Hola Mundo")
+```
+
+En **HCL** un programa puede ser simplemente una expresión, en este caso, la invocación de una función global llamada `print` (que se presentará más adelante). La cadena de texto `"Hola Mundo"` es un literal del tipo `String`, definido en la biblioteca estándar, que se comporta de la forma convencional en la mayoría de los lenguajes de programación más populares: es inmutable, y codificado en UTF8.
+
+## Tipos básicos
+
+Además de los literales de cadena, en **HCL** hay 2 tipos básicos adicionales: `Number`, que representa valores numéricos y `Boolean` que representa valores de verdad (con los literales usuales `True` y `False`).
+
+El tipo `Number` representa tanto números enteros, como números con coma flotante. La semántica concreta dependerá de la arquitectura. Siempre que sea posible se representará con un valor entero de 64 (o 32) bits, o en su defecto, un valor flotante de 64 (o 32) bits, según permita la arquitectura. Las constantes numéricas se pueden escribir como `42` (valor entero) o `3.14` (valor flotante).
+
+**HCL** tiene una jerarquía de tipos unificada, cuya raíz es el tipo `Object`, que es el único tipo abstracto permitido (no puede ser instanciado). Todos los demás tipos definidos en el lenguaje son concretos.
+
+## Expresiones elementales
+
+En **HCL** se definen todas las expresiones usuales, en orden decreciente de precedencia:
+
+- Aritméticas (entre expresiones de tipo `Number`): `- a`, `a ^ b`, `a * b`, `a / b`, `a + b`, `a - b`, con la precedencia y asociatividad usuales. El resultado es de tipo `Number` también.
+- Comparaciones (entre expresiones de tipo `Number`): `a < b`, `a > b`, `a <= b`, `a >= b`, con menor precedencia que las aritméticas, y sin asociatividad.
+- Comparaciones de igualdad (entre expresiones de cualquier tipo): `a == b`, `a != b`, con la semántica de igualdad por valor entre expresiones de tipo `Number`, `String` o `Boolean`, e igualdad por referencia en todos los demás tipos. Se permite comparar expresiones de cualquier tipo, y si sus tipos no son compatibles (e.j, `"Hola Mundo" == 42`) el resultado será `False`.
+- Lógicas (entre expresiones de tipo `Boolean`): `a & b`, `a | b`, `!a`, siempre evaluadas con cortocircuito.
+
+## Variables
+
+Las variables en **HCL** se introducen con una expresión `let`:
+
+```
+let <var>[:<type>] = <init> in <body>
+```
+
+La semántica de la expresión `let` consiste en que se crea un nuevo ámbito donde se define la variable `<var>` cuyo valor es el resultado de evaluar `<init>`, y se evalua en este ámbito la expresión `<body>`.
+
+```
+let msg:String = "Hola Mundo" in print(msg)
+```
+
+Como se verá, indicar el tipo de una variable al declararla es opcional. Los detalles de la inferencia y verificación de tipos se darán más adelante.
+
+Existe una variante extendida de la expresión `let` en la que se permite introducir más de una variable:
+
+```
+let x=1, y=2, z=3 in x+(y*z)
+```
+
+Esta variante es semánticamente idéntica a:
+
+```
+let x=1 in let y = 2 in let z = 3 in x + (y * z)
+```
+
+## Espacios en blanco e indentación
+
+En **HCL** los espacios en blanco no son significativos, ni tampoco la indentación. La sintaxis del lenguaje permite indicar explícitamente, cuando es necesario, el ámbito de un bloque de código. El ejemplo anterior es equivalente a:
+
+```
+let x=1 in
+let y = 2 in
+let z = 3 in
+    x + (y * z)
+```
+
+O cualquier otra forma de indentar que sea conveniente.
+
+## Identificadores
+
+Los identificadores se definen por la siguiente expresión regular (exceptuando claro las palabras reservadas):
+
+```
+[a-zA-Z_][a-ZA-Z_0-9]*
+```
+
+Es decir, empiezan con un caracter del alfabeto ASCII (o `_`) y pueden opcionalmente contener números internos. Ejemplos de identificadores válidos son:
+
+```
+x
+name
+CamelCase
+smallCamelCase
+snake_case
+_uggly_case
+hunter42
+```
+
+## Gramática
+
+Una gramática tentativa de **HCL** es la siguiente:
+
+    FUN-DEC  = ID ( ARGS ) FUN-BODY
+    FUN-BODY = -> EXPR | EXPR-LIST
+
+    EXPR-LIST = { EXPR ; [ EXPR ; ]* }
+    EXPR = LET-EXPR | ...
+    ...
+    ATOM = ( EXPR )
+
+    LET-EXPR = let VARS in EXPR
+
+## Ejemplos
+
+    class A {
+        x:int = 5
+        function f(a:int):int {
+            a + 5
+        }
+    }
+
+    // Valido
+    function g(x) -> x + 1
+
+    // Mejor
+    function g(x) {
+        x + 2;
+        x + 5;
+    }
+
+    let x = 5 in x + 6 + 4 + 7 + let y=5 in x
+
+    { (x=6) + { x=5; x+6 } }
+
+
+    function f(g) -> let x = y in let x = 5 in print(g(x)) + 5

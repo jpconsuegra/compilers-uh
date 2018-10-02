@@ -72,8 +72,8 @@ y variables locales, y luego las instrucciones en sí:
 
 ```cil
 function f1 {
-    ARG x;
-    ARG y;
+    PARAM x;
+    PARAM y;
 
     LOCAL a;
     LOCAL b;
@@ -324,7 +324,7 @@ function entry {
     instance = ALLOCATE Main ;
     SETATTR instance Main_msg lmsg ;
 
-    PARAM instance ;
+    ARG instance ;
     result = VCALL Main Main_main ;
 
     RETURN 0 ;

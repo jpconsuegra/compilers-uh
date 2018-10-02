@@ -59,7 +59,7 @@ $(CONTENT_MD_DIR)/%.md: $(CONTENT_DIR)/%.pmd
 	FILENAME="$<" pweave -f markdown -i markdown -o $@ $<
 
 ## Images
-images: folders  $(GRAPHICS_SVG) $(GRAPHICS_PNG) $(GRAPHICS_PDF) $(GRAPHICS_BUILD_PNG) $(GRAPHICS_BUILD_PDF)
+images: folders $(GRAPHICS_SVG) $(GRAPHICS_PNG) $(GRAPHICS_PDF) $(GRAPHICS_BUILD_PNG) $(GRAPHICS_BUILD_PDF)
 
 $(GRAPHICS_BUILD_DIR)/%.svg: $(GRAPHICS_DIR)/%.svg
 	cp $< $@
@@ -81,7 +81,10 @@ $(HTML_DIR)/%.html: $(CONTENT_MD_DIR)/%.md
 slides: folders $(SLIDES_PDF)
 
 $(SLIDES_PDF_DIR)/%.pdf: $(SLIDES_MD_DIR)/%.md
-	pandoc -t beamer -o $@ $<
+	make images
+	pandoc -t beamer --filter filters/fix_image_path.py -o $@ $<
+
+slides-md: folders $(SLIDES_MD)
 
 $(SLIDES_MD_DIR)/%.md: $(SLIDES_DIR)/%.pmd
 	FILENAME="$<" pweave -f markdown -i markdown -o $@ $<

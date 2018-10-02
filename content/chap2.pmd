@@ -591,9 +591,9 @@ Si al aplicar estas reglas, en cada posición `T[X,t]` obtenemos a lo sumo una p
 
 > **Definición:** Sea $G=<S,N,T,P>$ una gramática libre del contexto. $G$ es LL(1) si y solo si para todo no-terminal $X \in N$, tal que $X \leftarrow W_1 | W_2 | ... | W_n$ se cumple que:
 >
-> * $First(Wi) \bigcap First(Wj) = \emptyset \forall i \neq j$`
+> * $First(Wi) \bigcap First(Wj) = \emptyset \,\, \forall i \neq j$
 >
-> * $epsilon \in First(Wi) => First(Wj) \bigcap Follow(X) = \emptyset \forall j \neq i$
+> * $\epsilon \in First(Wi) => First(Wj) \bigcap Follow(X) = \emptyset \,\, \forall j \neq i$
 
 Esta definición nos garantiza que en toda entrada de la tabla LL(1) exista a lo sumo una producción a aplicar. Ahora podemos demostrar que la gramática anterior para expresiones, una vez factorizada, es LL(1):
 
