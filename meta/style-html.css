@@ -3,9 +3,11 @@ body {
     text-align: justify;
     width: 900px;
     margin: auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
     padding: 120px;
-    border-right: 1px solid rgb(180, 180, 180);
-    border-left: 1px solid rgb(180, 180, 180);
+    border: 1px solid rgb(180, 180, 180);
+    border-radius: 5px;
     background-color: white;
 }
 

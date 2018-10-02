@@ -4,5 +4,6 @@
     "version": "0.1.0",
     "command": "make",
     "showOutput": "silent",
-    "echoCommand": true
+    "echoCommand": true,
+    "isShellCommand": true
 }

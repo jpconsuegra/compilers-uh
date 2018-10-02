@@ -1,4 +1,4 @@
-# HCL
+# El lenguaje HCL
 
 En este capítulo definimos el lenguaje **HCL** (_Havana Compiler Language_), un lenguaje de programación didáctico diseñado para este curso.
 A grandes razgos, **HCL** es un lenguaje orientado a objetos, con herencia simple, polimorfismo, y encapsulamiento a nivel de clases.
@@ -8,7 +8,7 @@ También es posible definir _una única expresión global_ que constituye el pun
 La mayoría de las construcciones sintácticas en **HCL** son expresiones, incluyendo las instrucciones condicionales y los ciclos.
 Por último, **HCL** es un lenguaje fuertemente tipado con _tipado progresivo_, lo que significa que algunas (o todas) las partes de un programa pueden ser anotadas con tipos, y el compilador/intéprete intentará verificar la consistencia hasta donde sea posible.
 
-## Hola Mundo
+## Elementos básicos del lenguaje de HCL
 
 El programa más sencillo en **HCL** es, por supuesto, _Hola Mundo_:
 
@@ -18,7 +18,7 @@ print("Hola Mundo")
 
 En **HCL** un programa puede ser simplemente una expresión, en este caso, la invocación de una función global llamada `print` (que se presentará más adelante). La cadena de texto `"Hola Mundo"` es un literal del tipo `String`, definido en la biblioteca estándar, que se comporta de la forma convencional en la mayoría de los lenguajes de programación más populares: es inmutable, y codificado en UTF8.
 
-## Tipos básicos
+### Tipos básicos
 
 Además de los literales de cadena, en **HCL** hay 2 tipos básicos adicionales: `Number`, que representa valores numéricos y `Boolean` que representa valores de verdad (con los literales usuales `True` y `False`).
 
@@ -26,67 +26,97 @@ El tipo `Number` representa tanto números enteros, como números con coma flota
 
 **HCL** tiene una jerarquía de tipos unificada, cuya raíz es el tipo `Object`, que es el único tipo abstracto permitido (no puede ser instanciado). Todos los demás tipos definidos en el lenguaje son concretos.
 
-## Expresiones elementales
+### Expresiones elementales
 
 En **HCL** se definen todas las expresiones usuales, en orden decreciente de precedencia:
 
-- Aritméticas (entre expresiones de tipo `Number`): `- a`, `a ^ b`, `a * b`, `a / b`, `a + b`, `a - b`, con la precedencia y asociatividad usuales. El resultado es de tipo `Number` también.
+- Aritméticas (entre expresiones de tipo `Number`): `-a`, `a % b`, `a * b`, `a / b`, `a + b`, `a - b`, con la precedencia y asociatividad usuales. El resultado es de tipo `Number` también.
 - Comparaciones (entre expresiones de tipo `Number`): `a < b`, `a > b`, `a <= b`, `a >= b`, con menor precedencia que las aritméticas, y sin asociatividad.
 - Comparaciones de igualdad (entre expresiones de cualquier tipo): `a == b`, `a != b`, con la semántica de igualdad por valor entre expresiones de tipo `Number`, `String` o `Boolean`, e igualdad por referencia en todos los demás tipos. Se permite comparar expresiones de cualquier tipo, y si sus tipos no son compatibles (e.j, `"Hola Mundo" == 42`) el resultado será `False`.
 - Lógicas (entre expresiones de tipo `Boolean`): `a & b`, `a | b`, `!a`, siempre evaluadas con cortocircuito.
 
-## Variables
+En el espacio de nombres global siempre se encontrarán además las funciones `print`, `read` y `readNumber`, además de una serie de funciones elementales matemáticas, tales como `exp`, `pow`, `log`, `sqrt`, `min` y `max`.
+
+### Variables
 
 Las variables en **HCL** se introducen con una expresión `let`:
 
-```
-let <var>[:<type>] = <init> in <body>
+```HCL
+let <var>[:<type>]=<init> in <body>
 ```
 
 La semántica de la expresión `let` consiste en que se crea un nuevo ámbito donde se define la variable `<var>` cuyo valor es el resultado de evaluar `<init>`, y se evalua en este ámbito la expresión `<body>`.
 
-```
-let msg:String = "Hola Mundo" in print(msg)
+```HCL
+let msg:String="Hola Mundo" in print(msg)
 ```
 
 Como se verá, indicar el tipo de una variable al declararla es opcional. Los detalles de la inferencia y verificación de tipos se darán más adelante.
 
 Existe una variante extendida de la expresión `let` en la que se permite introducir más de una variable:
 
-```
+```HCL
 let x=1, y=2, z=3 in x+(y*z)
 ```
 
 Esta variante es semánticamente idéntica a:
 
-```
-let x=1 in let y = 2 in let z = 3 in x + (y * z)
+```HCL
+let x=1 in let y=2 in let z=3 in x+(y*z)
 ```
 
-## Espacios en blanco e indentación
+El cuerpo de una expresión `let` puede ser también una _lista de expresiones_, encerradas entre `{` y `}` y separadas por `;`, siendo el valor final de la expresión `let` el valor de la última expresión de la lista.
+
+```HCL
+let x=0 in {
+    print(x==0); # Imprime True
+    print(x==1); # Imprime False
+}
+```
+
+Una _lista de expresiones_ **no es** una expresión en sí, es decir, no puede ser usada donde quiera que se requiera una expresión. Solamente se puede usar en el cuerpo de algunas construcciones sintácticas que se irán introduciendo poco a poco.
+Es decir, que el siguiente ejemplo **no es válido**:
+
+```HCL
+let x={0;1} in print(x) # NO es válido
+```
+
+### Asignación
+
+La asignación en **HCL** se realiza con el operador `:=`, y solamente es posible asignar a una variable que exista en el contexto actual. La asignación devuelve el valor asignado:
+
+```HCL
+let color="green" in {
+    print(color);    # Imprime green
+    color:="blue";
+    print(color);    # Imprime blue
+}
+```
+
+### Espacios en blanco e indentación
 
 En **HCL** los espacios en blanco no son significativos, ni tampoco la indentación. La sintaxis del lenguaje permite indicar explícitamente, cuando es necesario, el ámbito de un bloque de código. El ejemplo anterior es equivalente a:
 
-```
+```HCL
 let x=1 in
-let y = 2 in
-let z = 3 in
+let y=2 in
+let z=3 in
     x + (y * z)
 ```
 
 O cualquier otra forma de indentar que sea conveniente.
 
-## Identificadores
+### Identificadores
 
 Los identificadores se definen por la siguiente expresión regular (exceptuando claro las palabras reservadas):
 
-```
+```HCL
 [a-zA-Z_][a-ZA-Z_0-9]*
 ```
 
 Es decir, empiezan con un caracter del alfabeto ASCII (o `_`) y pueden opcionalmente contener números internos. Ejemplos de identificadores válidos son:
 
-```
+```HCL
 x
 name
 CamelCase
@@ -96,41 +126,121 @@ _uggly_case
 hunter42
 ```
 
-## Gramática
+### Funciones
 
-Una gramática tentativa de **HCL** es la siguiente:
+**HCL** soporta funciones globales con 2 formas sintácticas muy similares. Una función se define por un nombre, argumentos con tipo opcional, un tipo de retorno también opcional, y el cuerpo.
+Todas las funciones globales deben ser definidas **antes** de la expresión global que define el _cuerpo_ del programa.
 
-    FUN-DEC  = ID ( ARGS ) FUN-BODY
-    FUN-BODY = -> EXPR | EXPR-LIST
+En la primera forma sintáctica, que llamamos "compacta", el cuerpo de la función debe ser exactamente una expresión:
 
-    EXPR-LIST = { EXPR ; [ EXPR ; ]* }
-    EXPR = LET-EXPR | ...
-    ...
-    ATOM = ( EXPR )
+```HCL
+function isEven(n:Number):Boolean -> n % 2 == 0
+```
 
-    LET-EXPR = let VARS in EXPR
+En la segunda forma, que llamaremos "extendida", el cuerpo de una función puede ser una _lista de expresiones_ separadas por `;`. El valor de retorno de la función es el valor de la última expresión de la lista:
 
-## Ejemplos
+```HCL
+function f(a, b, c) {
+    a := b + c;
+    b := c + a;
+    c := a + b;
+}
 
-    class A {
-        x:int = 5
-        function f(a:int):int {
-            a + 5
-        }
-    }
+let a=1, b=2, c=3 in print(f(a,b,c)) # Imprime 13
+```
 
-    // Valido
-    function g(x) -> x + 1
+En **HCL** no existe una instrucción ni palabra reservada con semántica similar a `return`. Todas las funciones tienen un tipo de retorno y devuelven siempre un valor, aunque este valor puede ser `Null`.
 
-    // Mejor
-    function g(x) {
-        x + 2;
-        x + 5;
-    }
+### Condicionales
 
-    let x = 5 in x + 6 + 4 + 7 + let y=5 in x
+Las expresiones condicionales se introducen con la sintaxis siguiente:
 
-    { (x=6) + { x=5; x+6 } }
+```
+if (<cond>) <body> [elif (<cond>) <body>]* [else <body>]
+```
 
+Es decir, una parte `if`, seguida de cero o más partes `elif` y finalmente una parte `else` opcional.
+Una expresión `if` devuelve el valor de la parte que se ejecuta. Si no se ejecuta ninguna (no hay else), devolverá `Null`. Si esto invalida la consistencia de tipos (como se verá más adelante), será necesario definir una parte `else` para garantizar al compilador/intérprete el tipo esperado.
 
-    function f(g) -> let x = y in let x = 5 in print(g(x)) + 5
+```
+function fib(n) -> if (n <= 1) 1 else fib(n-1) + fib(n-2)
+```
+
+Al igual que con las expresiones `let` y las funciones, cada cuerpo puede ser o bien una expresión o una lista de expresiones.
+
+### Ciclos
+
+La expresión de ciclo más general en **HCL** es un ciclo `while` con la semántica común:
+
+```HCL
+while (<cond>) <body>
+```
+
+Como ya es usual, `<body>` puede ser una expresión o una lista de expresiones.
+
+```HCL
+function gcd(a, b) {
+    let q=a%b in while (q != 0) {
+        a := b;
+        b := q;
+        q := a%b;
+    };
+
+    b;
+}
+```
+
+El valor de retorno de la expresión `while` es el valor de retorno del cuerpo la última vez que se ejecutó el ciclo, o `Null` en caso de que nunca se ejecute. Si es necesario, se puede adicionar una cláusula `else` para definir el valor cuando no haya ejecución.
+
+Con esta expresión, la manera más sencilla de implementar un contador (el común ciclo `for`) es:
+
+```HCL
+let i=0 in while (i < n) {
+    # ...
+    i := i+1;
+}
+```
+
+### Prioridad de las expresiones
+
+Las expresiones `let`, `if` y `while` tiene **menor prioridad** que todas las expresiones elementales (aritméticas, etc.). Por lo tanto,para poder usar una de estas expresiones dentro de una expresión aritmética, por ejemplo, se deben encerrar entre paréntesis.
+
+Por ejemplo, el siguiente es un caso común:
+
+```
+let x=5 in let y=8 in x+y
+```
+
+Que es equivalente a:
+
+```
+let x=5 in (let y=8 in (x+y))
+```
+
+Sin embargo, el siguiente caso **no es válido**, pues no se puede sumar con `let` sin parentizar (`let` tiene menor prioridad):
+
+```
+let x=5 in x + let y=8 in y # NO es valido
+```
+
+La forma correcta es:
+
+```
+let x=5 in x + (let y=8 in y) # NO es valido
+```
+
+Aunque no es del todo formal, podemos pensar que `let` "asocia a la derecha", pero solo cuando el cuerpo de un `let` es exactamente otra expresión `let`.
+De manera similar ocurre con `if` y `while` cuando se usan las formas "compactas".
+
+Por último, el bloque `else` siempre asocia al `if` más cercano.
+Es decir, la siguiente expresión:
+
+```HCL
+if (a) if (b) y else z
+```
+
+Es no ambigua, y equivalente a:
+
+```HCL
+if (a) (if (b) y else z)
+```
