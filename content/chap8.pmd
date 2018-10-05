@@ -6,7 +6,11 @@ Además en **HCL** es posible definir funciones globales fuera del contexto de c
 También es posible definir _una única expresión global_ que constituye el punto de entrada al programa.
 
 La mayoría de las construcciones sintácticas en **HCL** son expresiones, incluyendo las instrucciones condicionales y los ciclos.
-Por último, **HCL** es un lenguaje fuertemente tipado con _tipado progresivo_, lo que significa que algunas (o todas) las partes de un programa pueden ser anotadas con tipos, y el compilador/intéprete intentará verificar la consistencia hasta donde sea posible.
+Por último, **HCL** es un lenguaje estáticamente tipado con inferencia de tipos, lo que significa que algunas (o todas) las partes de un programa pueden ser anotadas con tipos, y el compilador verificará la consistencia de todas las operaciones.
+
+El lenguaje **HCL** ha sido diseñado para ser utilizado como mecanismo de aprendizaje y evaluación de un curso de Compilación. Por tal motivo, ciertas decisiones de diseño de lenguaje responden más a cuestiones didácticas que a cuestiones teóricas o pragmáticas. Un ejemplo ilustrativo es la inclusión de un solo tipo numérico básico. En la práctica los lenguajes de programación cuentan con varios tipos numéricos (`int`, `float`, `double`, `decimal`) para cubrir varias opciones. Sin embargo, desde el punto de vista didáctico, ya es suficiente complejidad el tener que lidiar con un tipo numérico, y la inclusión de otros no aporta nada nuevo desde nuestro punto de vista.
+
+Otra decisión importante es el tipado estático con inferencia de tipos, que será explicado más adelante en detalle. La motivación detrás de esta característica es permitir a los estudiantes implementar primero un evaluador para el lenguaje, y luego preocuparse por la verificación de tipos. Así mismo, la decisión de tener expresiones globales, funciones globales, y clases, responde a la necesidad de introducir los diversos elementos del lenguaje poco a poco. Al tener expresiones globales, es posible implementar un intérprete de expresiones sin necesidad de resolver los problemas de contexto. Luego se pueden introducir las funciones y finalmente las características orientadas a objetos. De esta forma los estudiantes pueden ir aprendiendo sobre la marcha a medida que adicionan características al lenguaje, siempre teniendo un subconjunto válido del lenguaje implementado.
 
 ## Elementos básicos del lenguaje de HCL
 
@@ -24,18 +28,20 @@ Además de los literales de cadena, en **HCL** hay 2 tipos básicos adicionales:
 
 El tipo `Number` representa tanto números enteros, como números con coma flotante. La semántica concreta dependerá de la arquitectura. Siempre que sea posible se representará con un valor entero de 64 (o 32) bits, o en su defecto, un valor flotante de 64 (o 32) bits, según permita la arquitectura. Las constantes numéricas se pueden escribir como `42` (valor entero) o `3.14` (valor flotante).
 
-**HCL** tiene una jerarquía de tipos unificada, cuya raíz es el tipo `Object`, que es el único tipo abstracto permitido (no puede ser instanciado). Todos los demás tipos definidos en el lenguaje son concretos.
+**HCL** tiene una jerarquía de tipos unificada, cuya raíz es el tipo `Object`. Todos los demás tipos definidos en el lenguaje son concretos.
 
 ### Expresiones elementales
 
 En **HCL** se definen todas las expresiones usuales, en orden decreciente de precedencia:
 
-- Aritméticas (entre expresiones de tipo `Number`): `-a`, `a % b`, `a * b`, `a / b`, `a + b`, `a - b`, con la precedencia y asociatividad usuales. El resultado es de tipo `Number` también.
-- Comparaciones (entre expresiones de tipo `Number`): `a < b`, `a > b`, `a <= b`, `a >= b`, con menor precedencia que las aritméticas, y sin asociatividad.
-- Comparaciones de igualdad (entre expresiones de cualquier tipo): `a == b`, `a != b`, con la semántica de igualdad por valor entre expresiones de tipo `Number`, `String` o `Boolean`, e igualdad por referencia en todos los demás tipos. Se permite comparar expresiones de cualquier tipo, y si sus tipos no son compatibles (e.j, `"Hola Mundo" == 42`) el resultado será `False`.
-- Lógicas (entre expresiones de tipo `Boolean`): `a & b`, `a | b`, `!a`, siempre evaluadas con cortocircuito.
+- Operaciones aritméticas entre expresiones de tipo `Number`: `-a`, `a % b`, `a * b`, `a / b`, `a + b`, `a - b`, con la precedencia y asociatividad usuales, y agrupamiento mediante paréntesis. El resultado es de tipo `Number` siempre.
+- Comparaciones entre expresiones de tipo `Number`: `a < b`, `a > b`, `a <= b`, `a >= b`, con menor precedencia que las aritméticas, y sin asociatividad.
+- Comparaciones de igualdad entre expresiones de cualquier tipo: `a == b`, `a != b`, con la semántica de igualdad por valor entre expresiones de tipo `Number`, `String` o `Boolean`, e igualdad por referencia en todos los demás tipos. Se permite comparar expresiones de cualquier tipo, y si sus tipos no son compatibles (e.j, `"Hola Mundo" == 42`) el resultado será `False`.
+- Operaciones lógicas entre expresiones de tipo `Boolean`: `a & b`, `a | b`, `!a`, siempre evaluadas con cortocircuito.
 
 En el espacio de nombres global siempre se encontrarán además las funciones `print`, `read` y `readNumber`, además de una serie de funciones elementales matemáticas, tales como `exp`, `pow`, `log`, `sqrt`, `min` y `max`.
+
+El valor `Null` es un valor especial que puede tener cualquier tipo. Todas las operaciones elementales con un valor `Null` lanzarán un error en tiempo de ejecución, **excepto** `==` y `!=`.
 
 ### Variables
 
@@ -155,14 +161,14 @@ En **HCL** no existe una instrucción ni palabra reservada con semántica simila
 
 Las expresiones condicionales se introducen con la sintaxis siguiente:
 
-```
-if (<cond>) <body> [elif (<cond>) <body>]* [else <body>]
+```HCL
+if (<cond>) <body> [elif (<cond>) <body>]* [else <body>]?
 ```
 
 Es decir, una parte `if`, seguida de cero o más partes `elif` y finalmente una parte `else` opcional.
 Una expresión `if` devuelve el valor de la parte que se ejecuta. Si no se ejecuta ninguna (no hay else), devolverá `Null`. Si esto invalida la consistencia de tipos (como se verá más adelante), será necesario definir una parte `else` para garantizar al compilador/intérprete el tipo esperado.
 
-```
+```HCL
 function fib(n) -> if (n <= 1) 1 else fib(n-1) + fib(n-2)
 ```
 
@@ -180,13 +186,13 @@ Como ya es usual, `<body>` puede ser una expresión o una lista de expresiones.
 
 ```HCL
 function gcd(a, b) {
-    let q=a%b in while (q != 0) {
-        a := b;
-        b := q;
-        q := a%b;
-    };
+    let q = a%b in while (q != 0) {
+        a := b
+        b := q
+        q := a%b
+    }
 
-    b;
+    b
 }
 ```
 
@@ -197,7 +203,7 @@ Con esta expresión, la manera más sencilla de implementar un contador (el com�
 ```HCL
 let i=0 in while (i < n) {
     # ...
-    i := i+1;
+    i := i+1
 }
 ```
 
@@ -207,26 +213,26 @@ Las expresiones `let`, `if` y `while` tiene **menor prioridad** que todas las ex
 
 Por ejemplo, el siguiente es un caso común:
 
-```
+```HCL
 let x=5 in let y=8 in x+y
 ```
 
 Que es equivalente a:
 
-```
+```HCL
 let x=5 in (let y=8 in (x+y))
 ```
 
 Sin embargo, el siguiente caso **no es válido**, pues no se puede sumar con `let` sin parentizar (`let` tiene menor prioridad):
 
-```
+```HCL
 let x=5 in x + let y=8 in y # NO es valido
 ```
 
 La forma correcta es:
 
-```
-let x=5 in x + (let y=8 in y) # NO es valido
+```HCL
+let x=5 in x + (let y=8 in y)
 ```
 
 Aunque no es del todo formal, podemos pensar que `let` "asocia a la derecha", pero solo cuando el cuerpo de un `let` es exactamente otra expresión `let`.
@@ -243,4 +249,288 @@ Es no ambigua, y equivalente a:
 
 ```HCL
 if (a) (if (b) y else z)
+```
+
+## Orientación a objetos en HCL
+
+Además de las características estructuradas y funcionales presentadas, el lenguaje **HCL** soporta el concepto de _tipo_, implementado mediante _clases_. Todos los valores creados en un programa de **HCL** tienen un tipo asociado, y este tipo no puede ser cambiado en tiempo de ejecución. Por esto decimos que **HCL** es un lenguaje con tipado estático.
+
+Aparte de los tipos nativos presentados (`Number`, `Boolean` y `String`), es posible definir nuevos tipos mediante la sintaxis:
+
+```HCL
+class <name> [inherits <base>] { [<attribute>]* [<method>]* }
+```
+
+Todas las clases deben ser definidas **antes** que todas las funciones globales, pero esto _no impide_ que dentro del cuerpo de un método en una clase (explicado más adelante), se llame a una función global, o se use una clase definida posteriormente.
+
+Todas las clases en **HCL** heredan de una clase base. En caso de no especificarse, esta clase será `Object`, que es la raíz de la jerarquía de tipos en **HCL**. Los tipos básicos `Number`, `String` y `Boolean` también heredan de `Object`, pero a diferencia del resto de las clases, **no es permitido heredar de los tipos básicos**. Esto se restringe ya que los tipos básicos generalmente se implementan de forma especial para garantizar una mayor eficiencia, y por lo tanto deben ser tratados con cuidado en la jerarquía de tipos.
+
+### Atributos y métodos
+
+Dentro del cuerpo de una clase se pueden definir dos tipos de elementos: atributos y métodos.
+Los atributos se definen con un nombre, un tipo opcional, y una expresión de inicializacion _opcional_ (si no se especifica el atributo correspondiente tendrá valor `Null`):
+
+```HCL
+class Point {
+    x:Number = 0
+    y:Number = 0
+}
+```
+
+Todos los atributos en **HCL** son **privados**, es decir, no está permitido acceder a ellos desde otras clases.
+
+Los métodos se definen con una sintaxis muy similar a las funciones globales. La única diferencia es que en el contexto de un método siempre existe una variable implícita `self` que referencia a la instancia en cuestión. Es obligatorio acceder a los atributos y métodos de una clase a través de `self`, **nunca** usando su nombre directamente.
+
+```HCL
+class Person {
+    name:String = "John Doe"
+    greet() -> "Hello" @ self.name
+}
+```
+
+O alternativamente:
+
+```HCL
+class Person {
+    name:String # Null
+    greet() {
+        # Sintaxis extendida
+        "Hello" @ self.name;
+    }
+}
+```
+
+Todos los atributos deben ser definidos **antes** que todos los métodos. Todos los métodos en **HCL** son **públicos** y **virtuales**, redefinibles por los herederos. Además, todos los métodos son de instancia, no existen métodos estáticos, y no existe sintaxis para invocar a un método que no sea a través de una referencia a una instancia de una clase.
+
+### Instanciando clases
+
+Para obtener una instancia de una clase en **HCL** se utiliza el nombre de la clase como si fuera un método:
+
+```HCL
+let p = Person() in p.greet() # Hello John Doe
+```
+
+Si se inicializar los atributos de la clase, se puede definir de la siguiente manera:
+
+```HCL
+class Person(name:String) {
+    name:String=name
+    greet() -> "Hello" @ self.name
+}
+```
+
+Y luego usarse el nombre de la clase como si fuera un método con la misma signatura:
+
+```HCL
+let p = new Person("Pete") in p.greet() # Hello Pete
+```
+
+Este "método constructor", si existe, debe ser **el primer método** definido en la clase.
+
+### Redefinición y polimorfismo
+
+En **HCL** todas las invocaciones a métodos de una instancia son polimórficas. El polimorfismo se resolverá en tiempo constante siempre que sea posible inferir estáticamente el tipo base de una instancia. En caso contrario, se resolverá dinámicamente, ascendiendo desde el tipo dinámico del objeto hacia `Object`, hasta que se encuentre el método, o se lanzará un error en tiempo de ejecución.
+
+Todos los métodos en **HCL** son virtuales, y pueden ser redefinidos, siempre que se mantenga la misma signatura (cantidad y tipo de los parámetros y retorno). La redefinición se realiza implícitamente si se define en una clase heredera un método con el mismo nombre de una clase ancestro:
+
+```HCL
+class Colleague inherits Person {
+    greet() -> "Hi" @ self.name
+}
+```
+
+El "método constructor" es el **único** método que no participa en el polimorfismo, no puede redefinirse, ni puede ser invocado de forma normal. Esto es porque su implementación es un tanto especial, ya que no existe polimorfismo durante la instanciación de una clase. Si una clase heredera desea redefinir su constructor, lo hará con el nombre correspondiente, y puede cambiar los parámetros.
+
+```HCL
+class Noble(title:String, who:String)
+    inherits Person(title ++ who) {
+
+}
+
+let p = new Noble("Sir", "Thomas") in p.greet() # Hello Sir Thomas
+```
+
+En caso de no redefinirlo, el comportamiento es como si implícitamente se hubiera definido un constructor con la implementación "heredada" del ancestro más cercano que tiene un constructor definido, y se le pasan los mismos argumentos.
+
+```HCL
+let c = new Colleague("Pete") in c.greet() # Hi Pete
+```
+
+### Evaluando el tipo dinámico
+
+La expresión `case` permite comparar el tipo dinámico de una expresión con una lista de tipos posibles. Su sintaxis es la siguiente:
+
+```HCL
+case <expr> of {
+    [<id>:<type> -> <body> ;]+
+}
+```
+
+Esta expresión compara el tipo dinámico de `<expr>` contra cada uno de los tipos `<type>`, y ejecuta el `<body>` correspondiente a la rama del ancestro más cercano:
+
+```HCL
+class A { }
+class B inherits A { }
+class C inherits B { }
+class D inherits A { }
+
+case new C() of {
+    a:A -> print("A");
+    b:B -> print("B"); # Se ejecuta esta rama
+    d:D -> print("C");
+}
+```
+
+En caso de ninguna rama ser válida en tiempo de ejecución, se lanza un error. En caso de poderse inferir el tipo de `<expr>`, se intentará validar la compatibilidad con los tipos `<type>`, y se lanzará un error semántico de existir. El cuerpo de una rama cualquiera puede ser una lista de expresiones entre `{` y `}` si fuera necesario, como sucede con las funciones.
+
+Existe una versión compacta también de `case` cuando hay una sola rama, con la forma:
+
+```HCL
+case <expr> of <id>:<type> -> <body>
+```
+
+Esta forma puede usarse para imitar un "downcast" en **HCL**, cuando se conoce con certeza el tipo dinámico de un objeto.
+
+Por ejemplo, el siguiente programa lanza error semántico pues `o` es de tipo estático `Object`, explícitamente declarado, por lo que no se puede sumar.
+
+```
+function dunno():Object -> 40
+
+let o:Object = something() in o + 2 # error semántico
+```
+
+Sin embargo, usando `case` se forzar al verificador de tipos a que infiera `Number` para esta expresión, lanzando error en tiempo de ejecución si realmente el tipo dinámico fuera otro.
+
+```
+function dunno():Object -> 40
+
+let o:Object = something() in case o of y:Number -> y + 2
+```
+
+## Verificación de tipos en HCL
+
+Un programa en **HCL** siempre será verificado para garantizar la consistencia del uso de los tipos. Sin embargo, según la cantidad de anotaciones de tipo que contenga el programa, será posible verificar una mayor o menor porción del código. **HCL** soporta un paradigma que denominamos "tipado progresivo", una generalización de los conceptos de tipado dinámico y tipado estático. Para entender este concepto, veamos primero los casos extremos.
+
+### Tipado estático y tipado dinámico
+
+La forma más estricta posible de escribir código **HCL** consiste en anotar el tipo estático de todas las declaraciones. Las construcciones sintácticas de **HCL** que admiten una declaración de tipo son:
+
+- Variables introducidas con `let`:
+    ```HCL
+    let x:Number=6, y:Number=7 in print(x*y)
+    ```
+- Parámetros formales y retorno de una función (o método):
+    ```HCL
+    function fact(n:Number):Number -> if (n<=1) 1 else n*fact(n-1)
+    ```
+- Atributos de una clase:
+    ```HCL
+    class Person {
+        name:String = "John Doe"
+    }
+    ```
+
+Para verificar la consistencia de tipos en modo estricto, es necesario anotar el tipo estático en cada uno de estos casos en todo el programa. En esta situación, el verificador de tipos de **HCL** se comporta como se espera en un lenguaje con tipado estático. El verificador infiere el tipo estático de cada expresión, y verifica que todas las asignaciones, declaraciones e invocaciones sean consistentes, lanzando un error semántico en caso de fallo.
+
+Si todos los tipos son anotados, el verificador puede garantizar que nunca se invocará un método o función incorrectamente, o se hará una asignación errónea. De esta forma el código ejecutado será más eficiente, pues no es necesario incluir verificaciones en tiempo de ejecución. De igual forma, el polimorfismo se resolverá en tiempo constante.
+
+El extremo opuesto consiste en no proveer anotaciones de tipo en ningún caso. En esta situación, el verificador de tipos no podrá garantizar la consistencia de muchas clases de expresiones, por lo que en el código final ejecutado se incluirán verificaciones en tiempo de ejecución para validar todas las operaciones.
+
+### Anotando el tipado dinámico
+
+Supongamos ahora que exigimos a todo programa en **HCL** anotar adecuadamente todos los tipos. Aun así, podemos introducir un mecanismo de tipado dinámico, mediante la definición de un _tipo estático_.
+Es decir, podemos reconciliar el tipado estático y dinámico en un solo mecanismo, introduciendo un tipo especial `Any`. Este tipo no puede ser instanciado ni heredado, y de hecho no existe en tiempo de ejecución. Solo puede ser usado como anotación de tipo en alguna declaración. Su función semántica es indicar al verificador de tipos que la expresión correspondiente se evalúa de forma _dinámica_. Veamos un ejemplo.
+
+En el siguiente fragmento, se instancia un objeto de tipo `Person` pero se enlaza a una variable declarada estáticamente como `Object`.
+
+```HCL
+class Person {
+    # ...
+}
+
+let p:Object = new Person() in p.greet() # error semántico
+```
+
+Este código no pasa el verificador de tipos, pues como `p:Object` indica el tipo estático de `p`, no es posible garantizar que el llamado `p.greet()` funcione, ya que `Object` no tiene el método `greet()`. Por otro lado, podemos anotar `p` con el tipo especial `Any`, obteniendo el siguiente fragmento de código:
+
+```HCL
+class Person {
+    # ...
+}
+
+let p:Any = new Person() in p.greet() # no se verifica la consistencia
+```
+
+En este caso, el tipo especial `Any` le indica al verificador de tipos que "confíe" en que el método `greet()` estará disponible en tiempo de ejecución, y genere un código que lo ejecute. Por supuesto, el código generado será diferente, pues habrá que buscar en tiempo de ejecución el método correcto. Pero desde el punto de vista semántico, el efecto que tiene anotar una declaración con tipo `Any` es _desactivar_ la verificación estática de consistencia de tipos.
+
+De cierta forma, es como si para el verificador de tipos, `Any` tuviera todos los métodos y atributos imaginables, y todos los operadores definidos, pero no _heredara de nadie_, ni siquiera de `Object`. En realidad, esto no es cierto, pues el tipo `Any` no existe en tiempo de ejecución, y la jerarquía de tipos en **HCL** tiene forma de árbol, por lo que no puede haber un tipo que no herede de `Object`; pero el efecto causado sobre el verificador de tipos se puede interpretar de esta forma. Por este motivo, cualquier uso de una variable con tipo estático `Any` será permitido.
+
+Por otro lado, como hemos dicho que `Any` se puede interpretar como si no fuera "heredero" de ningún tipo, entonces una vez que una expresión cualquiera tenga asignado (o inferido) tipo estático `Any`, ya nunca podrá ser usada con un tipo estático "normal", a menos que se use una expresión `case`. Por lo tanto, cualquier asignación de una expresión `Any` a una variable, autómaticamente obliga a esta variable a ser de tipo `Any` (ni siquiera `Object`). Así mismo, cualquier expresión donde aparezca un `Any` como argumento obliga al resultado de la expresión a ser `Any`.
+
+Por ejemplo, en el siguiente código, aunque la función `f` está estáticamente anotada, al usarla con un argumento de tipo de `Any`, el resultado ya debe ser de tipo `Any`:
+
+```HCL
+function f(m:Number, n:Number):Number ->
+    if   (m == 0) n + 1
+    elif (n == 0) f(m-1,1)
+    else          f(m-1, f(m,n-1))
+
+let m:Any=3, n:Number=4 in
+    let y:Any = f(m,n) in print(y)  # y:Number daría error semántico
+```
+
+Aunque sabemos que `y` será realmente de tipo dinámico `Number`, al anotar con `Any` aunque sea uno de los argumentos de `f`, estamos obligando al resultado a ser interpretado como `Any`. De cierta forma, el tipo `Any` es "viral", su uso obliga a anotar como `Any` hacia afuera todo lo que toca, al menos hasta que se encuentre una clásula `case`.
+
+### Tipado progresivo
+
+Una vez definido el comportamiento del tipo `Any`, el salto hacia el tipado progresivo es trivial. Si anotamos todas las declaraciones de un programa con `Any`, lo que tenemos como resultado es un código con tipado totalmente dinámico. Por otro lado, si anotamos todo el código con tipos "normales", tendremos un código totalmente estático. El tipado progresivo no es más que la anotación parcial de las declaraciones, algunas con tipos "normales" y otras con `Any`, como en el ejemplo anterior. Al anotar algunas declaraciones con `Any`, ya hemos definido exactamente como se comportará el verificador de tipos. Ahora simplemente definimos que _no anotar el tipo de una declaración es equivalente a anotar con_ `Any`.
+
+De modo que el tipado progresivo no es más que un mecanismo por el cual al verificador de tipos, para ciertas anotaciones, se le indica que no verifique la consistencia, y "confíe" en las operaciones. Cuando una declaración no está anotada, el verificador asume implícitamente el tipo `Any`, y continúa. Sin embargo, esto no "desactiva" el verificador de tipos. Por el contrario, el verificador se encargará de garantizar que se haga un uso consistente de las anotaciones, incluso de la _ausencia_ de ellas, dada la regla "viral" del tipo `Any`.
+
+Siguiendo con el ejemplo anterior, si escribimos el código de la siguiente forma, tendremos un error semántico, pues no se puede garantizar que `y` será de tipo `Number` una vez hemos permitido un argumento con tipo `Any` (implícito) en `f`.
+
+```HCL
+function f(m:Number, n:Number):Number ->
+    if   (m == 0) n + 1
+    elif (n == 0) f(m-1,1)
+    else          f(m-1, f(m,n-1))
+
+let m=3, n=4 in
+    let y:Number = f(m,n) in print(y)  # error semántico
+```
+
+De modo que el tipado progresivo nos permite garantizar estáticamente toda la parte del código que seamos capaces de anotar, pero da flexibilidad para la ejecución de código dinámico. Además permite mezclar convenientemente código estático y dinámico, pero siempre garantizando la consistencia del tipado, incluso del tipado dinámico.
+
+Esta característica de tipado progresivo ha sido añadida a **HCL** por varios motivos. En primer lugar, permite introducir el lenguaje poco a poco, comenzando por un subconjunto que solo contiene expresiones, luego introducir funciones, luego clases, y solo entonces introducir el problema de tipado estático y su verificación. Por otro lado, al implementar un compilador para **HCL**, es necesario lidiar a la vez con problemas típicos de lenguajes estáticos, y de lenguajes dinámicos, lo que da una mayor cobertura de los conocimientos de esta disciplina.
+
+## Formalización del lenguaje HCL
+
+En esta sección presentaremos una descripción formal de **HCL**, en términos sintácticos, semánticos y operacionales. Esta sección debe servir como referencia para la construcción de un compilador de **HCL**, pero recomendamos las secciones anteriores que explican de forma más intuitiva todos los elementos relevantes del lenguaje.
+
+## Sintaxis de HCL
+
+Una gramática posible para **HCL** se muestra a continuación. Nótese que por motivos didácticos, esta gramática es ambigua. En particular, la asociatividad y prioridad de los distintos tipos de expresiones se deja sin resolver, para dar espacio a los estudiantes a que resuelvan estos problemas.
+
+### Terminales
+
+Los terminales de **HCL** son:
+
+```Grammar
+NUMBER  := [0-9]+(.[0-9]+)?
+STRING  := '"' UNICODE* '"' # Todos los caracteres unicode válidos
+BOOLEAN := 'True' | 'False'
+LITERAL := NUMBER | STRING | BOOLEAN
+ID      := [a-zA-Z_][a-zA-Z0-9]*
+```
+
+Un programa en **HCL** tiene tres partes.
+
+```Grammar
+<program> := [<class>]* [<function>]* [<expr>]?
+```
+
+Una clase contiene atributos y métodos.
+
+```Grammar
+<class> := 'class' ID ['inherits' ID] { [<attr>]* [<method>]* }
 ```
