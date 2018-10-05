@@ -502,20 +502,44 @@ Los terminales de **HCL** son:
 
 ```Grammar
 NUMBER  := [0-9]+(.[0-9]+)?
-STRING  := '"' UNICODE* '"' # Todos los caracteres unicode válidos
-BOOLEAN := 'True' | 'False'
+STRING  := " UNICODE* " # Todos los caracteres unicode válidos
+BOOLEAN := True | False
 LITERAL := NUMBER | STRING | BOOLEAN
 ID      := [a-zA-Z_][a-zA-Z0-9]*
 ```
 
-Un programa en **HCL** tiene tres partes.
+Un programa en **HCL** tiene tres partes: declaraciones de clases, declaraciones de funciones y una expresión opcional terminada en `;`:
 
 ```Grammar
-<program> := [<class>]* [<function>]* [<expr>]?
+<program> := [<class>]* [<function>]* [<expr>;]
 ```
 
-Una clase contiene atributos y métodos.
+Una clase contiene atributos y métodos, y opcionalmente declaraciones de argumentos de clases:
 
 ```Grammar
-<class> := 'class' ID ['is' ID] { [<attr>]* [<method>]* }
+<class>  := class ID [(<params>)] [is ID [(<args>)]] { [<attr>]* [<method>]* }
+<params> := ID [: ID] [, ID [: ID]]*
+          | epsilon
+<args>   := ID = <expr> [, ID = <expr>]*
+          | epsilon
+```
+
+Los atributos tiene un nombre, opcionalmente un tipo y una inicialización obligatoria.
+
+```Grammar
+<attr> := ID [: ID] = <expr> ;
+```
+
+Un método tiene un nombre, argumentos, un tipo de retorno opcional y un cuerpo. Hay 2 tipos de notaciones para métodos, una donde el cuerpo es una expresión simple (y termina en `;`) y otra donde el cuerpo es una lista de expresiones.
+
+```Grammar
+<method> := ID ( <params> ) [: ID] <body>
+<body>   := -> <expr> ;
+          | { [<expr>;]* }
+```
+
+Una función global tiene una signatura muy parecida a un método, pero requiere la palabra clave `function`:
+
+```Grammar
+<function> := function ID ( <params> ) [: ID] <body>
 ```
