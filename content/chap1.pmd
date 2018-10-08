@@ -255,6 +255,12 @@ Automaton('q0', ['q3'], {
     ('q1', 'a'): 'q2',
     ('q2', 'a'): 'q3',
     ('q3', 'a'): 'q4',
+
+    ('q0', 'b'): 'q0',
+    ('q1', 'b'): 'q1',
+    ('q2', 'b'): 'q2',
+    ('q3', 'b'): 'q3',
+    ('q4', 'b'): 'q4',
 }).print(float=False, width="70%")
 ```
 
@@ -272,7 +278,7 @@ De manera general, informalmente, podemos decir que los lenguajes regulares son 
 
 Ahora que ya sabemos cómo construir autómatas para cualquier lenguaje regular, y sabemos (intuitivamente) que el lenguaje de los *tokens* de un lenguaje de programación se puede definir como un lenguaje regular, nos dedicamos a la pregunta de cómo es mejor definir ese lenguaje. Evidentemente, podemos diseñar un autómata, de forma manual, que reconozca los *tokens*, pero esta tarea, incluso para los lenguajes más sencillos, es muy engorrosa. El problema radica en los autómatas son un mecanismo de cómputo, podemos decir, un mecanismo *procedural* o *imperativo*, para definir lenguajes. Para definir un autómata hay que decidir una cantidad de estados, el conjunto de estados finales y las transiciones. Todo esto no parece intuitivo de antemano. Por otro lado, un autómata es muy difícil de "leer" para un humano. Al mirar un autómata, identificar rápidamente el lenguaje que reconoce no es una tarea sencilla, mucho menos intuitiva.
 
- De forma alternativa, pudiéramos desear tener un mecanismo *declarativo* que nos permita definir lenguajes de forma más sencilla, y de dónde sea posible de forma automática obtener el autómata correspondiente. Como sabemos de la experiencia anterior en otros lenguajes de programación, los humanos somos muchos mejores mientras mayor sea el nivel de abstracción, y las máquinas son mucho mejores mientras menor sea el nivel abstracción. ¡Justamente por esta diferencia es que surgió la ciencia de la compilación en sí misma! Estamos volviendo a enfrentarnos al mismo problema original, pero en una escala menor. Cabe preguntarnos entonces si podemos crear un mecanismo de "alto nivel" para definir lenguajes regulares, y una especie de compilador que transforme este mecanismo de alto nivel al autómata correspondiente.
+De forma alternativa, pudiéramos desear tener un mecanismo *declarativo* que nos permita definir lenguajes de forma más sencilla, y de dónde sea posible de forma automática obtener el autómata correspondiente. Como sabemos de la experiencia anterior en otros lenguajes de programación, los humanos somos muchos mejores mientras mayor sea el nivel de abstracción, y las máquinas son mucho mejores mientras menor sea el nivel abstracción. ¡Justamente por esta diferencia es que surgió la ciencia de la compilación en sí misma! Estamos volviendo a enfrentarnos al mismo problema original, pero en una escala menor. Cabe preguntarnos entonces si podemos crear un mecanismo de "alto nivel" para definir lenguajes regulares, y una especie de "compilador" que transforme este mecanismo de alto nivel al autómata correspondiente.
 
 ## Convirtiendo expresiones regulares a autómatas finitos {#regnfa}
 
