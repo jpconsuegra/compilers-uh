@@ -592,6 +592,7 @@ Finalmente las expresiones se dividen en 7 tipos fundamentales:
         | <if-expr>
         | <while-expr>
         | <case-expr>
+        | <assign-expr>
         | <elem-expr>
 ```
 
@@ -626,6 +627,13 @@ Una expresión de tipo `case` tiene una expresión y un conjunto de ramas compue
              | { [ID : ID -> <expr-body> ;]* }
 ```
 
+Una asignación tiene una locación a la izquierda y una expresión a la derecha:
+
+```Grammar
+<assing-expr> := <loc> ':=' <expr>
+<loc>         := <loc> [ '[' <expr> ']' ]? | <loc> . <expr> | ID
+```
+
 Las expresiones elementales se componen de todas las operaciones lógicas, aritméticas, etc., además de la invocación a funciones globales, métodos, y atributos:
 
 ```Grammar
@@ -636,5 +644,7 @@ Las expresiones elementales se componen de todas las operaciones lógicas, aritm
              | <expr> @ <expr>  | <expr> @@ <expr>
              | <expr> + <expr>  | <expr> - <expr>
              | <expr> % <expr>  | <expr> * <expr>   | <expr> / <expr>
-             | [<expr>.] ID [( <args> )]? | -<expr> | ( <expr> )
+             | <expr> [ '[' <expr> ']' ]?
+             | [<expr> .] ID [( <args> )]?
+             | -<expr> | ( <expr> )
 ```
