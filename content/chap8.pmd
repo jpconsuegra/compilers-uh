@@ -722,7 +722,7 @@ Una asignación tiene una locación a la izquierda y una expresión a la derecha
 
 ```Grammar
 <assing-expr> := <loc> ':=' <expr>
-<loc>         := <loc> [ '[' <expr> ']' ]? | <loc> . <expr> | ID
+<loc>         := <loc> '[' <expr> ']' | <loc> . <expr> | ID
 ```
 
 Las expresiones elementales se componen de todas las operaciones lógicas, aritméticas, etc., además de la invocación a funciones globales, métodos, y atributos:
