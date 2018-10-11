@@ -707,7 +707,8 @@ Una expresión de tipo `if` tiene un conjunto de condiciones y opcionalmente una
 Una expresión de tipo `while` tiene una condición, un cuerpo, y opcionalmente una cláusula `else`:
 
 ```Grammar
-<while-expr> := while ( <expr> ) <expr-body> [else <expr-body>]
+<while-expr> := while ( <expr> ) <expr-body>
+                [else <expr-body>]
 ```
 
 Una expresión de tipo `case` tiene una expresión y un conjunto de ramas compuestas por identificador, tipo, y expresión de retorno:
@@ -722,7 +723,9 @@ Una asignación tiene una locación a la izquierda y una expresión a la derecha
 
 ```Grammar
 <assing-expr> := <loc> ':=' <expr>
-<loc>         := <loc> '[' <expr> ']' | <loc> . <expr> | ID
+<loc>         := <loc> '[' <expr> ']'
+               | <loc> . <expr>
+               | ID
 ```
 
 Las expresiones elementales se componen de todas las operaciones lógicas, aritméticas, etc., además de la invocación a funciones globales, métodos, y atributos:
