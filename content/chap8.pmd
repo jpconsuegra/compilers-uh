@@ -42,7 +42,7 @@ En **HULK** se definen todas las expresiones usuales, en orden decreciente de pr
 
 En el espacio de nombres global siempre se encontrarán además las funciones `print`, `read` y `parse`, además de una serie de funciones elementales matemáticas, tales como `exp`, `pow`, `log`, `sqrt`, `min` y `max`.
 
-El valor `Null` es un valor especial que puede tener cualquier tipo, excepto `Number` y `Boolean`. Los únicos operadores válidos con un valor `Null` son `==` y `!=`. `Null` representa la no existencia de una instancia asociada a la variable (_l-value_ en caso general) correspondiente, y cualquier operación que se intente sobre un valor `Null` lanzará un error en tiempo de ejecución. No está permitido comparar una variable de tipo `Number` o `Boolean` con `Null` (lanza error semántico).
+El valor `Null` es un valor especial que puede tener cualquier tipo, excepto `Number` y `Boolean`. `Null` representa la no existencia de una instancia asociada a la variable (_l-value_ en caso general) correspondiente, y cualquier operación que se intente sobre un valor `Null` lanzará un error en tiempo de ejecución, excepto `==`,que siempre devuelve `False`, y `!=` (que siempre devuelve `True`, incluso entre expresiones ambas iguales a `Null`. El literal `Null` es una expresión de tipo `Object` con valor igual a `Null`.
 
 ### Variables
 
@@ -136,13 +136,7 @@ O cualquier otra forma de indentar que sea conveniente.
 
 ### Identificadores
 
-Los identificadores se definen por la siguiente expresión regular (exceptuando claro las palabras reservadas):
-
-```HULK
-[a-zA-Z_][a-ZA-Z_0-9]*
-```
-
-Es decir, empiezan con un caracter del alfabeto ASCII (o `_`) y pueden opcionalmente contener números internos. Ejemplos de identificadores válidos son:
+Los identificadores empiezan con un caracter del alfabeto ASCII (o `_`) y pueden opcionalmente contener números. Ejemplos de identificadores válidos son:
 
 ```HULK
 x
@@ -150,7 +144,7 @@ name
 CamelCase
 smallCamelCase
 snake_case
-_uggly_case
+_ugly_case
 hunter42
 ```
 
@@ -262,6 +256,68 @@ let x = Number[][10], n=0 in while(n<x.size()) {
 
 El tipo de un _array_ complejo como el anterior sería `Number[][]`.
 
+### Inicialización automática de _arrays_
+
+Cuando se instancia un _array_, es posible inicializarlo automáticamente mediante la sintaxis:
+
+```HULK
+<type>[<length>] { <index> -> <expr> }
+```
+
+Donde `<expr>` es una expresión que devuelve el valor del i-ésimo elemento, indizado por la variable `<index>`. Por ejemplo:
+
+```HULK
+Number[20]{ i -> 2*i+1 }
+```
+
+Es equivalente a:
+
+```HULK
+let x=Number[20], i=0 in while (i<x.size()) {
+    x[i] := 2*i+1;
+    i := i+1;
+    x;
+}
+```
+
+La expresión de inicialización es un atajo sintáctico para no escribir un ciclo de inicialización. Por tal motivo, se comporta exactamente igual que dicho ciclo. Esta expresión crea un nuevo contexto donde se define la variable `<index>`. Este contexto es hijo del contexto donde se crea el _array_. En particular, **tiene acceso** a la variable que referencia al propio _array_ (en caso de existir). Por ejemplo, la siguiente expresión es válida:
+
+```HULK
+let x=Number[20]{ i -> if (i<=1) 0 else x[i-1] + x[i-2] }
+```
+
+Pues es equivalente a:
+
+```HULK
+let x=Number[20], i=0 in while (i<x.size()) {
+    x[i] := if (i<=1) 0 else x[i-1] * x[i-2];
+    i := i+1;
+    x;
+}
+```
+
+### Lidiando con valores `Null`
+
+Si una variable tiene valor `Null`, se lanzará un error en tiempo de ejecución si se intenta cualquier operación sobre ella (expecto `==` y `!=`). Siempre es posible evitar esto comprobando explícitamente:
+
+```HULK
+if (x != Null) x.value else 0
+```
+
+Para estos casos, **HULK** introduce una sintaxis específica:
+
+```HULK
+with (<expr> as <id>) <expr> [else <expr>]
+```
+
+Por ejemplo, en este caso:
+
+```HULK
+with (x as o) o.value else 0
+```
+
+La ventaja de esta sintaxis es que dentro del cuerpo de `with` se garantiza que `<id>` nunca será `Null`. Además, la variable `<id>` es **una referencia de de solo lectura** a la expresión `<expr>`, y el compilador impide que se le hagan asiganciones. De modo que es posible garantizar que este código nunca lanzará excepción en tiempo de ejecución por accesos o usos de `<id>`.
+
 ### Prioridad de las expresiones
 
 Las expresiones `let`, `if` y `while` tienen **menor prioridad** que todas las expresiones elementales (aritméticas, etc.), y siempre asocian a la derecha. Por lo tanto, para poder usar una de estas expresiones dentro de una expresión aritmética, por ejemplo, se deben encerrar entre paréntesis.
@@ -303,6 +359,8 @@ Es no ambigua, y equivalente a:
 if (a) (if (b) y else z)
 ```
 
+Por otro lado, la invocación de funciones, instanciación, el acceso a miembros (e.g., `self.x`) y el indizado en _arrays_ tienen mayor prioridad que todas las expresiones elementales aritméticas.
+
 ## Orientación a objetos en HULK
 
 Además de las características estructuradas y funcionales presentadas, el lenguaje **HULK** soporta el concepto de _tipo_, implementado mediante _clases_. Todos los valores creados en un programa de **HULK** tienen un tipo asociado, y este tipo no puede ser cambiado en tiempo de ejecución. Por esto decimos que **HULK** es un lenguaje con tipado estático.
@@ -310,7 +368,10 @@ Además de las características estructuradas y funcionales presentadas, el leng
 Aparte de los tipos nativos presentados (`Number`, `Boolean` y `String`), es posible definir nuevos tipos mediante la sintaxis:
 
 ```HULK
-class <name>[<args>] [is <base>[<init>]] { [<attribute>;]* [<method>]* }
+class <name>[<args>] [is <base>[<init>]] {
+    [<attribute>;]*
+    [<method>]*
+}
 ```
 
 Todas las clases deben ser definidas **antes** que todas las funciones globales, pero esto _no impide_ que dentro del cuerpo de un método en una clase (explicado más adelante), se llame a una función global, o se use una clase definida posteriormente.
@@ -329,7 +390,7 @@ class Point {
 }
 ```
 
-Todos los atributos en **HULK** son **privados**, es decir, no está permitido acceder a ellos desde otras clases.
+Todos los atributos en **HULK** son **privados**, es decir, no está permitido acceder a ellos desde otras clases, ni desde clases herederas.
 
 Los métodos se definen con una sintaxis muy similar a las funciones globales. La única diferencia es que en el contexto de un método siempre existe una variable implícita `self` que referencia a la instancia en cuestión. Es obligatorio acceder a los atributos y métodos de una clase a través de `self`, **nunca** usando su nombre directamente.
 
@@ -375,12 +436,12 @@ En **HULK** todas las invocaciones a métodos de una instancia son polimórficas
 
 ```HULK
 class Person(name:String) {
-    name:String=name
-    def greet() -> "Hello" @@ self.name
+    name:String=name;
+    def greet() -> "Hello" @@ self.name;
 }
 
 class Colleague is Person {
-    greet() -> "Hi" @@ self.name
+    greet() -> "Hi" @@ self.name;
 }
 ```
 
@@ -487,7 +548,7 @@ En el caso anterior, es fácil inferir el tipo de retorno de `succ` porque la ex
 function succ(n) -> n + 1;
 ```
 
-Sin embargo, a veces no es posible inferir el tipo de un argumento a partir de su uso _dentro del cuerpo_ de una función. En el caso siguiente, aunque sabemos que el tipo del argumento `p` debe ser `Point` para aceptar la invocación, _no se garantiza_ que el mecanismo de inferencia de tipos deba deducirlo. Dependiendo de la implementación, en estos casos se permite lanzar error semántico indicando que no fue posible inferir el tipo del argumento `p`.
+Sin embargo, a veces no es posible inferir el tipo de un argumento a partir de su uso _dentro del cuerpo_ de una función. En el caso siguiente, aunque sabemos que el tipo del argumento `p` debe ser `Point` para aceptar la invocación, _no se garantiza_ que el mecanismo de inferencia de tipos deba deducirlo (ya que en el futuro puede haber otras clases con un método `translate`). Dependiendo de la implementación, en estos casos se permite lanzar error semántico indicando que no fue posible inferir el tipo del argumento `p`.
 
 ```HULK
 function step(p) -> p.translate(1,1);
@@ -521,15 +582,44 @@ def g(a, b) -> if (b==1) a else f(a/2, b+1)
 
 En este caso, es posible teóricamente inferir que `f` y `g` deben ambos retornar tipo `Number`, pero dada la complejidad de manejar la inferencia de tipos en más de una función a la vez, no se garantiza que sea posible deducir los tipos en este caso.
 
-De igual manera, en el caso general, no se garantiza que se pueda deducir el tipo de los argumentos de clase, a menos que se usen en la inicialización de los atributos de forma consistente:
+Cuando se crea un _array_, es posible inferir el tipo estático si se provee una expresión de inicialización:
 
 ```HULK
-class Point(x,y):
-    x=x;
-    y=y;
-    zero=x==0 & y==0; # Se puede inferir x:Number e y:Number
-    # ...
+let x = [20]{ i -> (i+1)*(i+2) } in ... # Infiere Number
 ```
+
+Sin embargo, si en la expresión de inicialización se usa el propio _array_, entonces no se garantiza que sea posible inferir el tipo:
+
+```HULK
+let x=[20]{ i -> if (i<=1) 1 else x[i-1] + x[i-2] } in ...
+```
+
+### _Null-safety_ en **HULK**
+
+Gracias a la existencia de la instrucción `with`, el compilador de **HULK** es capaz de inferir para un programa si es seguro garantizar que no habrá errores en ejecución por variables `Null`. Es posible entonces que un compilador genere en estos casos un código más eficiente, al no tener que validar las referencias en todos los accesos y usos. En todos los casos en que no se pueda garantizar la _null-safety_, el compilador debe emitir una advertencia en tiempo de compilación (_warning_).
+
+Opcionalmente, el compilador de **HULK** puede ejecutarse en modo **null-safe**. En este modo, las advertencias por violación de _null-safety_ se convierten en errores de compilación.
+
+Nótese que no es estrictamente necesario usar `with` en todos los casos para garantizar la _null-safety_. Hay casos en que por el contexto es posible garantizar la seguridad.
+El caso más sencillo es cuando se usan variables de tipo `Number` o `Boolean`, que por definición no pueden contener un valor `Null`.
+
+Un caso más interesante es cuando se puede inferir por la inicialización de una variable, por ejemplo:
+
+```HULK
+let x=Person("John Doe") in print(x.greet());
+```
+
+En este caso se puede inferir que `x` nunca será `Null` pues no existe ninguna asignación, y el valor de la expresión `Person(...)` nunca es `Null`.
+
+Por el contrario, si se usa un ciclo o una expresión `if` sin parte `else`, no es posible garantizar _null-safety_, incluso cuando realmente el valor de la expresión no pueda ser `Null`.
+
+```HULK
+let i=n, x=(while (i > 0) i:=i-1) in print(x);
+```
+
+Así mismo, en los argumentos de una función nunca será posible garantizar _null-safety_.
+
+De manera general el compilador de **HULK** hará todo lo posible por inferir si cada uso es _null-safe_, incluso cuando no se introduzca una expresión `with`. En los casos en que no sea posible inferirlo, el programador siempre podrá introducir una expresión `with` para satisfacer al compilador.
 
 ## Formalización del lenguaje HULK
 
@@ -609,8 +699,9 @@ Una expresión de tipo `let` se compone de un bloque de inicializaciones, y un c
 Una expresión de tipo `if` tiene un conjunto de condiciones y opcionalmente una cláusula `else`:
 
 ```Grammar
-<if-expr> := if ( <expr> ) <expr-body> [elif ( <expr> ) <expr-body>]*
-                                       [else <expr-body>]
+<if-expr> := if ( <expr> ) <expr-body>
+             [elif ( <expr> ) <expr-body>]*
+             [else <expr-body>]
 ```
 
 Una expresión de tipo `while` tiene una condición, un cuerpo, y opcionalmente una cláusula `else`:
