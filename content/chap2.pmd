@@ -1,3 +1,8 @@
+---
+previous-chapter: chap1
+next-chapter: chap3
+---
+
 # Parsing Descendente (*Top-Down*)
 
 Hasta el momento hemos visto el proceso de compilación a grandes razgos, y hemos definido que la primera fase consiste en el análisis sintáctico. Esta fase a su vez la hemos divido en 2 procesos secuenciales: el análisis lexicográfico (*tokenización* o *lexing*), y el análisis sintáctico en sí (*parsing*). En esta sección nos concentraremos en este segundo proceso.

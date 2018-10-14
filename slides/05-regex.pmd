@@ -277,7 +277,7 @@ Una expresión regular es una definición recursiva de un lenguaje:
 
 Si $s$ y $r$ son expresiones regulares, entonces:
 
-- **Unión**: $(s) | (r)$ es la expresión regular para el lenguaje $L(s) \bigcup L(r)$.
+- **Unión**: $(s)|(r)$ es la expresión regular para el lenguaje $L(s) \bigcup L(r)$.
 - **Concatenación**: $(s)(r)$ es la expresión regular para el lenguaje $L(s)L(r)$.
 - **Clausura**: $(s)*$ es la expresión regular para el lenguaje $L(s)* = \bigcup_{k=0}^\infty L(s)^k$.
 
@@ -289,7 +289,7 @@ Más adelante caracterizaremos formalmente a estos lenguajes.
 > - $(a|b)*$
 > - $aa(a|b)*$
 > - $(a|b)*bb$
-> - $a*(baa*)*$
+> - $a*(baa*)*(b|\epsilon)$
 > - $(1|2|3|4|5|6|7|8|9)(0|1|2|3|4|5|6|7|8|9)*$
 
 # Expresiones regulares extendidas
@@ -332,7 +332,7 @@ Si tenemos una expresión regular $r$ y un lenguaje $L$, ¿cómo demostrar que $
 
 ### Ejemplo:
 
-- $a*(baa*)*$
+- $a*(baa*)*(b|\epsilon)$
 
 # Gramáticas regulares
 

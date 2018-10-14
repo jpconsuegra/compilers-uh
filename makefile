@@ -59,13 +59,10 @@ $(CONTENT_MD_DIR)/%.md: $(CONTENT_DIR)/%.pmd
 	FILENAME="$<" pweave -f markdown -i markdown -o $@ $<
 
 ## Images
-images: folders $(GRAPHICS_SVG) $(GRAPHICS_PNG) $(GRAPHICS_PDF) $(GRAPHICS_BUILD_PNG) $(GRAPHICS_BUILD_PDF)
+images: folders $(GRAPHICS_SVG) $(GRAPHICS_PDF) $(GRAPHICS_BUILD_PDF)
 
 $(GRAPHICS_BUILD_DIR)/%.svg: $(GRAPHICS_DIR)/%.svg
 	cp $< $@
-
-$(GRAPHICS_BUILD_DIR)/%.png: $(GRAPHICS_BUILD_DIR)/%.svg
-	inkscape -e $@ -f $<
 
 $(GRAPHICS_BUILD_DIR)/%.pdf: $(GRAPHICS_BUILD_DIR)/%.svg
 	inkscape -A $@ -f $<
@@ -75,7 +72,7 @@ html: folders $(CONTENT_HTML) images meta/style-html.css
 	cp meta/style-html.css $(HTML_DIR)/style.css
 
 $(HTML_DIR)/%.html: $(CONTENT_MD_DIR)/%.md
-	pandoc -c style.css -s -o $@ $<
+	pandoc -c style.css --template meta/template-book.html -o $@ $<
 
 ## Slides
 slides: folders $(SLIDES_PDF)

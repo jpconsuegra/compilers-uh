@@ -1,3 +1,7 @@
+---
+previous-chapter: chap7
+---
+
 # El lenguaje HULK
 
 En este capítulo definimos el lenguaje **HULK** (_Havana University Language for Kompilers_), un lenguaje de programación didáctico diseñado para este curso.
@@ -6,9 +10,9 @@ Además en **HULK** es posible definir funciones globales fuera del contexto de 
 También es posible definir _una única expresión global_ que constituye el punto de entrada al programa.
 
 La mayoría de las construcciones sintácticas en **HULK** son expresiones, incluyendo las instrucciones condicionales y los ciclos.
-Por último, **HULK** es un lenguaje estáticamente tipado con inferencia de tipos, lo que significa que algunas (o todas) las partes de un programa pueden ser anotadas con tipos, y el compilador verificará la consistencia de todas las operaciones.
+**HULK** es un lenguaje estáticamente tipado con inferencia de tipos, lo que significa que algunas (o todas) las partes de un programa pueden ser anotadas con tipos, y el compilador verificará la consistencia de todas las operaciones.
 
-El lenguaje **HULK** ha sido diseñado para ser utilizado como mecanismo de aprendizaje y evaluación de un curso de Compilación. Por tal motivo, ciertas decisiones de diseño de lenguaje responden más a cuestiones didácticas que a cuestiones teóricas o pragmáticas. Un ejemplo ilustrativo es la inclusión de un solo tipo numérico básico. En la práctica los lenguajes de programación cuentan con varios tipos numéricos (`int`, `float`, `double`, `decimal`) para cubrir varias opciones. Sin embargo, desde el punto de vista didáctico, ya es suficiente complejidad el tener que lidiar con un tipo numérico, y la inclusión de otros no aporta nada nuevo desde nuestro punto de vista.
+El lenguaje **HULK** ha sido diseñado para ser utilizado como mecanismo de aprendizaje y evaluación de un curso de Compilación. Por tal motivo, ciertas decisiones de diseño de lenguaje responden más a cuestiones didácticas que a cuestiones teóricas o pragmáticas. Un ejemplo ilustrativo es la inclusión de un solo tipo numérico básico. En la práctica los lenguajes de programación cuentan con varios tipos numéricos (`int`, `float`, `double`, `decimal`) para cubrir el amplio rango de _trade-off_ entre eficiencia y expresividad. Sin embargo, desde el punto de vista didáctico, ya es suficiente complejidad el tener que lidiar con un tipo numérico, y la inclusión de otros no aporta nada nuevo desde nuestro punto de vista.
 
 Otra decisión importante es el tipado estático con inferencia de tipos, que será explicado más adelante en detalle. La motivación detrás de esta característica es permitir a los estudiantes implementar primero un evaluador para el lenguaje, y luego preocuparse por la verificación de tipos. Así mismo, la decisión de tener expresiones globales, funciones globales, y clases, responde a la necesidad de introducir los diversos elementos del lenguaje poco a poco. Al tener expresiones globales, es posible implementar un intérprete de expresiones sin necesidad de resolver los problemas de contexto. Luego se pueden introducir las funciones y finalmente las características orientadas a objetos. De esta forma los estudiantes pueden ir aprendiendo sobre la marcha a medida que adicionan características al lenguaje, siempre teniendo un subconjunto válido del lenguaje implementado.
 
@@ -228,7 +232,7 @@ let i=0 in while (i < n) {
 En **HULK** existe un tipo nativo con semántica similar al _array_ de los lenguajes de programación de la familia C. Este _array_ **no crece** dinámicamente y **no es covariante** en la asignación. El _array_ es el único tipo genérico que existe en **HULK**, y se declara con una sintaxis especial. Como es de esperar, un _array_ se indiza con una expresión de tipo `Number` y el valor del primer índice es `0`. Para los efectos del sistema de tipos, todo tipo _array_ hereda directamente de `Object`, y no se puede heredar de él.
 
 ```HULK
-let a:Number[] = [1, 2, 3, 4], i:Number=0 in while (i < a.size()) {
+let a:Number[] = {1, 2, 3, 4}, i:Number=0 in while (i < a.size()) {
     print(a[i]);
     i := i+1;
 }
@@ -296,6 +300,28 @@ let x=Number[20], i=0 in while (i<x.size()) {
 }
 ```
 
+De esta forma es posible inicializar _arrays_ complejos en una sola expresión, como en el ejemplo siguiente:
+
+```HULK
+Number[][100] { i -> Number[100] { j -> i*j } }
+```
+
+Que es equivalente a:
+
+```HULK
+let x=Number[][100], i=0 in while (i<x.size()) {
+    x[i] := Number[100];
+    let j=0 in while (j < x[i].size()) {
+        x[i][j] := i * j;
+        j := j+1;
+    };
+    i := i+1;
+    x;
+}
+```
+
+Todos los _arrays_ en **HULK** tienen semántica de enlace por referencia.
+
 ### Lidiando con valores `Null`
 
 Si una variable tiene valor `Null`, se lanzará un error en tiempo de ejecución si se intenta cualquier operación sobre ella (expecto `==` y `!=`). Siempre es posible evitar esto comprobando explícitamente:
@@ -320,7 +346,7 @@ La ventaja de esta sintaxis es que dentro del cuerpo de `with` se garantiza que 
 
 ### Prioridad de las expresiones
 
-Las expresiones `let`, `if` y `while` tienen **menor prioridad** que todas las expresiones elementales (aritméticas, etc.), y siempre asocian a la derecha. Por lo tanto, para poder usar una de estas expresiones dentro de una expresión aritmética, por ejemplo, se deben encerrar entre paréntesis.
+Las expresiones `let`, `if`, `while`, `case` y `with` tienen **menor prioridad** que todas las expresiones elementales (aritméticas, etc.), y siempre asocian a la derecha. Por lo tanto, para poder usar una de estas expresiones dentro de una expresión aritmética, por ejemplo, se deben encerrar entre paréntesis.
 
 Por ejemplo, el siguiente es un caso común:
 
@@ -346,7 +372,7 @@ La forma correcta es:
 let x=5 in x + (let y=8 in y)
 ```
 
-Por último, el bloque `else` siempre asocia al `if` más cercano.
+Por último, el bloque `else` siempre asocia al `if` (o `while`) más cercano.
 Es decir, la siguiente expresión:
 
 ```HULK
@@ -411,7 +437,7 @@ Todos los atributos deben ser definidos **antes** que todos los métodos, y sus 
 Para obtener una instancia de una clase en **HULK** se utiliza el nombre de la clase como si fuera un método:
 
 ```HULK
-let p = Point() in print(p.translate(5,3).length())
+let p = Point() in print(p.translate(5,3).length());
 ```
 
 Si se desea inicializar los atributos de la clase, se pueden definir _argumentos de clase_, y su valor usarse en la inicialización de los atributos:
@@ -427,7 +453,7 @@ class Point(x:Number, y:Number) {
 Una vez definidos argumentos de clase, es obligatorio proporcionar su valor al construir la clase:
 
 ```HULK
-let p = new Point(5,3) in print(p.length())
+let p = new Point(5,3) in print(p.length());
 ```
 
 ### Redefinición y polimorfismo
@@ -448,7 +474,7 @@ class Colleague is Person {
 Al heredar de una clase se heredan por defecto las definiciones de los argumentos de clase. Por lo tanto, al instanciar una clase heredera, es obligatorio proporcionar los valores de los argumentos:
 
 ```HULK
-let p = Colleague("Pete") in print(p.greet()) # "Hi Pete"
+let p = Colleague("Pete") in print(p.greet()); # Hi Pete
 ```
 
 Sin embargo, **no está permitido** usar estos argumentos de clase implícitos en la inicialización de atributos de una clase heredera. Si es necesario usarlos, se pueden redefinir explícitamente en la clase heredera. Por otro lado, siempre que se redefinan argumentos de clase en una clase heredera, será necesario indicar explícitamente cómo se evaluan los argumentos de la clase padre en términos de los argumentos de la clase heredera:
@@ -456,13 +482,7 @@ Sin embargo, **no está permitido** usar estos argumentos de clase implícitos e
 ```HULK
 class Noble(title:String, who:String) is Person(title @@ who) { }
 
-let p = Noble("Sir", "Thomas") in print(p.greet()) # Hello Sir Thomas
-```
-
-En caso de no redefinirlo, el comportamiento es como si implícitamente se hubiera definido un constructor con la implementación "heredada" del ancestro más cercano que tiene un constructor definido, y se le pasan los mismos argumentos.
-
-```HULK
-let c = new Colleague("Pete") in c.greet() # Hi Pete
+let p = Noble("Sir", "Thomas") in print(p.greet()); # Hello Sir Thomas
 ```
 
 ### Evaluando el tipo dinámico
@@ -479,9 +499,9 @@ Esta expresión compara el tipo dinámico de `<expr>` contra cada uno de los tip
 
 ```HULK
 class A { }
-class B inherits A { }
-class C inherits B { }
-class D inherits A { }
+class B is A { }
+class C is B { }
+class D is A { }
 
 case new C() of {
     a:A -> print("A");
@@ -577,7 +597,7 @@ Finalmente, dos funciones mutuamente recursivas:
 
 ```HULK
 def f(a, b) -> is (a==1) b else g(a+1, b/2);
-def g(a, b) -> if (b==1) a else f(a/2, b+1)
+def g(a, b) -> if (b==1) a else f(a/2, b+1);
 ```
 
 En este caso, es posible teóricamente inferir que `f` y `g` deben ambos retornar tipo `Number`, pero dada la complejidad de manejar la inferencia de tipos en más de una función a la vez, no se garantiza que sea posible deducir los tipos en este caso.
@@ -596,7 +616,7 @@ let x=[20]{ i -> if (i<=1) 1 else x[i-1] + x[i-2] } in ...
 
 ### _Null-safety_ en **HULK**
 
-Gracias a la existencia de la instrucción `with`, el compilador de **HULK** es capaz de inferir para un programa si es seguro garantizar que no habrá errores en ejecución por variables `Null`. Es posible entonces que un compilador genere en estos casos un código más eficiente, al no tener que validar las referencias en todos los accesos y usos. En todos los casos en que no se pueda garantizar la _null-safety_, el compilador debe emitir una advertencia en tiempo de compilación (_warning_).
+Gracias a la existencia de la instrucción `with`, un compilador de **HULK** debe ser capaz de inferir para un programa si es seguro garantizar que no habrá errores en ejecución por variables `Null`. Es posible entonces que un compilador genere en estos casos un código más eficiente, al no tener que validar las referencias en todos los accesos y usos. En todos los casos en que no se pueda garantizar la _null-safety_, el compilador debe emitir una advertencia en tiempo de compilación (_warning_).
 
 Opcionalmente, el compilador de **HULK** puede ejecutarse en modo **null-safe**. En este modo, las advertencias por violación de _null-safety_ se convierten en errores de compilación.
 
@@ -639,7 +659,7 @@ LITERAL := NUMBER | STRING | BOOLEAN
 ID      := [a-zA-Z_][a-zA-Z0-9]*
 ```
 
-Un programa en **HULK** tiene tres partes: declaraciones de clases, declaraciones de funciones y una expresión opcional terminada en `;`:
+Un programa en **HULK** tiene tres partes: declaraciones de clases, declaraciones de funciones y una expresión opcional terminada en punto y coma (`;`):
 
 ```Grammar
 <program> := [<class>]* [<function>]* [<expr> ;]
@@ -742,3 +762,17 @@ Las expresiones elementales se componen de todas las operaciones lógicas, aritm
              | [<expr> .] ID [( <args> )]?
              | -<expr> | ( <expr> )
 ```
+
+### Semántica de tipos
+
+### Reglas para la inferencia de tipos
+
+### Semántica operacional
+
+## Implementando un Compilador de **HULK**
+
+La implementación de un compilador de **HULK** tiene varios detalles y retos interesantes. A continuación queremos discutir algunas cuestiones que facilitarán esta tarea.
+
+### Flujo de trabajo
+
+### Casos de prueba
