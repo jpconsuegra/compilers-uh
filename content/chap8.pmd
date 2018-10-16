@@ -241,20 +241,20 @@ let a:Number[] = {1, 2, 3, 4}, i:Number=0 in while (i < a.size()) {
 La forma de crear un array vacío es mediante la sintaxis:
 
 ```HULK
-let x = Number[20] in ...
+let x = new Number[20] in ...
 ```
 
 Todo _array_ se inicializa con el valor por defecto del tipo correspondiente, que es `0` para `Number`, `False` para `Boolean`, y `Null` para cualquier otro tipo. En **HULK** no existen _arrays_ multidimensionales, pero sí es posible crear _arrays_ de _arrays_ (_ad infinitum_):
 
 ```HULK
-let x = Number[][10] in ...
+let x = new Number[][10] in ...
 ```
 
 En este caso, el único _array_ que se inicializa es el más externo. Cada valor de `x[i]` se inicializa con `Null` y debe asignarse explícitamente:
 
 ```HULK
 let x = Number[][10], n=0 in while(n<x.size()) {
-    x[i] := Number[i+1];
+    x[i] := new Number[i+1];
 }
 ```
 
@@ -265,19 +265,19 @@ El tipo de un _array_ complejo como el anterior sería `Number[][]`.
 Cuando se instancia un _array_, es posible inicializarlo automáticamente mediante la sintaxis:
 
 ```HULK
-<type>[<length>] { <index> -> <expr> }
+new <type>[<length>] { <index> -> <expr> }
 ```
 
 Donde `<expr>` es una expresión que devuelve el valor del i-ésimo elemento, indizado por la variable `<index>`. Por ejemplo:
 
 ```HULK
-Number[20]{ i -> 2*i+1 }
+new Number[20]{ i -> 2*i+1 }
 ```
 
 Es equivalente a:
 
 ```HULK
-let x=Number[20], i=0 in while (i<x.size()) {
+let x = new Number[20], i=0 in while (i<x.size()) {
     x[i] := 2*i+1;
     i := i+1;
     x;
@@ -287,13 +287,13 @@ let x=Number[20], i=0 in while (i<x.size()) {
 La expresión de inicialización es un atajo sintáctico para no escribir un ciclo de inicialización. Por tal motivo, se comporta exactamente igual que dicho ciclo. Esta expresión crea un nuevo contexto donde se define la variable `<index>`. Este contexto es hijo del contexto donde se crea el _array_. En particular, **tiene acceso** a la variable que referencia al propio _array_ (en caso de existir). Por ejemplo, la siguiente expresión es válida:
 
 ```HULK
-let x=Number[20]{ i -> if (i<=1) 0 else x[i-1] + x[i-2] }
+let x = new Number[20]{ i -> if (i<=1) 0 else x[i-1] + x[i-2] }
 ```
 
 Pues es equivalente a:
 
 ```HULK
-let x=Number[20], i=0 in while (i<x.size()) {
+let x = new Number[20], i=0 in while (i<x.size()) {
     x[i] := if (i<=1) 0 else x[i-1] * x[i-2];
     i := i+1;
     x;
@@ -303,14 +303,14 @@ let x=Number[20], i=0 in while (i<x.size()) {
 De esta forma es posible inicializar _arrays_ complejos en una sola expresión, como en el ejemplo siguiente:
 
 ```HULK
-Number[][100] { i -> Number[100] { j -> i*j } }
+new Number[][100] { i -> new Number[100] { j -> i*j } }
 ```
 
 Que es equivalente a:
 
 ```HULK
-let x=Number[][100], i=0 in while (i<x.size()) {
-    x[i] := Number[100];
+let x = new Number[][100], i=0 in while (i<x.size()) {
+    x[i] := new Number[100];
     let j=0 in while (j < x[i].size()) {
         x[i][j] := i * j;
         j := j+1;

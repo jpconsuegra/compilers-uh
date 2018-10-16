@@ -104,14 +104,12 @@ folders:
 	mkdir -p $(GRAPHICS_BUILD_DIR)
 
 publish:
+	(cd build && git init && ( git checkout -b gh-pages || git checkout gh-pages ))
 	(cd build && \
-	 rm -rf .git && \
-	 git init && \
-	 git checkout -b gh-pages && \
 	 git add html/* && \
 	 git add graphics/* && \
-	 git pull git@github.com:apiad/compilers-uh.git gh-pages && \
 	 git commit -m "Publishing" && \
+	 git pull git@github.com:apiad/compilers-uh.git gh-pages && \
 	 git push git@github.com:apiad/compilers-uh.git gh-pages)
 
 clean:
