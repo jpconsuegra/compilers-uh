@@ -1,0 +1,6 @@
+.vscode/settings.json
+*.pyc
+.ipynb_checkpoints
+build
+__latexindent*
+.log
