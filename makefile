@@ -103,7 +103,6 @@ folders:
 	mkdir -p $(NOTEBOOKS_SOLUTIONS_DIR)
 	mkdir -p $(GRAPHICS_BUILD_DIR)
 
-<<<<<<< HEAD
 publish:
 	cd build
 	rm -rf .git
@@ -114,8 +113,6 @@ publish:
 	git commit -m "Publishing"
 	git push git://github.com/apiad/compilers-ln.git gh-pages
 
-=======
->>>>>>> 464fe4b9aa1d90298d0af13d3ab40df42bf88a7d
 clean:
 	rm -rf $(BUILD_DIR)
 
