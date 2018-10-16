@@ -434,10 +434,10 @@ Todos los atributos deben ser definidos **antes** que todos los métodos, y sus 
 
 ### Instanciando clases
 
-Para obtener una instancia de una clase en **HULK** se utiliza el nombre de la clase como si fuera un método:
+Para obtener una instancia de una clase en **HULK** se utiliza el nombre de la clase como si fuera un método, precedido la palabra clave `new`.
 
 ```HULK
-let p = Point() in print(p.translate(5,3).length());
+let p = new Point() in print(p.translate(5,3).length());
 ```
 
 Si se desea inicializar los atributos de la clase, se pueden definir _argumentos de clase_, y su valor usarse en la inicialización de los atributos:
@@ -474,7 +474,7 @@ class Colleague is Person {
 Al heredar de una clase se heredan por defecto las definiciones de los argumentos de clase. Por lo tanto, al instanciar una clase heredera, es obligatorio proporcionar los valores de los argumentos:
 
 ```HULK
-let p = Colleague("Pete") in print(p.greet()); # Hi Pete
+let p = new Colleague("Pete") in print(p.greet()); # Hi Pete
 ```
 
 Sin embargo, **no está permitido** usar estos argumentos de clase implícitos en la inicialización de atributos de una clase heredera. Si es necesario usarlos, se pueden redefinir explícitamente en la clase heredera. Por otro lado, siempre que se redefinan argumentos de clase en una clase heredera, será necesario indicar explícitamente cómo se evaluan los argumentos de la clase padre en términos de los argumentos de la clase heredera:
@@ -482,7 +482,7 @@ Sin embargo, **no está permitido** usar estos argumentos de clase implícitos e
 ```HULK
 class Noble(title:String, who:String) is Person(title @@ who) { }
 
-let p = Noble("Sir", "Thomas") in print(p.greet()); # Hello Sir Thomas
+let p = new Noble("Sir", "Thomas") in print(p.greet()); # Hello Sir Thomas
 ```
 
 ### Evaluando el tipo dinámico
@@ -573,7 +573,7 @@ Sin embargo, a veces no es posible inferir el tipo de un argumento a partir de s
 ```HULK
 function step(p) -> p.translate(1,1);
 
-let p=Point(0,0) in step(p); # Puede lanzar error semántico
+let p = new Point(0,0) in step(p); # Puede lanzar error semántico
 ```
 
 Por último, especial complejidad acarrean las funciones recursivas:
@@ -611,7 +611,7 @@ let x = [20]{ i -> (i+1)*(i+2) } in ... # Infiere Number
 Sin embargo, si en la expresión de inicialización se usa el propio _array_, entonces no se garantiza que sea posible inferir el tipo:
 
 ```HULK
-let x=[20]{ i -> if (i<=1) 1 else x[i-1] + x[i-2] } in ...
+let x = [20]{ i -> if (i<=1) 1 else x[i-1] + x[i-2] } in ...
 ```
 
 ### _Null-safety_ en **HULK**
