@@ -133,38 +133,38 @@ let a=1, b=2, c=3 in print(f(a,b,c)); # Imprime 13</code></pre>
     i := i+1;
 }</code></pre>
 <p>La forma de crear un array vacío es mediante la sintaxis:</p>
-<pre class="hulk"><code>let x = Number[20] in ...</code></pre>
+<pre class="hulk"><code>let x = new Number[20] in ...</code></pre>
 <p>Todo <em>array</em> se inicializa con el valor por defecto del tipo correspondiente, que es <code>0</code> para <code>Number</code>, <code>False</code> para <code>Boolean</code>, y <code>Null</code> para cualquier otro tipo. En <strong>HULK</strong> no existen <em>arrays</em> multidimensionales, pero sí es posible crear <em>arrays</em> de <em>arrays</em> (<em>ad infinitum</em>):</p>
-<pre class="hulk"><code>let x = Number[][10] in ...</code></pre>
+<pre class="hulk"><code>let x = new Number[][10] in ...</code></pre>
 <p>En este caso, el único <em>array</em> que se inicializa es el más externo. Cada valor de <code>x[i]</code> se inicializa con <code>Null</code> y debe asignarse explícitamente:</p>
 <pre class="hulk"><code>let x = Number[][10], n=0 in while(n&lt;x.size()) {
-    x[i] := Number[i+1];
+    x[i] := new Number[i+1];
 }</code></pre>
 <p>El tipo de un <em>array</em> complejo como el anterior sería <code>Number[][]</code>.</p>
 <h3 id="inicialización-automática-de-arrays">Inicialización automática de <em>arrays</em></h3>
 <p>Cuando se instancia un <em>array</em>, es posible inicializarlo automáticamente mediante la sintaxis:</p>
-<pre class="hulk"><code>&lt;type&gt;[&lt;length&gt;] { &lt;index&gt; -&gt; &lt;expr&gt; }</code></pre>
+<pre class="hulk"><code>new &lt;type&gt;[&lt;length&gt;] { &lt;index&gt; -&gt; &lt;expr&gt; }</code></pre>
 <p>Donde <code>&lt;expr&gt;</code> es una expresión que devuelve el valor del i-ésimo elemento, indizado por la variable <code>&lt;index&gt;</code>. Por ejemplo:</p>
-<pre class="hulk"><code>Number[20]{ i -&gt; 2*i+1 }</code></pre>
+<pre class="hulk"><code>new Number[20]{ i -&gt; 2*i+1 }</code></pre>
 <p>Es equivalente a:</p>
-<pre class="hulk"><code>let x=Number[20], i=0 in while (i&lt;x.size()) {
+<pre class="hulk"><code>let x = new Number[20], i=0 in while (i&lt;x.size()) {
     x[i] := 2*i+1;
     i := i+1;
     x;
 }</code></pre>
 <p>La expresión de inicialización es un atajo sintáctico para no escribir un ciclo de inicialización. Por tal motivo, se comporta exactamente igual que dicho ciclo. Esta expresión crea un nuevo contexto donde se define la variable <code>&lt;index&gt;</code>. Este contexto es hijo del contexto donde se crea el <em>array</em>. En particular, <strong>tiene acceso</strong> a la variable que referencia al propio <em>array</em> (en caso de existir). Por ejemplo, la siguiente expresión es válida:</p>
-<pre class="hulk"><code>let x=Number[20]{ i -&gt; if (i&lt;=1) 0 else x[i-1] + x[i-2] }</code></pre>
+<pre class="hulk"><code>let x = new Number[20]{ i -&gt; if (i&lt;=1) 0 else x[i-1] + x[i-2] }</code></pre>
 <p>Pues es equivalente a:</p>
-<pre class="hulk"><code>let x=Number[20], i=0 in while (i&lt;x.size()) {
+<pre class="hulk"><code>let x = new Number[20], i=0 in while (i&lt;x.size()) {
     x[i] := if (i&lt;=1) 0 else x[i-1] * x[i-2];
     i := i+1;
     x;
 }</code></pre>
 <p>De esta forma es posible inicializar <em>arrays</em> complejos en una sola expresión, como en el ejemplo siguiente:</p>
-<pre class="hulk"><code>Number[][100] { i -&gt; Number[100] { j -&gt; i*j } }</code></pre>
+<pre class="hulk"><code>new Number[][100] { i -&gt; new Number[100] { j -&gt; i*j } }</code></pre>
 <p>Que es equivalente a:</p>
-<pre class="hulk"><code>let x=Number[][100], i=0 in while (i&lt;x.size()) {
-    x[i] := Number[100];
+<pre class="hulk"><code>let x = new Number[][100], i=0 in while (i&lt;x.size()) {
+    x[i] := new Number[100];
     let j=0 in while (j &lt; x[i].size()) {
         x[i][j] := i * j;
         j := j+1;
