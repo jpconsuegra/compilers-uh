@@ -253,7 +253,7 @@ let x = new Number[][10] in ...
 En este caso, el único _array_ que se inicializa es el más externo. Cada valor de `x[i]` se inicializa con `Null` y debe asignarse explícitamente:
 
 ```HULK
-let x = Number[][10], n=0 in while(n<x.size()) {
+let x = new Number[][10], n=0 in while(n<x.size()) {
     x[i] := new Number[i+1];
 }
 ```
@@ -522,7 +522,7 @@ Esta forma puede usarse para evaluar un "downcast" en **HULK**, cuando se conoce
 
 Por ejemplo, el siguiente programa lanza error semántico pues `o` es de tipo estático `Object`, explícitamente declarado, por lo que no se puede sumar.
 
-```
+```HULK
 function dunno():Object -> 40;
 
 let o:Object = something() in o + 2; # error semántico
@@ -530,7 +530,7 @@ let o:Object = something() in o + 2; # error semántico
 
 Sin embargo, usando `case` se puede forzar al verificador de tipos a que infiera `Number` para esta expresión, lanzando error en tiempo de ejecución si realmente el tipo dinámico fuera otro.
 
-```
+```HULK
 function dunno():Object -> 40;
 
 let o:Object = something() in case o of y:Number -> y + 2;
@@ -605,13 +605,13 @@ En este caso, es posible teóricamente inferir que `f` y `g` deben ambos retorna
 Cuando se crea un _array_, es posible inferir el tipo estático si se provee una expresión de inicialización:
 
 ```HULK
-let x = [20]{ i -> (i+1)*(i+2) } in ... # Infiere Number
+let x = new [20]{ i -> (i+1)*(i+2) } in ... # Infiere Number
 ```
 
 Sin embargo, si en la expresión de inicialización se usa el propio _array_, entonces no se garantiza que sea posible inferir el tipo:
 
 ```HULK
-let x = [20]{ i -> if (i<=1) 1 else x[i-1] + x[i-2] } in ...
+let x = new [20]{ i -> if (i<=1) 1 else x[i-1] + x[i-2] } in ...
 ```
 
 ### _Null-safety_ en **HULK**
@@ -626,7 +626,7 @@ El caso más sencillo es cuando se usan variables de tipo `Number` o `Boolean`, 
 Un caso más interesante es cuando se puede inferir por la inicialización de una variable, por ejemplo:
 
 ```HULK
-let x=Person("John Doe") in print(x.greet());
+let x = new Person("John Doe") in print(x.greet());
 ```
 
 En este caso se puede inferir que `x` nunca será `Null` pues no existe ninguna asignación, y el valor de la expresión `Person(...)` nunca es `Null`.
