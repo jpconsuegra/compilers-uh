@@ -137,7 +137,7 @@ let a=1, b=2, c=3 in print(f(a,b,c)); # Imprime 13</code></pre>
 <p>Todo <em>array</em> se inicializa con el valor por defecto del tipo correspondiente, que es <code>0</code> para <code>Number</code>, <code>False</code> para <code>Boolean</code>, y <code>Null</code> para cualquier otro tipo. En <strong>HULK</strong> no existen <em>arrays</em> multidimensionales, pero sí es posible crear <em>arrays</em> de <em>arrays</em> (<em>ad infinitum</em>):</p>
 <pre class="hulk"><code>let x = new Number[][10] in ...</code></pre>
 <p>En este caso, el único <em>array</em> que se inicializa es el más externo. Cada valor de <code>x[i]</code> se inicializa con <code>Null</code> y debe asignarse explícitamente:</p>
-<pre class="hulk"><code>let x = Number[][10], n=0 in while(n&lt;x.size()) {
+<pre class="hulk"><code>let x = new Number[][10], n=0 in while(n&lt;x.size()) {
     x[i] := new Number[i+1];
 }</code></pre>
 <p>El tipo de un <em>array</em> complejo como el anterior sería <code>Number[][]</code>.</p>
@@ -269,11 +269,11 @@ case new C() of {
 <pre class="hulk"><code>case &lt;expr&gt; of &lt;id&gt;:&lt;type&gt; -&gt; &lt;body&gt;</code></pre>
 <p>Esta forma puede usarse para evaluar un &quot;downcast&quot; en <strong>HULK</strong>, cuando se conoce con certeza el tipo dinámico de un objeto.</p>
 <p>Por ejemplo, el siguiente programa lanza error semántico pues <code>o</code> es de tipo estático <code>Object</code>, explícitamente declarado, por lo que no se puede sumar.</p>
-<pre><code>function dunno():Object -&gt; 40;
+<pre class="hulk"><code>function dunno():Object -&gt; 40;
 
 let o:Object = something() in o + 2; # error semántico</code></pre>
 <p>Sin embargo, usando <code>case</code> se puede forzar al verificador de tipos a que infiera <code>Number</code> para esta expresión, lanzando error en tiempo de ejecución si realmente el tipo dinámico fuera otro.</p>
-<pre><code>function dunno():Object -&gt; 40;
+<pre class="hulk"><code>function dunno():Object -&gt; 40;
 
 let o:Object = something() in case o of y:Number -&gt; y + 2;</code></pre>
 <h3 id="verificación-e-inferencia-de-tipos">Verificación e inferencia de tipos</h3>
@@ -307,15 +307,15 @@ let p = new Point(0,0) in step(p); # Puede lanzar error semántico</code></pre>
 def g(a, b) -&gt; if (b==1) a else f(a/2, b+1);</code></pre>
 <p>En este caso, es posible teóricamente inferir que <code>f</code> y <code>g</code> deben ambos retornar tipo <code>Number</code>, pero dada la complejidad de manejar la inferencia de tipos en más de una función a la vez, no se garantiza que sea posible deducir los tipos en este caso.</p>
 <p>Cuando se crea un <em>array</em>, es posible inferir el tipo estático si se provee una expresión de inicialización:</p>
-<pre class="hulk"><code>let x = [20]{ i -&gt; (i+1)*(i+2) } in ... # Infiere Number</code></pre>
+<pre class="hulk"><code>let x = new [20]{ i -&gt; (i+1)*(i+2) } in ... # Infiere Number</code></pre>
 <p>Sin embargo, si en la expresión de inicialización se usa el propio <em>array</em>, entonces no se garantiza que sea posible inferir el tipo:</p>
-<pre class="hulk"><code>let x = [20]{ i -&gt; if (i&lt;=1) 1 else x[i-1] + x[i-2] } in ...</code></pre>
+<pre class="hulk"><code>let x = new [20]{ i -&gt; if (i&lt;=1) 1 else x[i-1] + x[i-2] } in ...</code></pre>
 <h3 id="null-safety-en-hulk"><em>Null-safety</em> en <strong>HULK</strong></h3>
 <p>Gracias a la existencia de la instrucción <code>with</code>, un compilador de <strong>HULK</strong> debe ser capaz de inferir para un programa si es seguro garantizar que no habrá errores en ejecución por variables <code>Null</code>. Es posible entonces que un compilador genere en estos casos un código más eficiente, al no tener que validar las referencias en todos los accesos y usos. En todos los casos en que no se pueda garantizar la <em>null-safety</em>, el compilador debe emitir una advertencia en tiempo de compilación (<em>warning</em>).</p>
 <p>Opcionalmente, el compilador de <strong>HULK</strong> puede ejecutarse en modo <strong>null-safe</strong>. En este modo, las advertencias por violación de <em>null-safety</em> se convierten en errores de compilación.</p>
 <p>Nótese que no es estrictamente necesario usar <code>with</code> en todos los casos para garantizar la <em>null-safety</em>. Hay casos en que por el contexto es posible garantizar la seguridad. El caso más sencillo es cuando se usan variables de tipo <code>Number</code> o <code>Boolean</code>, que por definición no pueden contener un valor <code>Null</code>.</p>
 <p>Un caso más interesante es cuando se puede inferir por la inicialización de una variable, por ejemplo:</p>
-<pre class="hulk"><code>let x=Person(&quot;John Doe&quot;) in print(x.greet());</code></pre>
+<pre class="hulk"><code>let x = new Person(&quot;John Doe&quot;) in print(x.greet());</code></pre>
 <p>En este caso se puede inferir que <code>x</code> nunca será <code>Null</code> pues no existe ninguna asignación, y el valor de la expresión <code>Person(...)</code> nunca es <code>Null</code>.</p>
 <p>Por el contrario, si se usa un ciclo o una expresión <code>if</code> sin parte <code>else</code>, no es posible garantizar <em>null-safety</em>, incluso cuando realmente el valor de la expresión no pueda ser <code>Null</code>.</p>
 <pre class="hulk"><code>let i=n, x=(while (i &gt; 0) i:=i-1) in print(x);</code></pre>
