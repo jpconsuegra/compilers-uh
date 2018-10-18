@@ -4,6 +4,15 @@ previous-chapter: chap7
 
 # El lenguaje HULK
 
+```python echo=False
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.curdir))
+
+from source.diagrams import Pipeline
+```
+
 En este capítulo definimos el lenguaje **HULK** (_Havana University Language for Kompilers_), un lenguaje de programación didáctico diseñado para este curso.
 A grandes razgos, **HULK** es un lenguaje orientado a objetos, con herencia simple, polimorfismo, y encapsulamiento a nivel de clases.
 Además en **HULK** es posible definir funciones globales fuera del contexto de cualquier clase.
@@ -671,7 +680,7 @@ Una clase contiene atributos y métodos, y opcionalmente declaraciones de argume
 <class>  := class ID [(<params>)] [is ID [(<args>)]] { [<attr> ;]* [<method>]* }
 <params> := ID [: ID] [, ID [: ID]]*
           | epsilon
-<args>   := ID = <expr> [, ID = <expr>]*
+<args>   := <expr> [, <expr>]*
           | epsilon
 ```
 
@@ -695,7 +704,7 @@ Una función global tiene una signatura muy parecida a un método, pero requiere
 <function> := function ID ( <params> ) [: ID] <body>
 ```
 
-Finalmente las expresiones se dividen en 7 tipos fundamentales:
+Finalmente las expresiones se dividen en 8 tipos fundamentales:
 
 ```Grammar
 <expr> := <let-expr>
@@ -703,6 +712,8 @@ Finalmente las expresiones se dividen en 7 tipos fundamentales:
         | <while-expr>
         | <case-expr>
         | <assign-expr>
+        | <array-expr>
+        | <inst-expr>
         | <elem-expr>
 ```
 
@@ -744,8 +755,20 @@ Una asignación tiene una locación a la izquierda y una expresión a la derecha
 ```Grammar
 <assing-expr> := <loc> ':=' <expr>
 <loc>         := <loc> '[' <expr> ']'
-               | <loc> . <expr>
+               | <loc> . <loc>
                | ID
+```
+
+Una expresión de creación de _array_ tiene un tipo opcional, una cantidad, y opcionalmente una cláusula de inicialización:
+
+```Grammar
+<array-expr> := new ID? '[' <expr> ']' [{ ID -> <expr> }]?
+```
+
+Una expresión de instanciación tiene un tipo y un conjunto de argumentos de clase:
+
+```Grammar
+<inst-expr> := new ID ( <args> )
 ```
 
 Las expresiones elementales se componen de todas las operaciones lógicas, aritméticas, etc., además de la invocación a funciones globales, métodos, y atributos:
@@ -763,7 +786,11 @@ Las expresiones elementales se componen de todas las operaciones lógicas, aritm
              | -<expr> | ( <expr> )
 ```
 
+**NOTA**: Como se ha explicado al inicio de la sección, la gramática anterior no tiene en cuenta la asociatividad ni precedencia de los diferentes tipos de expresiones. Esto se ha hecho a propósito, para permitir a los estudiantes resolver los problemas de ambigüedad resultantes del modo que consideren oportuno.
+
 ### Semántica de tipos
+
+En **HULK** todas las expresiones tienen asociado un tipo estático, que debe ser inferido por el compilador. Cada expresión o instrucción de **HULK** tiene reglas de consistencia de tipos que deben ser verificadas por el compilador. En esta sección asumiremos que todos los tipos están explícitamente declarados. La sección siguiente explica cómo realizar la inferencia de tipos cuando existan declaraciones sin anotaciones de tipo. Para definir el tipo inferido y las restricciones de consistencia de cada tipo de expresión usaremos la notación definida en el capítulo [Semántica de Tipos](#semantics).
 
 ### Reglas para la inferencia de tipos
 
@@ -773,6 +800,44 @@ Las expresiones elementales se componen de todas las operaciones lógicas, aritm
 
 La implementación de un compilador de **HULK** tiene varios detalles y retos interesantes. A continuación queremos discutir algunas cuestiones que facilitarán esta tarea.
 
+### Consideraciones generales
+
+El compilador de **HULK** es un proyecto complejo, que debe ser dividido convenientemente en subproblemas, para ser atacado de forma efectiva. Si el proyecto se realiza en un equipo, existen algunos puntos importantes donde la carga puede ser divida.
+
+El punto de división más evidente es el AST semántico, que separa todo el proceso de _parsing_ de las fases de verificación semántica y generación de código. Si se define primero una jerarquía para el AST y se usa el patrón _Visitor_, es posible dividir el trabajo al menos en 2 fases independientes: _parsing_ y chequeo semántico. Mientras un miembro del equipo construye la gramática y el _parser_, otro miembro puede implementar toda la verificación semántica, sin estorbarse mutuamente, pues la interfaz de comunicación es el AST.
+Así mismo, un tercer miembro puede a partir del AST semántico implementar toda la generación de código, asumiendo que la verificación semántica es correcta, sin importar que aún no esté implementada.
+
+Para la fase de generación de código, recomendamos que se utilice un lenguaje intermedio, similar a **CIL**. Esto permitirá nuevamente dividir el trabajo en 2 fases bien separadas. Primero se define un AST de este lenguaje intermedio, que debe ser mucho más sencillo que un AST para **HULK**. A partir de este punto, 2 personas diferentes pueden trabajar en 2 tareas: la transformación del AST semántico al AST de **CIL**, y la transformación de este AST a MIPS.
+
+De modo que existen al menos 4 tareas del compilador que pueden implementarse en paralelo, estableciendo como interfaces de comunicación 2 ASTs, 1 para **HULK** y uno para **CIL**. Las tareas opcionales de inferencia de tipos y optimización de código también ser incluidas en este esquema de forma no disruptiva. Esto queda resumido en la siguiente gráfica:
+
+```python echo=False, results="plain"
+Pipeline(['HULK', 'AST-HULK', 'AST-CIL', 'MIPS'], [
+    (0, 1, 'Parser\nLexer'),
+    (1, 1, 'Semántica\nInferencia'),
+    (1, 2, 'Generación'),
+    (2, 2, 'Optimización'),
+    (2, 3, 'Generación')
+]).print(width="100%", float=False)
+```
+
 ### Flujo de trabajo
+
+El lenguaje **HULK** ha sido diseñado de forma que su compilador pueda implementarse *bottom-up*. Esto es, en vez de implementar cada fase del compilador (_lexer_, _parser_, semántico, generación de código) de forma secuencial, proponemos que se tomen las características del lenguaje (expresiones, funciones, clases) y se vayan adicionando, en cada momento implementando las modificaciones que cada fase requiera. A continuación proponemos un orden para implementar las características del lenguaje. En cada paso, sugerimos implementar _todas_ las fases, es decir, introducir los tipos de _token_ nuevos, producciones en la gramática, nodos del AST, reglas de verificación semántica y generación de código.
+
+#### Expresiones Aritméticas
+
+Implementar los operadores `+`, `-`, `*`, `/` y `%`, y el tipo `Number`. En este punto su compilador debe ser capaz de compilar programas como el siguiente:
+
+```HULK
+(34.1 * (123.42 - 208)) / (24 + 9)
+```
+
+Para resolver este subproblema deberá:
+
+- Implementar un tokenizador básico de expresiones aritméticas.
+- Diseñar una gramática no-ambigüa de expresiones.
+- Construir un AST correspondiente.
+- Construir un visitor para generar código de 3
 
 ### Casos de prueba
