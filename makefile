@@ -3,6 +3,7 @@ CONTENT_DIR = content
 SLIDES_DIR = slides
 GRAPHICS_DIR = graphics
 NOTEBOOKS_DIR = notebooks
+ASSETS_DIR = assets
 
 # Output
 BUILD_DIR = build
@@ -15,6 +16,7 @@ HTML_DIR = $(BUILD_DIR)/html
 
 SLIDES_MD_DIR = $(BUILD_DIR)/slides/markdown
 SLIDES_PDF_DIR = $(BUILD_DIR)/slides/pdf
+SLIDES_HTML_DIR = $(BUILD_DIR)/slides/html
 
 NOTEBOOKS_FINAL_DIR = $(BUILD_DIR)/notebooks
 NOTEBOOKS_SOLUTIONS_DIR = $(BUILD_DIR)/notebooks/solutions
@@ -38,6 +40,7 @@ GRAPHICS_BUILD_PDF = $(patsubst $(GRAPHICS_BUILD_DIR)/%.svg, $(GRAPHICS_BUILD_DI
 SLIDES_SOURCE = $(wildcard $(SLIDES_DIR)/*.pmd)
 SLIDES_MD = $(patsubst $(SLIDES_DIR)/%.pmd, $(SLIDES_MD_DIR)/%.md, $(SLIDES_SOURCE))
 SLIDES_PDF = $(patsubst $(SLIDES_DIR)/%.pmd, $(SLIDES_PDF_DIR)/%.pdf, $(SLIDES_SOURCE))
+SLIDES_HTML = $(patsubst $(SLIDES_DIR)/%.pmd, $(SLIDES_HTML_DIR)/%.html, $(SLIDES_SOURCE))
 
 NOTEBOOKS_SOURCE = $(wildcard $(NOTEBOOKS_DIR)/*.ipynb)
 NOTEBOOKS_FINAL = $(patsubst $(NOTEBOOKS_DIR)/%.ipynb, $(NOTEBOOKS_FINAL_DIR)/%.ipynb, $(NOTEBOOKS_SOURCE))
@@ -75,11 +78,15 @@ $(HTML_DIR)/%.html: $(CONTENT_MD_DIR)/%.md
 	pandoc -c style.css --template meta/template-book.html -o $@ $<
 
 ## Slides
-slides: folders $(SLIDES_PDF)
+slides: folders $(SLIDES_PDF) $(SLIDES_HTML)
+	make images
 
 $(SLIDES_PDF_DIR)/%.pdf: $(SLIDES_MD_DIR)/%.md
-	make images
 	pandoc -t beamer --filter filters/fix_image_path.py -o $@ $<
+
+$(SLIDES_HTML_DIR)/%.html: $(SLIDES_MD_DIR)/%.md
+	pandoc -s -t revealjs -o $@ $<
+	cp $(ASSETS_DIR)/reveal.js $(SLIDES_HTML_DIR)/reveal.js
 
 slides-md: folders $(SLIDES_MD)
 
@@ -98,6 +105,7 @@ folders:
 	mkdir -p $(CONTENT_PDF_DIR)
 	mkdir -p $(SLIDES_MD_DIR)
 	mkdir -p $(SLIDES_PDF_DIR)
+	mkdir -p $(SLIDES_HTML_DIR)
 	mkdir -p $(HTML_DIR)
 	mkdir -p $(NOTEBOOKS_FINAL_DIR)
 	mkdir -p $(NOTEBOOKS_SOLUTIONS_DIR)

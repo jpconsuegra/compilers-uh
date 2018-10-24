@@ -20,17 +20,44 @@ class Pipeline(Graph):
     ])
     """
 
-    def __init__(self, nodes, edges):
+    def __init__(self, nodes, edges, startshape='box', endshape='box', innershape='box'):
         self.nodes = nodes
         self.edges = edges
+        self.startshape = startshape
+        self.endshape = endshape
+        self.innershape = innershape
 
     def graph(self):
         G = pydot.Dot(rankdir='LR', margin=0.1, rank='same')
 
         for i, node in enumerate(self.nodes):
-            G.add_node(pydot.Node(i, shape='box', label=node))
+            if i == 0:
+                shape = self.startshape
+            elif i == len(self.nodes) - 1:
+                shape = self.endshape
+            else:
+                shape = self.innershape
+
+            G.add_node(pydot.Node(i, shape=shape, label=node))
 
         for (start, end, label) in self.edges:
             G.add_edge(pydot.Edge(start, end, label=label, labeldistance=2))
 
         return G
+
+
+class Lexer(Graph):
+    def __init__(self, string, state=-1):
+        self.string = string
+        self.state = state
+
+    def graph(self):
+        graph = pydot.Dot(margin=0.1, nodesep=0.05)
+
+        for i,x in enumerate(self.string):
+            if i == self.state:
+                graph.add_node(pydot.Node(i, label=x, shape='box', width=0.3, height=0.3, style='filled', fillcolor='black', fontcolor='white'))
+            else:
+                graph.add_node(pydot.Node(i, label=x, shape='box', width=0.3, height=0.3, style='solid'))
+
+        return graph

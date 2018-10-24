@@ -472,7 +472,7 @@ En **HULK** todas las invocaciones a métodos de una instancia son polimórficas
 ```HULK
 class Person(name:String) {
     name:String=name;
-    def greet() -> "Hello" @@ self.name;
+    greet() -> "Hello" @@ self.name;
 }
 
 class Colleague is Person {
@@ -605,8 +605,8 @@ Como el tipo de retorno no se utiliza explícitamente en una operación matemát
 Finalmente, dos funciones mutuamente recursivas:
 
 ```HULK
-def f(a, b) -> is (a==1) b else g(a+1, b/2);
-def g(a, b) -> if (b==1) a else f(a/2, b+1);
+function f(a, b) -> is (a==1) b else g(a+1, b/2);
+function g(a, b) -> if (b==1) a else f(a/2, b+1);
 ```
 
 En este caso, es posible teóricamente inferir que `f` y `g` deben ambos retornar tipo `Number`, pero dada la complejidad de manejar la inferencia de tipos en más de una función a la vez, no se garantiza que sea posible deducir los tipos en este caso.
@@ -825,19 +825,57 @@ Pipeline(['HULK', 'AST-HULK', 'AST-CIL', 'MIPS'], [
 
 El lenguaje **HULK** ha sido diseñado de forma que su compilador pueda implementarse *bottom-up*. Esto es, en vez de implementar cada fase del compilador (_lexer_, _parser_, semántico, generación de código) de forma secuencial, proponemos que se tomen las características del lenguaje (expresiones, funciones, clases) y se vayan adicionando, en cada momento implementando las modificaciones que cada fase requiera. A continuación proponemos un orden para implementar las características del lenguaje. En cada paso, sugerimos implementar _todas_ las fases, es decir, introducir los tipos de _token_ nuevos, producciones en la gramática, nodos del AST, reglas de verificación semántica y generación de código.
 
-#### Expresiones Aritméticas
+Para simplificar aun más la organización, proponemos dividir el desarrollo del compilador en 2 grandes fases: _frontend_ y _backend_. La fase de _frontend_ termina con la verificación semántica en el AST de HULK y la fase de _backend_ comienza justo en la generación de código de HULK a CIL. Ambas fases pueden ser implementadas en paralelo (por personas diferentes), o en serie. En esta sección asumiremos que estas 2 fases se realizan en serie, y por tanto primero ejemplificaremos como implementar todo el _frontend_ y luego todo el _backend_, pero es importante recordar que ambas fases son prácticamente independientes y se pueden ir desarrollando a la par.
 
-Implementar los operadores `+`, `-`, `*`, `/` y `%`, y el tipo `Number`. En este punto su compilador debe ser capaz de compilar programas como el siguiente:
+La ventaja de comenzar de esta manera, es que muy rápidamente se tocan todos los puntos claves del _frontend_ del compilador y se comienza a trabajar en todas las fases, aunque en cada una es muy sencillo lo que debe implementarse. Esto no quiere decir que más adelante no sea necesario regresar y revisar decisiones de diseño que en este punto no fueron previstas, pero eso es inevitable en cualquier caso. Al obligarse a comenzar el proyecto implementando un primer prototipo funcional _completo_, habrás garantizado "chocar" con la mayoría de los obstáculos temprano.
+
+Veamos entonces una propuesta de organización.
+
+#### Paso 1: Expresiones Aritméticas
+
+Implementar los operadores `+`, `-`, `*`, `/` y `%`, y el tipo `Number`. En este punto tu compilador debe ser capaz de _interpretar_ programas como el siguiente:
 
 ```HULK
-(34.1 * (123.42 - 208)) / (24 + 9)
+(34.1 * (123.42 - 208)) / (24 + 9);
 ```
 
-Para resolver este subproblema deberá:
+Para resolver este paso deberás:
 
 - Implementar un tokenizador básico de expresiones aritméticas.
 - Diseñar una gramática no-ambigüa de expresiones.
-- Construir un AST correspondiente.
-- Construir un visitor para generar código de 3
+- Construir un AST con soporte para expresiones.
+- Construir un visitor para interpretar el AST.
+
+#### Paso 2: Funciones globales
+
+Implementar la invocación (**solo la invocación**) a funciones globales (`print`, `parse`, `max`, `min`, `sin`, `cos`, etc.). En este punto tu compilador debe ser capaz de interpretar programas como el siguiente:
+
+```HULK
+print(sin(2 * 3.1415) + cos(1 / (4.54 - 6.72)));
+```
+
+Para resolver este paso deberás:
+
+- Adicionar las reglas y producciones a la gramática.
+- Añadir un nodo de invocación a funciones.
+- Implementar un _visitor_ de verificación semántica que chequee la cantidad de argumentos pasados a una función.
+- Añadir al intérprete la implementación de las funciones elementales.
+
+#### Paso 3: Declaración de funciones
+
+Implementar la declaración de funciones, potencialmente _solo_ con la notación compacta. En este punto tu compilador debe ser capaz de interpretar programas como el siguiente:
+
+```HULK
+function tan(x) -> sin(x) / cos(x);
+
+print(tan(2 * 3.1415));
+```
+
+Para resolver este paso deberás:
+
+- Adicionar reglas y producciones para la declaración.
+- Comprobar que la cantidad de parámetros declarados coincida con la invocación.
+
+#### Paso 4:
 
 ### Casos de prueba

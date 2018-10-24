@@ -41,11 +41,11 @@ Un primer análisis nos puede llevar a pensar idea similar a dividir la cadena p
 
 Veamos el problema entonces desde el siguiente punto de vista: supongamos que escaneamos la secuencia de caracteres de inicio a fin, un caracter a la vez, y lo que deseamos es en cada momento ser capaces de determinar si estamos en el medio de un *token*, o si acabamos de reconocer un *token* completo. Por ejemplo, tomemos nuevamente la cadena de ejemplo del capítulo anterior:
 
-    if a<=0 then b else c
+    if (a<=0) b else c
 
 Vamos a simbolizar con el símbolo `|` el punto que divide el fragmento de la cadena que hemos analizado, de la parte de la cadena que falta por analizar. Es decir, al inicio de nuestro procesamiento, estamos en el siguiente estado:
 
-    |if a<=0 then b else c
+    |if (a<=0) b else c
 
 Que simboliza que aún no hemos visto ningún caracter de la cadena. Queremos entonces idear una maquinaria que "avance" por la cadena, caracter a caracter, y en cada instante sepa determinar si con los caracteres vistos hasta el momento ya tiene un *token* construido, o si necesita seguir avanzando. Veamos paso a paso cómo podría funcionar un mecanismo así. Comenzamos con el inicio de la cadena, y vamos además a almacenar el fragmento de *token* que estamos construyendo, y la lista de *tokens* que vamos reconociendo como salida:
 
