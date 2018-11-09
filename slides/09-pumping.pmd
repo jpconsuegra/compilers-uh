@@ -1,0 +1,52 @@
+% Límites de los Lenguajes Regulares
+% MSc. Alejandro Piad Morffis
+% MatCom, UH (CC BY-SA-NC 4.0)
+
+# No todos los lenguajes son regulares
+
+> Sea $L = \{ a^n b^n \,\, | \,\, n \geq 0 \}$
+
+- ¿Es $L$ regular?
+- ¿Cómo podemos demostrar que no existe un autómata $A$ tal que $L_A = L$?
+
+# Idea intuitiva
+
+- Supongamos que existe $A$.
+- Sea $k = |Q|$ la cantidad de estados de $A$.
+- Analicemos la cadena $a^k$
+- Existe un estado $q_i$ que se usa 2 veces (¿?).
+- Sea $q_i$ este estado, existe un par de prefijos $a^p$ y $a_q$ que ambos terminan en $q_i$.
+- Entonces sean las cadenas $a_p b^p$ y $a^q b^p$ pasan por $q_i$ y terminan en el mismo $q_f$ (¿?)
+- Pero una de los dos no pertenece a $L$.
+- Contradicción, $A$ no puede existir.
+
+# Formalizando
+
+## Lema del bombeo
+
+Sea $L$ un lenguaje regular, existe un $n$ (que depende de $L$), tal que,
+para toda cadena $\omega$ con $|\omega| \geq n$, $\omega$ se puede escribir como
+$xyz$, tal que:
+
+1. $y \neq \epsilon$
+2. $|xy| \leq n$
+3. Para todo $k$, $xy^kz \in L$
+
+# Usando el lema del bombeo
+
+Quiero demostrar que un lenguaje no es regular.
+
+- Escojo una cadena $\omega$ en función de $n$.
+- Escojo una forma de picar $\omega$ en $xyz$ que _no dependa_ de $n$.
+- Escojo un $k$ tal que $xy^kz$ no esté en $L$.
+
+# Ejemplos
+
+- Cantidad igual de $a$ y $b$.
+- Paréntesis balanceados.
+- $0^n 1^m$ con $n \leq m$.
+
+## Otros lenguajes
+
+- $\omega \in \{a,b\}^*$ con $\#_a \mod \#_b (k)$, para un $k$ arbitrario.
+- $\omega = yxy^R$ con $x,y \in \{0,1\}^*$.
