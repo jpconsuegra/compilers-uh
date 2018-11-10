@@ -635,7 +635,7 @@ Esta extensión introduce funciones anónimas, también conocidas como expresion
 Por ejemplo, en una declaración de variables:
 
 ```HULK
-let f:(Number)->Number = function (x) -> x * 2 in print(f(3));
+let f:(Number)->Number = function (x:Number):Number -> x * 2 in print(f(3));
 ```
 
 O directamente como parámetro a una función o método:
@@ -645,7 +645,7 @@ function map(a:Number[], f:(Number)->Number) {
     new Number[]{ i -> f(a[i]) };
 }
 
-print(map(new Number[20]{ i -> i }, function(x) -> x+2));
+print(map(new Number[20]{ i -> i }, function (x:Number):Number -> x+2));
 ```
 
 Al igual que las funciones globales, el cuerpo puede ser una expresión simple o un bloque de expresiones.
@@ -655,7 +655,8 @@ Al igual que las funciones globales, el cuerpo puede ser una expresión simple o
 Esta extensión adiciona a las expresiones _lambda_ un mecanismo de clausura que permite capturar variables existentes en el contexto de la función automáticamente.
 
 ```HULK
-let x:Number=3, f:(Number)->Number = function (y) -> y * x in print(f(5)); # 15
+let x:Number=3, f:(Number)->Number = function (y:Number):Number -> y * x in
+    print(f(5)); # 15
 ```
 
 La captura se realiza **por copia** siempre, por lo que las variables capturadas **no mantienen su valor** luego de ejecutada la función.
@@ -663,7 +664,7 @@ Sin embargo, la variable capturada visible dentro de la función anónima **si m
 
 ```HULK
 let x:Number=1 in
-    let f:(Number)->Number = function (y) {
+    let f:(Number)->Number = function (y:Number):Number {
         x := x + 1;
         y * x;
     } in {
@@ -682,7 +683,7 @@ class NumberNumberFunction {
 
 class LambdaFunction1(x:Number) is NumberNumberFunction {
     x:Number = x;
-    invoke(arg1:Number) {
+    invoke(arg1:Number):Number {
         self.x := self.x + 1;
         y * self.x;
     }
@@ -698,9 +699,9 @@ let x:Number=1 in
 
 De esta forma se garantiza que el valor de `x` fuera de `f` no sea modificado, sin embargo, todas las ejecuciones de `f` comparten una misma referencia al `x` interno.
 
-### Extensión: Iteradores
+### Extensión: Generadores (iteradores)
 
-Esta extensión adiciona una sintaxis para definir iteradores (también llamados generadores). Un iterador es cualquier clase que implemente dos métodos: `next()` y `current()`. El método `next()` devuelve `Boolean` y su función es avanzar el iterador. El método `current()` devuelve un tipo arbitrario y retorna el elemento "actual" del iterador. Por ejemplo:
+Esta extensión adiciona una sintaxis para usar generadores (también llamados iteradores). Un generador es cualquier clase que implemente dos métodos: `next()` y `current()`. El método `next()` devuelve `Boolean` y su función es avanzar el iterador. El método `current()` devuelve un tipo arbitrario y retorna el elemento "actual" del generador. Por ejemplo:
 
 ```HULK
 class Range(start:Number, end:Number) {
@@ -716,17 +717,183 @@ class Range(start:Number, end:Number) {
 Cualquier clase que posea estos dos métodos puede ser usada con la siguiente sintaxis:
 
 ```HULK
+for (<var>:<type> in <generator>) <expr>
+```
+
+Por ejemplo:
+
+```HULK
 for (x:Number in new Range(0,100)) print(x);
 ```
 
-Que es un atajo sintáctico equivalente a:
+Esta expresión enlaza una variable `x` al valor `current()` del generador en cada iteración, y ejecuta la expresión correspondiente. Al igual que todas las expresiones con cuerpo (`let`, `while`), es posible usar una expresión simple o un bloque de expresiones.
+
+La expresión `for` es sintácticamente equivalente a una construcción como la siguiente:
 
 ```HULK
-let iter=new Range(0,100) in while(iter.next()) {
-    let x=iter.current() in print(x);
-    iter.next();
+let _iter:<generator-type>=<generator> in while (_iter.next()) {
+    let <var>:<type>=_iter.current() in <expr>;
+}
+```
+
+Por ejemplo, en este caso:
+
+```HULK
+let _iter:Range=new Range(0,100) in while(_iter.next()) {
+    let x:Number=_iter.current() in print(x);
 };
 ```
+
+### Extensión: Tipos generadores
+
+Esta extensión adiciona una familia especial de tipos, los tipos generadores, que son covariantes con cualquier clase que implemente una interfaz de generador adecuada.
+
+Un tipo generador se declara con la sintaxis:
+
+```HULK
+<type>*
+```
+
+Donde `<type>` es un tipo cualquiera. Por ejemplo `Number*`, `Boolean*`, `Number[]*`, y por supuesto, `Number**` y cualquier otra composición. Los tipos generadores pueden usarse como tipo estático de una variable o parámetro donde se espere un generador, y son compatibles (covariantes) con cualquier tipo (clase) que cumpla la interfaz de generador correspondiente.
+
+Por ejemplo, la siguiente clase cumple con la interfaz de un generador de tipo `Number*`:
+
+```HULK
+class Range(start:Number, end:Number) {
+    i:Number = start;
+    next():Boolean {
+        self.i += 1;
+        self.i <= end;
+    }
+    current():Number -> self.i - 1;
+}
+```
+
+Por lo tanto, puede ser usado en el siguiente fragmento:
+
+```HULK
+function sum(items:Number*) {
+    let s:Number=0 in for(x:Number in items) s:=s+x;
+}
+
+print(sum(new Range(1,100))); # 4950
+```
+
+De esta forma es posible escribir funciones "genéricas" con respecto a los tipos generadores, es decir, donde no sea necesario conocer de antemano el tipo concreto que implementa la interfaz de generador. Además, es posible escribir funciones que devuelvan tipos generadores y de esta forma simplificar la sintaxis:
+
+```HULK
+function range(start:Number, end:Number):Number* -> new Range(start, end);
+
+for (x in range(1,100)) print(x);
+```
+
+Las variables y parámetros declarador con un tipo generador pueden ser usados en una expresión `for`, pero además, es posible interpretarlos como una _supuesta_ clase con métodos `next()` y `current()`, ya que implementación "real" es esta manera. Por lo tanto, el siguiente código es válido:
+
+```HULK
+let items:Number* = range(1,100) in items.next();
+```
+
+Aún cuando no sea posible acceder estáticamente al tipo concreto que implementa el generador, es sabido que tendrá al menos los métodos `next()` y `current()` con la semántica esperada, por lo que es posible implementar funciones importantes tales como:
+
+```HULK
+function empty(items:Number*) -> !items.next();
+```
+
+O patrones como este:
+
+```HULK
+class Take(items:Number*, k:Number) {
+    items:Number* = items;
+    k:Number = k;
+
+    next():Boolean -> if (k>0) self.items.next() else False;
+    current():Number -> self.items.current();
+}
+
+function take(items:Number*, k:Number):Number* -> Take(items,k);
+```
+
+### Extensión: Expresiones generadoras
+
+Esta extensión añade una sintaxis para definir expresiones generadoras, es decir, expresiones que pueden usarse con la sintaxis `for`, cuyo tipo estático será un tipo generador.
+
+Una expresión generadora tiene la forma:
+
+```HULK
+{ <expr> | <var> in <loop-expr> }
+```
+
+Donde `<expr>` es una expresión que involucra la variable `<var>`, y `<var>` captura el valor de retorno de `<loop-expr>`, que debe ser una de las siguientes expresiones:
+
+- Un tipo generador.
+- Un ciclo `while`.
+- Un ciclo `for`.
+- Una expresión `let` cuyo cuerpo es una de las anteriores.
+
+Los siguientes ejemplos son todos válidos:
+
+- Tipo generador explícito:
+    ```HULK
+    { 2*x | x in new Range(1, 100) }
+    ```
+
+- Función que devuelve un tipo generador:
+    ```HULK
+    { x+1 | x in range(1, 100) }
+    ```
+
+- Ciclo `while` (infinito en este caso):
+    ```HULK
+    { exp(x) | x in while (True) random() }
+    ```
+
+- Ciclo `for` (anidado en este caso):
+    ```HULK
+    { x | x in for (i in range(1,100))
+               for (j in range(1,100))
+               i*j }
+    ```
+
+- Expresión `let` con un ciclo en el cuerpo:
+    ```HULK
+    { x | x in let i:Number=0 in while (i < 100) {
+                   i := i + 1;
+                   random(); }}
+    ```
+
+Un expresión generadora es semánticamente equivalente a una clase que implemente el tipo generador correspondiente (al tipo estático de `x`), y cuya implementación de los métodos `next()` y `current()` corresponda al comportamiento definido. El mecanismo exacto para lograr esta transpilación es demasiado complejo para formalizarlo en esta sección, pero daremos un ejemplo ilustrativo.
+
+De manera general, el cuerpo del método `next()` corresponderá a la implementación de `<loop-expr>`, desenrrollada de forma tal que cada paso se ejecute en un llamado correspondiente, mientras que el cuerpo de `current()` corresponderá a la expresión `<expr>` de retorno del generador.
+
+Por ejemplo, para la siguiente expresión:
+
+```HULK
+{ exp(x) | x in let i:Number=0 in while (i < 100) {
+                    i := i + 1;
+                    random(); }}
+```
+
+Una posible implementación será el siguiente tipo generador:
+
+```HULK
+class Generator {
+    x:Number = 0; # Variable que almacenará current
+    i:Number = 0; # Inicialización de la expresión let
+
+    next():Boolean {
+        if (!(self.i < 100)) False
+        else {
+            self.i := self.i + 1;
+            self.x := random();
+            True;
+        };
+    }
+
+    current():Number -> exp(self.x);
+}
+```
+
+En el caso de que el cuerpo de una expresión generadora sea un generador directamente, o un ciclo `for`, existen formas de convertirlo a un patrón `let-while` básico. De esta forma todas las expresiones generadoras pueden reescribirse como **HULK** básico.
 
 ### Extensión: Inferencia de tipos
 
@@ -748,7 +915,7 @@ class Point(x:Number, y:Number) {
 }
 ```
 
-Un caso más complejo es cuando se deja sin especificar el tipo de retorno de una función, pero puede ser inferido por a partir de su cuerpo:
+Un caso más complejo es cuando se deja sin especificar el tipo de retorno de una función, pero puede ser inferido a partir de su cuerpo:
 
 ```HULK
 function succ(n:Number) -> n + 1;
@@ -794,6 +961,8 @@ function g(a, b) -> if (b==1) a else f(a/2, b+1);
 
 En este caso, es posible teóricamente inferir que `f` y `g` deben ambos retornar tipo `Number`, pero dada la complejidad de manejar la inferencia de tipos en más de una función a la vez, no se garantiza que sea posible deducir los tipos en este caso.
 
+Varias de las extensiones de **HULK** introducen tipos nuevos, por ejemplo, _arrays_, tipos generadores y tipos funcionales. En caso de implementar algunas de estas extensión, la inferencia de tipos también se debe extender de forma correspondiente.
+
 Cuando se crea un _array_, es posible inferir el tipo estático si se provee una expresión de inicialización:
 
 ```HULK
@@ -812,6 +981,32 @@ Cuando se define un tipo funcional, el tipo puede ser inferido a partir de la de
 function fib(n) -> if (n <= 1) 1 else fib(n-1) + fib(n-2);
 
 let f=fib in print(f(3)); # f infiere (Number) -> Number
+```
+
+Cuando se define una función anónima, el tipo puede ser inferido a partir de su cuerpo:
+
+```HULK
+let f = function (x) -> x % 2 == 0 in print(f(10));
+```
+
+En ocasiones, se puede inferir el tipo de un parámetro a partir del tipo de la variable donde es almacenada la función anónima:
+
+```HULK
+let f:(Person)->Boolean = function (p) -> p.name() == "John" in ...
+```
+
+En este caso hipótetico el compilador infiere `Person` para el argumento `p` gracias a la declaración de `f`, por lo que reconoce `p.name` como un método válido en esta clase.
+
+Para las expresiones generadoras, el tipo puede ser inferido a partir del tipo de la variable generada. Por ejemplo, en el siguiente caso, el tipo inferido para `x` es `Number`, pues es el tipo de retorno del ciclo `while` (función `random()`).
+El tipo inferido para la expresion `exp(x) < 0` es `Boolean`.
+Por lo tanto el tipo inferido para toda la expresión `Boolean*`.
+
+```HULK
+# g infiere Boolean*
+let g = { exp(x) < 0 | x in let i:Number=0 in
+                            while (i < 100) {
+                                i := i + 1;
+                                random(); }} in ...
 ```
 
 ### Extensión: _Null-safety_
@@ -834,7 +1029,7 @@ En este caso se puede inferir que `x` nunca será `Null` pues no existe ninguna 
 Por el contrario, si se usa un ciclo o una expresión `if` sin parte `else`, no es posible garantizar _null-safety_, incluso cuando realmente el valor de la expresión no pueda ser `Null`.
 
 ```HULK
-let i=n, x=(while (i > 0) i:=i-1) in print(x);
+let i=10, x=(while (i > 0) i:=i-1) in print(x);
 ```
 
 Así mismo, en los argumentos de una función nunca será posible garantizar _null-safety_.
