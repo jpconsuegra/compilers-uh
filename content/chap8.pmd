@@ -21,17 +21,19 @@ También es posible definir _una única expresión global_ que constituye el pun
 La mayoría de las construcciones sintácticas en **HULK** son expresiones, incluyendo las instrucciones condicionales y los ciclos.
 **HULK** es un lenguaje estáticamente tipado con inferencia de tipos, lo que significa que algunas (o todas) las partes de un programa pueden ser anotadas con tipos, y el compilador verificará la consistencia de todas las operaciones.
 
-### Un lenguaje incremental
+## Un lenguaje didáctico e incremental
 
 El lenguaje **HULK** ha sido diseñado para ser utilizado como mecanismo de aprendizaje y evaluación de un curso de Compilación. Por tal motivo, ciertas decisiones de diseño de lenguaje responden más a cuestiones didácticas que a cuestiones teóricas o pragmáticas. Un ejemplo ilustrativo es la inclusión de un solo tipo numérico básico. En la práctica los lenguajes de programación cuentan con varios tipos numéricos (`int`, `float`, `double`, `decimal`) para cubrir el amplio rango de _trade-off_ entre eficiencia y expresividad. Sin embargo, desde el punto de vista didáctico, ya es suficiente complejidad el tener que lidiar con un tipo numérico, y la inclusión de otros no aporta nada nuevo desde nuestro punto de vista.
 
 Otra decisión importante es el tipado estático con inferencia de tipos, que será explicado más adelante en detalle. La motivación detrás de esta característica es permitir a los estudiantes implementar primero un evaluador para el lenguaje, y luego preocuparse por la verificación de tipos. Así mismo, la decisión de tener expresiones globales, funciones globales, y clases, responde a la necesidad de introducir los diversos elementos del lenguaje poco a poco. Al tener expresiones globales, es posible implementar un intérprete de expresiones sin necesidad de resolver los problemas de contexto. Luego se pueden introducir las funciones y finalmente las características orientadas a objetos. De esta forma los estudiantes pueden ir aprendiendo sobre la marcha a medida que adicionan características al lenguaje, siempre teniendo un subconjunto válido del lenguaje implementado.
 
-El lenguaje **HULK** realmente es un conjunto de lenguajes de programación muy relacionados. Lo que llamaremos **HULK** _básico_ consiste en un subconjunto mínimo funcional del lenguaje, y un conjunto extenso de características adicionales. El lenguaje _básico_ contiene expresiones, funciones globales y un sistema unificado de tipos con herencia simple. Las extensión incluyen desde soporte para _arrays_, hasta delegados, inferencia de tipos, iteradores, entre otras características. Cada una de estas extensiones se ha diseñado para que sea compatible con el resto de **HULK**, incluyendo el resto de la extensiones. Debe ser posible, una vez implementado un compilador básico, adicionar cualquier subconjunto de estas extensiones.
+El lenguaje **HULK** realmente es un conjunto de lenguajes de programación muy relacionados. Lo que llamaremos **HULK** _básico_ consiste en un subconjunto mínimo al que se le definen un conjunto extenso de características adicionales. El lenguaje _básico_ contiene expresiones, funciones globales y un sistema unificado de tipos con herencia simple. Las extensión incluyen desde soporte para _arrays_, hasta delegados, inferencia de tipos, iteradores, entre otras características. Cada una de estas extensiones se ha diseñado para que sea compatible con el resto de **HULK**, incluyendo el resto de la extensiones. Debe ser posible, una vez implementado un compilador básico, adicionar cualquier subconjunto de estas extensiones.
+
+Este diseño ha sido concebido para permitir el uso de **HULK** en un amplio rango de niveles de aprendizaje. Como lenguaje de expresiones y funciones, es útil para cursos introductorios sobre _parsing_ y técnicas básicas de compilación. La orientación a objetos introduce todo un universo de complejidades semánticas; sin embargo, el sistema de tipos de **HULK** es suficientemente sencillo como para ilustrar los problemas más comunes en la verificación semántica de tipos. Por su parte, cada una de las extensiones introduce problemáticas avanzadas e interesantes. Los _arrays_ introducen problemas relacionados con el manejo de memoria, mientras que las funciones anónimas y los iteradores son fundamentalmente problemas de transpilación y generación de código. La inferencia de tipos y la verificación de _null-safety_ es todo un ejercicio en inferencia lógica, que puede servir en cursos avanzados. La idea es que cada curso defina sus objetivos de interés, y pueda utilizar un subconjunto apropiado de **HULK** para ilustrar y evaluarlos.
 
 ## HULK básico
 
-En esta sección definimos el subconjunto mínimo de **HULK**, que llamaremos _básico_. Este subconjunto consiste en un lenguaje de expresiones y funciones globales con tipado estático.
+En esta sección definimos el subconjunto mínimo de **HULK**, que llamaremos _básico_. Este subconjunto consiste en un lenguaje de expresiones y funciones globales con tipado estático, y un sistema unificado de tipos con herencia simple.
 
 El programa más sencillo en **HULK** es, por supuesto, _Hola Mundo_:
 
@@ -57,11 +59,11 @@ En **HULK** se definen todas las expresiones usuales, en orden decreciente de pr
 - Operaciones aritméticas entre expresiones de tipo `Number`: `-a`, `a % b`, `a * b`, `a / b`, `a + b`, `a - b`, con la precedencia y asociatividad usuales, y agrupamiento mediante paréntesis. El resultado es de tipo `Number` siempre.
 - Comparaciones entre expresiones de tipo `Number`: `a < b`, `a > b`, `a <= b`, `a >= b`, con menor precedencia que las aritméticas, y sin asociatividad.
 - Comparaciones de igualdad entre expresiones de cualquier tipo: `a == b`, `a != b`, con la semántica de igualdad por valor entre expresiones de tipo `Number`, `String` o `Boolean`, e igualdad por referencia en todos los demás tipos. Se permite comparar expresiones de cualquier tipo, y si sus tipos no son compatibles (e.j, `"Hola Mundo" == 42`) el resultado será `False`.
-- El operador infijo `@` de concatenación entre `String`: `"Hello "@"World" == "Hello World"`. Para los casos donde es conveniente, el operador `@@` adiciona un espacio intermedio: `"Hello"@@"World" == "Hello World"`.
+- El operador infijo `@` de concatenación entre `String`: `"Hello "@"World" == "Hello World"`. Para los casos donde es conveniente, el operador `@@` adiciona un espacio intermedio: `"Hello" @@ "World"` es igual a `"Hello World"`.
 
-En el espacio de nombres global siempre se encontrarán además las funciones `print`, `read` y `parse`, además de una serie de funciones elementales matemáticas, tales como `exp`, `pow`, `log`, `sqrt`, `min` y `max`.
+En el espacio de nombres global siempre se encontrarán además las funciones `print`, `read` y `parse`, además de una serie de funciones elementales matemáticas, tales como `exp`, `pow`, `log`, `sqrt`, `min`, `max` y `random`.
 
-El valor `Null` es un valor especial que puede tener cualquier tipo, excepto `Number` y `Boolean`. `Null` representa la no existencia de una instancia asociada a la variable (_l-value_ en caso general) correspondiente, y cualquier operación que se intente sobre un valor `Null` lanzará un error en tiempo de ejecución, excepto `==`,que siempre devuelve `False`, y `!=` (que siempre devuelve `True`, incluso entre expresiones ambas iguales a `Null`. El literal `Null` es una expresión de tipo `Object` con valor igual a `Null`.
+El valor `Null` es un valor especial que puede tener cualquier tipo, excepto `Number` y `Boolean`. `Null` representa la no existencia de una instancia asociada a la variable (_l-value_ en caso general) correspondiente, y cualquier operación que se intente sobre un valor `Null` lanzará un error en tiempo de ejecución, excepto `==`, que siempre devuelve `False`, y `!=` (que siempre devuelve `True`, incluso entre expresiones ambas iguales a `Null`). El literal `Null` es una expresión de tipo `Object` con valor igual a `Null`.
 
 ### Variables
 
@@ -242,15 +244,15 @@ let i:Number=0 in while (i < n) {
 }
 ```
 
-###  Lidiando con valores `Null`
+### Lidiando con valores `Null`
 
-Si una variable tiene valor `Null`, se lanzará un error en tiempo de ejecución si se intenta cualquier operación sobre ella (expecto `==` y `!=`). Siempre es posible evitar esto comprobando explícitamente:
+Si una variable tiene valor `Null`, se lanzará un error en tiempo de ejecución si se intenta cualquier operación sobre ella (expecto `==` y `!=`). **No** es posible evitar esto comprobando explícitamente:
 
 ```HULK
 if (x != Null) x.value else 0
 ```
 
-Para estos casos, **HULK** introduce una sintaxis específica:
+Ya que el operador `!=` devuelve `True` siempre que uno de los dos valores sea `Null`. Es decir `Null != Null == True`. Para estos casos, **HULK** introduce una sintaxis específica:
 
 ```HULK
 with (<expr> as <id>) <expr> [else <expr>]
@@ -456,6 +458,8 @@ function dunno():Object -> 40;
 let o:Object = something() in case o of y:Number -> y + 2;
 ```
 
+Hasta este punto, el lenguaje **HULK** básico definido representa un reto suficientemente interesante como proyecto de un semestre en un curso estándar de compilación. A continuación se definen un conjunto de extensiones que complejizan considerablemente el lenguaje en distintas dimensiones.
+
 ## Extensiones a **HULK**
 
 En esta sección definimos un conjunto de extensiones a **HULK**. Todas estas extensiones adicionan elementos sintácticos o semánticos al lenguaje. Todas las extensiones están diseñadas para que sean compatibles con el lenguaje **HULK** _básico_, y también compatibles entre sí. De este modo, un compilador de **HULK** puede decidir implementar cualquier subconjunto de estas extensiones.
@@ -568,7 +572,7 @@ Esta extensión permite definir _tipos_ que representan funciones, y pueden ser 
 
 Un _tipo funcional_ se declara con la sintaxis siguiente:
 
-```
+```HULK
 (<type1>, <type2>, ...) -> <return>
 ```
 
@@ -580,7 +584,7 @@ function fib(n:Number): Number -> if (n<=1) 1 else fib(n-1) + fib(n-2);
 
 Una anotación de su tipo sería:
 
-```
+```HULK
 (Number) -> Number
 ```
 
@@ -787,7 +791,7 @@ function range(start:Number, end:Number):Number* -> new Range(start, end);
 for (x in range(1,100)) print(x);
 ```
 
-Las variables y parámetros declarador con un tipo generador pueden ser usados en una expresión `for`, pero además, es posible interpretarlos como una _supuesta_ clase con métodos `next()` y `current()`, ya que implementación "real" es esta manera. Por lo tanto, el siguiente código es válido:
+Las variables y parámetros declarados con un tipo generador pueden ser usados en una expresión `for`, pero además, es posible interpretarlos como una _supuesta_ clase con métodos `next()` y `current()`, ya que la implementación "real" es esta. Por lo tanto, el siguiente código es válido:
 
 ```HULK
 let items:Number* = range(1,100) in items.next();
@@ -861,6 +865,8 @@ Los siguientes ejemplos son todos válidos:
                    random(); }}
     ```
 
+La variable `<var>` tendrá sucesivamente todos los valores "producidos" para la expresión de iteración.
+
 Un expresión generadora es semánticamente equivalente a una clase que implemente el tipo generador correspondiente (al tipo estático de `x`), y cuya implementación de los métodos `next()` y `current()` corresponda al comportamiento definido. El mecanismo exacto para lograr esta transpilación es demasiado complejo para formalizarlo en esta sección, pero daremos un ejemplo ilustrativo.
 
 De manera general, el cuerpo del método `next()` corresponderá a la implementación de `<loop-expr>`, desenrrollada de forma tal que cada paso se ejecute en un llamado correspondiente, mientras que el cuerpo de `current()` corresponderá a la expresión `<expr>` de retorno del generador.
@@ -894,6 +900,17 @@ class Generator {
 ```
 
 En el caso de que el cuerpo de una expresión generadora sea un generador directamente, o un ciclo `for`, existen formas de convertirlo a un patrón `let-while` básico. De esta forma todas las expresiones generadoras pueden reescribirse como **HULK** básico.
+
+Al igual que en las funciones anónimas, las variables externas referenciadas dentro de la clausura de una expresión generadora se capturan **por copia**. Por lo tanto, su modificación dentro de una expresión generadora no se percibe fuera de la expresión:
+
+```HULK
+let i:Number = 0,
+    items:Number* = { x | x in while (i<10) i := i+1 }
+in {
+    for (x:Number in items) print(x); # Imprime 1 ... 10
+    print(i);                         # Imprime 0
+}
+```
 
 ### Extensión: Inferencia de tipos
 
@@ -997,6 +1014,16 @@ let f:(Person)->Boolean = function (p) -> p.name() == "John" in ...
 
 En este caso hipótetico el compilador infiere `Person` para el argumento `p` gracias a la declaración de `f`, por lo que reconoce `p.name` como un método válido en esta clase.
 
+En una expresión `for` el tipo de la variable puede ser inferido a partir del tipo del generador:
+
+```HULK
+function range(start:Number, end:Number):Number* {
+    new Range(start,end);
+}
+
+for (x in range(1,100)) print(x); # x infiere Number
+```
+
 Para las expresiones generadoras, el tipo puede ser inferido a partir del tipo de la variable generada. Por ejemplo, en el siguiente caso, el tipo inferido para `x` es `Number`, pues es el tipo de retorno del ciclo `while` (función `random()`).
 El tipo inferido para la expresion `exp(x) < 0` es `Boolean`.
 Por lo tanto el tipo inferido para toda la expresión `Boolean*`.
@@ -1024,7 +1051,7 @@ Un caso más interesante es cuando se puede inferir por la inicialización de un
 let x = new Person("John Doe") in print(x.greet());
 ```
 
-En este caso se puede inferir que `x` nunca será `Null` pues no existe ninguna asignación, y el valor de la expresión `Person(...)` nunca es `Null`.
+En este caso se puede inferir que `x` nunca será `Null` pues no existe ninguna asignación, y el valor de la expresión `new Person(...)` nunca es `Null`.
 
 Por el contrario, si se usa un ciclo o una expresión `if` sin parte `else`, no es posible garantizar _null-safety_, incluso cuando realmente el valor de la expresión no pueda ser `Null`.
 
