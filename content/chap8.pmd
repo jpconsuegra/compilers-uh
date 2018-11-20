@@ -19,7 +19,7 @@ Además en **HULK** es posible definir funciones globales fuera del contexto de 
 También es posible definir _una única expresión global_ que constituye el punto de entrada al programa.
 
 La mayoría de las construcciones sintácticas en **HULK** son expresiones, incluyendo las instrucciones condicionales y los ciclos.
-**HULK** es un lenguaje estáticamente tipado con inferencia de tipos, lo que significa que algunas (o todas) las partes de un programa pueden ser anotadas con tipos, y el compilador verificará la consistencia de todas las operaciones.
+**HULK** es un lenguaje estáticamente tipado con inferencia de tipos opcional, lo que significa que algunas (o todas) las partes de un programa pueden ser anotadas con tipos, y el compilador verificará la consistencia de todas las operaciones.
 
 ## Un lenguaje didáctico e incremental
 
@@ -37,7 +37,7 @@ En esta sección definimos el subconjunto mínimo de **HULK**, que llamaremos _b
 
 El programa más sencillo en **HULK** es, por supuesto, _Hola Mundo_:
 
-```HULK
+```hulk
 print("Hola Mundo");
 ```
 
@@ -69,13 +69,13 @@ El valor `Null` es un valor especial que puede tener cualquier tipo, excepto `Nu
 
 Las variables en **HULK** se introducen con una expresión `let`:
 
-```HULK
+```hulk
 let <var>[:<type>]=<init> in <body>
 ```
 
 La semántica de la expresión `let` consiste en que se crea un nuevo ámbito donde se define la variable `<var>` cuyo valor es el resultado de evaluar `<init>`, y se evalua en este ámbito la expresión `<body>`.
 
-```HULK
+```hulk
 let msg:String="Hola Mundo" in print(msg)
 ```
 
@@ -83,19 +83,19 @@ Como se verá, indicar el tipo de una variable al declararla es opcional. Los de
 
 Existe una variante extendida de la expresión `let` en la que se permite introducir más de una variable:
 
-```HULK
+```hulk
 let x=1, y=2, z=3 in x+(y*z)
 ```
 
 Esta variante es semánticamente idéntica a:
 
-```HULK
+```hulk
 let x=1 in let y=2 in let z=3 in x+(y*z)
 ```
 
 El cuerpo de una expresión `let` puede ser también una _lista de expresiones_, encerradas entre `{` y `}` y separadas por `;`, siendo el valor final de la expresión `let` el valor de la última expresión de la lista.
 
-```HULK
+```hulk
 let x=0 in {
     print(x==0); # Imprime True
     print(x==1); # Imprime False
@@ -105,13 +105,13 @@ let x=0 in {
 Una _lista de expresiones_ **no es** una expresión en sí, es decir, no puede ser usada donde quiera que se requiera una expresión. Solamente se puede usar en el cuerpo de algunas construcciones sintácticas que se irán introduciendo poco a poco.
 Es decir, el siguiente ejemplo **no es válido**:
 
-```HULK
+```hulk
 let x={0;1} in print(x) # NO es válido
 ```
 
 Como tampoco lo es:
 
-```HULK
+```hulk
 {1;2} + {3;4;let x=5 in 5} # NO es válido
 ```
 
@@ -121,7 +121,7 @@ Ni ningún otro ejemplo similar donde se use un bloque de expresiones como una e
 
 La asignación en **HULK** se realiza con el operador `:=`, y solamente es posible asignar a una variable que exista en el contexto actual:
 
-```HULK
+```hulk
 let color="green" in {
     print(color);    # Imprime green
     color:="blue";
@@ -131,7 +131,7 @@ let color="green" in {
 
 La asignación devuelve el valor asignado, y asocia a la derecha. Tiene menor prioridad que todas las expresiones aritméticas:
 
-```HULK
+```hulk
 let x=0, y=0 in {
     y := x := 5 + 5;
     print(x); # 10
@@ -146,7 +146,7 @@ let x=0, y=0 in {
 
 En **HULK** los espacios en blanco no son significativos, ni tampoco la indentación. La sintaxis del lenguaje permite indicar explícitamente, cuando es necesario, el ámbito de un bloque de código. El ejemplo anterior es equivalente a:
 
-```HULK
+```hulk
 let x=1 in
 let y=2 in
 let z=3 in
@@ -159,7 +159,7 @@ O cualquier otra forma de indentar que sea conveniente.
 
 Los identificadores empiezan con un caracter del alfabeto ASCII (o `_`) y pueden opcionalmente contener números. Ejemplos de identificadores válidos son:
 
-```HULK
+```hulk
 x
 name
 CamelCase
@@ -176,13 +176,13 @@ Todas las funciones globales deben ser definidas **antes** de la expresión glob
 
 En la primera forma sintáctica, que llamamos "compacta", el cuerpo de la función debe ser exactamente una expresión (terminada en `;`):
 
-```HULK
+```hulk
 function isEven(n:Number):Boolean -> n % 2 == 0;
 ```
 
 En la segunda forma, que llamaremos "extendida", el cuerpo de una función puede ser una _lista de expresiones_ separadas por `;`. El valor de retorno de la función es el valor de la última expresión de la lista. En esta notación **no se incluye** un `;` al final de la declaración de la función.
 
-```HULK
+```hulk
 function f(a:Number, b:Number, c:Number):Number {
     a := b + c;
     b := c + a;
@@ -198,14 +198,14 @@ En **HULK** no existe una instrucción ni palabra reservada con semántica simil
 
 Las expresiones condicionales se introducen con la sintaxis siguiente:
 
-```HULK
+```hulk
 if (<cond>) <body> [elif (<cond>) <body>]* [else <body>]?
 ```
 
 Es decir, una parte `if`, seguida de cero o más partes `elif` y finalmente una parte `else` opcional.
 Una expresión `if` devuelve el valor de la parte que se ejecuta. Si no se ejecuta ninguna (no hay else), devolverá `Null`. Si esto invalida la consistencia de tipos (como se verá más adelante), será necesario definir una parte `else` para garantizar al compilador/intérprete el tipo esperado.
 
-```HULK
+```hulk
 function fib(n:Number):Number -> if (n <= 1) 1 else fib(n-1) + fib(n-2);
 ```
 
@@ -215,13 +215,13 @@ Al igual que con las expresiones `let` y las funciones, cada cuerpo puede ser o 
 
 La expresión de ciclo más general en **HULK** es un ciclo `while` con la semántica común:
 
-```HULK
+```hulk
 while (<cond>) <body>
 ```
 
 Como ya es usual, `<body>` puede ser una expresión o una lista de expresiones.
 
-```HULK
+```hulk
 function gcd(a:Number, b:Number):Number {
     let q:Number = a%b in while (q != 0) {
         a := b;
@@ -237,7 +237,7 @@ El valor de retorno de la expresión `while` es el valor de retorno del cuerpo l
 
 Con esta expresión, la manera más sencilla de implementar un contador (el común ciclo `for`) es:
 
-```HULK
+```hulk
 let i:Number=0 in while (i < n) {
     # ...
     i := i+1;
@@ -248,19 +248,19 @@ let i:Number=0 in while (i < n) {
 
 Si una variable tiene valor `Null`, se lanzará un error en tiempo de ejecución si se intenta cualquier operación sobre ella (expecto `==` y `!=`). **No** es posible evitar esto comprobando explícitamente:
 
-```HULK
+```hulk
 if (x != Null) x.value else 0
 ```
 
 Ya que el operador `!=` devuelve `True` siempre que uno de los dos valores sea `Null`. Es decir `Null != Null == True`. Para estos casos, **HULK** introduce una sintaxis específica:
 
-```HULK
+```hulk
 with (<expr> as <id>) <expr> [else <expr>]
 ```
 
 Por ejemplo, en este caso:
 
-```HULK
+```hulk
 with (x as o) o.value else 0
 ```
 
@@ -272,38 +272,38 @@ Las expresiones `let`, `if`, `while`, `case` y `with` tienen **menor prioridad**
 
 Por ejemplo, el siguiente es un caso común:
 
-```HULK
+```hulk
 let x:Number=5 in let y:Number=8 in x+y
 ```
 
 Que es equivalente a:
 
-```HULK
+```hulk
 let x:Number=5 in (let y:Number=8 in (x+y))
 ```
 
 Sin embargo, el siguiente caso **no es válido**, pues no se puede sumar con `let` sin parentizar (`let` tiene menor prioridad):
 
-```HULK
+```hulk
 let x:Number=5 in x + let y:Number=8 in y # NO es valido
 ```
 
 La forma correcta es:
 
-```HULK
+```hulk
 let x:Number=5 in x + (let y:Number=8 in y)
 ```
 
 Por último, el bloque `else` siempre asocia al `if` (o `while`) más cercano.
 Es decir, la siguiente expresión:
 
-```HULK
+```hulk
 if (a) if (b) y else z
 ```
 
 Es no ambigua, y equivalente a:
 
-```HULK
+```hulk
 if (a) (if (b) y else z)
 ```
 
@@ -315,7 +315,7 @@ Además de las características estructuradas y funcionales presentadas, el leng
 
 Aparte de los tipos nativos presentados (`Number`, `Boolean` y `String`), es posible definir nuevos tipos mediante la sintaxis:
 
-```HULK
+```hulk
 class <name>[<args>] [is <base>[<init>]] {
     [<attribute>;]*
     [<method>]*
@@ -331,7 +331,7 @@ Todas las clases en **HULK** heredan de una clase base. En caso de no especifica
 Dentro del cuerpo de una clase se pueden definir dos tipos de elementos: atributos y métodos.
 Los atributos se definen con un nombre, un tipo opcional, y una expresión de inicializacion _obligatoria_ (terminado en `;`):
 
-```HULK
+```hulk
 class Point {
     x:Number = 0;
     y:Number = 0;
@@ -342,7 +342,7 @@ Todos los atributos en **HULK** son **privados**, es decir, no está permitido a
 
 Los métodos se definen con una sintaxis muy similar a las funciones globales. La única diferencia es que en el contexto de un método siempre existe una variable implícita `self` que referencia a la instancia en cuestión. Es obligatorio acceder a los atributos y métodos de una clase a través de `self`, **nunca** usando su nombre directamente.
 
-```HULK
+```hulk
 class Point {
     x:Number = 0;
     y:Number = 0;
@@ -358,13 +358,13 @@ Todos los atributos deben ser definidos **antes** que todos los métodos, y sus 
 
 Para obtener una instancia de una clase en **HULK** se utiliza el nombre de la clase como si fuera un método, precedido la palabra clave `new`.
 
-```HULK
+```hulk
 let p = new Point() in print(p.translate(5,3).length());
 ```
 
 Si se desea inicializar los atributos de la clase, se pueden definir _argumentos de clase_, y su valor usarse en la inicialización de los atributos:
 
-```HULK
+```hulk
 class Point(x:Number, y:Number) {
     x:Number = x;
     y:Number = y;
@@ -374,7 +374,7 @@ class Point(x:Number, y:Number) {
 
 Una vez definidos argumentos de clase, es obligatorio proporcionar su valor al construir la clase:
 
-```HULK
+```hulk
 let p:Point = new Point(5,3) in print(p.length());
 ```
 
@@ -382,7 +382,7 @@ let p:Point = new Point(5,3) in print(p.length());
 
 En **HULK** todas las invocaciones a métodos de una instancia son polimórficas. Todos los métodos en **HULK** son virtuales, y pueden ser redefinidos, siempre que se mantenga la misma signatura (cantidad y tipo de los parámetros y retorno). La redefinición se realiza implícitamente si se define en una clase heredera un método con el mismo nombre de una clase ancestro.
 
-```HULK
+```hulk
 class Person(name:String) {
     name:String=name;
     greet() -> "Hello" @@ self.name;
@@ -395,13 +395,13 @@ class Colleague is Person {
 
 Al heredar de una clase se heredan por defecto las definiciones de los argumentos de clase. Por lo tanto, al instanciar una clase heredera, es obligatorio proporcionar los valores de los argumentos:
 
-```HULK
+```hulk
 let p:Person = new Colleague("Pete") in print(p.greet()); # Hi Pete
 ```
 
 Sin embargo, **no está permitido** usar estos argumentos de clase implícitos en la inicialización de atributos de una clase heredera. Si es necesario usarlos, se pueden redefinir explícitamente en la clase heredera. Por otro lado, siempre que se redefinan argumentos de clase en una clase heredera, será necesario indicar explícitamente cómo se evaluan los argumentos de la clase padre en términos de los argumentos de la clase heredera:
 
-```HULK
+```hulk
 class Noble(title:String, who:String) is Person(title @@ who) { }
 
 let p = new Noble("Sir", "Thomas") in print(p.greet()); # Hello Sir Thomas
@@ -411,7 +411,7 @@ let p = new Noble("Sir", "Thomas") in print(p.greet()); # Hello Sir Thomas
 
 La expresión `case` permite comparar el tipo dinámico de una expresión con una lista de tipos posibles. Su sintaxis es la siguiente:
 
-```HULK
+```hulk
 case <expr> of {
     [<id>:<type> -> <body> ;]+
 }
@@ -419,7 +419,7 @@ case <expr> of {
 
 Esta expresión compara el tipo dinámico de `<expr>` contra cada uno de los tipos `<type>`, y ejecuta el `<body>` correspondiente a la rama del ancestro más cercano:
 
-```HULK
+```hulk
 class A { }
 class B is A { }
 class C is B { }
@@ -436,7 +436,7 @@ En caso de ninguna rama ser válida en tiempo de ejecución, se lanza un error. 
 
 Existe una versión compacta también de `case` cuando hay una sola rama, con la forma:
 
-```HULK
+```hulk
 case <expr> of <id>:<type> -> <body>
 ```
 
@@ -444,7 +444,7 @@ Esta forma puede usarse para evaluar un "downcast" en **HULK**, cuando se conoce
 
 Por ejemplo, el siguiente programa lanza error semántico pues `o` es de tipo estático `Object`, explícitamente declarado, por lo que no se puede sumar.
 
-```HULK
+```hulk
 function dunno():Object -> 40;
 
 let o:Object = something() in o + 2; # error semántico
@@ -452,7 +452,7 @@ let o:Object = something() in o + 2; # error semántico
 
 Sin embargo, usando `case` se puede forzar al verificador de tipos a que infiera `Number` para esta expresión, lanzando error en tiempo de ejecución si realmente el tipo dinámico fuera otro.
 
-```HULK
+```hulk
 function dunno():Object -> 40;
 
 let o:Object = something() in case o of y:Number -> y + 2;
@@ -469,7 +469,7 @@ En esta sección definimos un conjunto de extensiones a **HULK**. Todas estas ex
 Esta extensión introduce un tipo nativo con semántica similar al _array_ de los lenguajes de programación de la familia C. Este _array_ **no crece** dinámicamente y **no es covariante** en la asignación. El _array_ es un tipo genérico que se declara con una sintaxis especial. Como es de esperar, un _array_ se indiza con una expresión de tipo `Number` y el valor del primer índice es `0`. Si el valor del índice no es entero, se lanzará un error en tiempo de ejecución, al igual que si el índice sobrepasa los límites del array. Para los efectos del sistema de tipos, todo tipo _array_ hereda directamente de `Object`, y no se puede heredar de él.
 Todos los _arrays_ en **HULK** tienen semántica de enlace por referencia.
 
-```HULK
+```hulk
 let a:Number[] = {1, 2, 3, 4}, i:Number=0 in while (i < a.size()) {
     print(a[i]);
     i := i+1;
@@ -478,19 +478,19 @@ let a:Number[] = {1, 2, 3, 4}, i:Number=0 in while (i < a.size()) {
 
 La forma de crear un array vacío es mediante la sintaxis:
 
-```HULK
+```hulk
 let x:Number[] = new Number[20] in ...
 ```
 
 Todo _array_ se inicializa con el valor por defecto del tipo correspondiente, que es `0` para `Number`, `False` para `Boolean`, y `Null` para cualquier otro tipo. En **HULK** no existen _arrays_ multidimensionales, pero sí es posible crear _arrays_ de _arrays_ (_ad infinitum_):
 
-```HULK
+```hulk
 let x:Number[][] = new Number[][10] in ...
 ```
 
 En este caso, el único _array_ que se inicializa es el más externo. Cada valor de `x[i]` se inicializa con `Null` y debe asignarse explícitamente:
 
-```HULK
+```hulk
 let x:Number[][] = new Number[][10], n=0:Number in while(n<x.size()) {
     x[i] := new Number[i+1];
 }
@@ -502,19 +502,19 @@ El tipo de un _array_ complejo como el anterior sería `Number[][]`.
 
 Cuando se instancia un _array_, es posible inicializarlo automáticamente mediante la sintaxis:
 
-```HULK
+```hulk
 new <type>[<length>] { <index> -> <expr> }
 ```
 
 Donde `<expr>` es una expresión que devuelve el valor del i-ésimo elemento, indizado por la variable `<index>`. Por ejemplo:
 
-```HULK
+```hulk
 new Number[20]{ i -> 2*i+1 }
 ```
 
 Es equivalente a:
 
-```HULK
+```hulk
 let x:Number[] = new Number[20], i:Number=0 in while (i<x.size()) {
     x[i] := 2*i+1;
     i := i+1;
@@ -532,7 +532,7 @@ let x:Number[] = new Number[20]{ i -> if (i<=1) 0
 
 Ya que cuando se ejecuta la inicialización, la variable `x` aún no se ha definido. Para poder realizar una construcción de este tipo, introduciremos el uso de la palabra clave `self`, que servirá dentro de una expresión de inicialización para referirse al propio _array_:
 
-```HULK
+```hulk
 # SI es válido
 let x:Number[] = new Number[20]{ i -> if (i<=1) 0
                                       else self[i-1] + self[i-2] }
@@ -540,7 +540,7 @@ let x:Number[] = new Number[20]{ i -> if (i<=1) 0
 
 Pues es equivalente a:
 
-```HULK
+```hulk
 let x:Number[] = new Number[20], i:Number=0 in while (i<x.size()) {
     x[i] := if (i<=1) 0 else x[i-1] * x[i-2];
     i := i+1;
@@ -550,13 +550,13 @@ let x:Number[] = new Number[20], i:Number=0 in while (i<x.size()) {
 
 De esta forma es posible inicializar _arrays_ complejos en una sola expresión, como en el ejemplo siguiente:
 
-```HULK
+```hulk
 new Number[][100] { i -> new Number[100] { j -> i*j } }
 ```
 
 Que es equivalente a:
 
-```HULK
+```hulk
 let x:Number[] = new Number[][100], i:Number=0 in while (i<x.size()) {
     x[i] := new Number[100];
     let j:Number=0 in while (j < x[i].size()) {
@@ -572,7 +572,7 @@ let x:Number[] = new Number[][100], i:Number=0 in while (i<x.size()) {
 
 Esta extensión introduce el concepto de _interfaz_ en **HULK**. Una interfaz es básicamente una declaración de los métodos que debe contener un tipo:
 
-```HULK
+```hulk
 interface Piece {
     canMove(dx:Number, dy:Number): Boolean;
 }
@@ -584,7 +584,7 @@ Las interfaces en **HULK** son compatibles con cualquier tipo que implemente los
 
 Por ejemplo, la siguiente clase implementa la interfaz `Piece`.
 
-```HULK
+```hulk
 class Bishop(x:Number, y:Number) {
     x:Number = x;
     y:Number = y;
@@ -595,9 +595,9 @@ class Bishop(x:Number, y:Number) {
 }
 ```
 
-Para ser compatibilidad con una interfaz, una clase debe implementar **todos** los métodos. Cada método debe tener la misma cantidad de argumentos, aunque los nombres de los argumentos no importan. Los tipos de los argumentos son _covariantes_ en la entrada y _contravariantes_ en el retorno. Es decir, si una interfaz tiene un método:
+Para ser compatibile con una interfaz, una clase debe implementar **todos** los métodos. Cada método debe tener la misma cantidad de argumentos, aunque los nombres de los argumentos no importan. Los tipos de los argumentos son _covariantes_ en la entrada y _contravariantes_ en el retorno. Es decir, si una interfaz tiene un método:
 
-```HULK
+```hulk
 interface I {
     method(arg1:T1, ..., argn:Tn): Tr;
 }
@@ -605,7 +605,7 @@ interface I {
 
 Entonces una clase puede implementarla con un método:
 
-```HULK
+```hulk
 class C {
     method(arg:T'1, ..., argn:T'n): T'r -> ...
 }
@@ -621,25 +621,25 @@ Esta extensión permite definir _tipos_ que representan funciones, y pueden ser 
 
 Un _tipo funcional_ se declara con la sintaxis siguiente:
 
-```HULK
+```hulk
 (<type1>, <type2>, ...) -> <return>
 ```
 
 Por ejemplo, para la función siguiente:
 
-```HULK
+```hulk
 function fib(n:Number): Number -> if (n<=1) 1 else fib(n-1) + fib(n-2);
 ```
 
 Una anotación de su tipo sería:
 
-```HULK
+```hulk
 (Number) -> Number
 ```
 
 Estas anotaciones sirven para declarar tipos funcionales que pueden ser usados entonces como argumentos o valores de retorno en otras funciones, o almacenados en variables:
 
-```HULK
+```hulk
 let f:(Number)->Number = fib in ...
 ```
 
@@ -648,13 +648,13 @@ Una vez obtenida una referencia a un tipo funcional, se puede utilizar exactamen
 
 Para invocar un tipo funcional se usa la misma sintaxis que para invocar directamente una función global:
 
-```HULK
+```hulk
 let f:(Number)->Number = fib in print(f(6));
 ```
 
 De la misma forma se pueden definir funciones con argumentos de tipos funcionales. Por ejemplo, si se implementan _arrays_, la siguiente función es posible:
 
-```HULK
+```hulk
 function map(a:Number[], f:(Number)->Number):Number[] {
     new Number[array.size()] { i -> f(a[i]) };
 }
@@ -662,7 +662,7 @@ function map(a:Number[], f:(Number)->Number):Number[] {
 
 Desde el punto de vista semántico, el tipo funcional anterior se comporta _como si_ existiera una interfaz como la siguiente, y una clase respectiva que implementara la interfaz:
 
-```HULK
+```hulk
 interface NumberNumberFunction {
     invoke(arg1:Number): Number;
 }
@@ -674,7 +674,7 @@ class FibFunction {
 
 Y el uso o invocación de este tipo funcional pudiera verse _como si_ se empleara de la siguiente forma:
 
-```HULK
+```hulk
 let f:NumberNumberFunction = new FibFunction() in print(f.invoke(6));
 ```
 
@@ -687,13 +687,13 @@ Los tipos funcionales son invariantes tanto en los tipos de los argumentos como 
 Esta extensión introduce funciones anónimas, también conocidas como expresiones _lambda_. Una función anónima es una expresión cuyo tipo es un funcional. Sintácticamente se declaran muy parecido a las funciones globales, excepto que no es necesario indicar un nombre. Semánticamente, las funciones anónimas son expresiones, por lo que pueden ser usadas donde se requiera un funcional.
 Por ejemplo, en una declaración de variables:
 
-```HULK
+```hulk
 let f:(Number)->Number = function (x:Number):Number -> x * 2 in print(f(3));
 ```
 
 O directamente como parámetro a una función o método:
 
-```HULK
+```hulk
 function map(a:Number[], f:(Number)->Number) {
     new Number[]{ i -> f(a[i]) };
 }
@@ -707,7 +707,7 @@ Al igual que las funciones globales, el cuerpo puede ser una expresión simple o
 
 Esta extensión adiciona a las expresiones _lambda_ un mecanismo de clausura que permite capturar variables existentes en el contexto de la función automáticamente.
 
-```HULK
+```hulk
 let x:Number=3, f:(Number)->Number = function (y:Number):Number -> y * x in
     print(f(5)); # 15
 ```
@@ -715,7 +715,7 @@ let x:Number=3, f:(Number)->Number = function (y:Number):Number -> y * x in
 La captura se realiza **por copia** siempre, por lo que las variables capturadas **no mantienen su valor** luego de ejecutada la función.
 Sin embargo, la variable capturada visible dentro de la función anónima **si mantiente su valor** de una ejecución a la siguiente:
 
-```HULK
+```hulk
 let x:Number=1 in
     let f:(Number)->Number = function (y:Number):Number {
         x := x + 1;
@@ -729,7 +729,7 @@ let x:Number=1 in
 
 Semánticamente, la clausura se comporta como si en el momento de definir la función anónima se copiaran los valores de las variables capturadas a campos internos de una _supuesta_ clase que representa el funcional. El ejemplo anterior sería equivalente semánticamente al siguiente código:
 
-```HULK
+```hulk
 interface NumberNumberFunction {
     invoke(arg1:Number):Number;
 }
@@ -752,11 +752,25 @@ let x:Number=1 in
 
 De esta forma se garantiza que el valor de `x` fuera de `f` no sea modificado, sin embargo, todas las ejecuciones de `f` comparten una misma referencia al `x` interno.
 
+### Extensión: Funciones genéricas
+
+Esta extensión introduce funciones globales con argumentos de tipos genéricos. Un tipo genérico se define con la sintaxis `'T` donde `T` es un identificador. Los tipos genéricos pueden usarse en tipos complejos (por ejemplo, un _array_, un tipo funcional, etc.). Una función genérica puede declarar como tipo de uno o más de sus argumentos un tipo genérico.
+
+```hulk
+function map(a:'T[], f:('T)->'R): 'R[] {
+    new T'[] { i -> f(a[i]) };
+}
+```
+
+Los tipos genéricos se consideran declarados en los argumentos de la función. Dentro del cuerpo de una función genérica se pueden utilizar los tipos genéricos como si fueran tipos concretos. En el momento en que se realice una invocación de la función, los tipos genéricos declarados se realizarán en un tipo concreto.
+
+A los efectos semánticos, es como si cuando se realizara una invocación, se definiera en ese momento una versión de la función con los tipos concretos.
+
 ### Extensión: Generadores (iteradores)
 
 Esta extensión adiciona una sintaxis para usar generadores (también llamados iteradores). Un generador es cualquier clase que implemente dos métodos: `next()` y `current()`. El método `next()` devuelve `Boolean` y su función es avanzar el iterador. El método `current()` devuelve un tipo arbitrario y retorna el elemento "actual" del generador. Por ejemplo:
 
-```HULK
+```hulk
 class Range(start:Number, end:Number) {
     i:Number = start;
     next():Boolean {
@@ -767,26 +781,15 @@ class Range(start:Number, end:Number) {
 }
 ```
 
-Formalmente, un generador es un tipo que implementa la interfaz:
-
-```HULK
-interface Generator {
-    next(): Boolean;
-    current(): T;
-}
-```
-
-Donde `T` es un tipo específico.
-
 Cualquier clase que posea estos dos métodos puede ser usada con la siguiente sintaxis:
 
-```HULK
+```hulk
 for (<var>:<type> in <generator>) <expr>
 ```
 
 Por ejemplo:
 
-```HULK
+```hulk
 for (x:Number in new Range(0,100)) print(x);
 ```
 
@@ -794,7 +797,7 @@ Esta expresión enlaza una variable `x` al valor `current()` del generador en ca
 
 La expresión `for` es sintácticamente equivalente a una construcción como la siguiente:
 
-```HULK
+```hulk
 let _iter:<generator-type>=<generator> in while (_iter.next()) {
     let <var>:<type>=_iter.current() in <expr>;
 }
@@ -802,7 +805,7 @@ let _iter:<generator-type>=<generator> in while (_iter.next()) {
 
 Por ejemplo, en este caso:
 
-```HULK
+```hulk
 let _iter:Range=new Range(0,100) in while(_iter.next()) {
     let x:Number=_iter.current() in print(x);
 };
@@ -814,7 +817,7 @@ Esta extensión adiciona una familia especial de tipos, los tipos generadores, q
 
 Un tipo generador se declara con la sintaxis:
 
-```HULK
+```hulk
 <type>*
 ```
 
@@ -822,7 +825,7 @@ Donde `<type>` es un tipo cualquiera. Por ejemplo `Number*`, `Boolean*`, `Number
 
 Por ejemplo, la siguiente clase cumple con la interfaz de un generador de tipo `Number*`:
 
-```HULK
+```hulk
 class Range(start:Number, end:Number) {
     i:Number = start;
     next():Boolean {
@@ -835,7 +838,7 @@ class Range(start:Number, end:Number) {
 
 Por lo tanto, puede ser usado en el siguiente fragmento:
 
-```HULK
+```hulk
 function sum(items:Number*) {
     let s:Number=0 in for(x:Number in items) s:=s+x;
 }
@@ -845,7 +848,7 @@ print(sum(new Range(1,100))); # 4950
 
 De esta forma es posible escribir funciones "genéricas" con respecto a los tipos generadores, es decir, donde no sea necesario conocer de antemano el tipo concreto que implementa la interfaz de generador. Además, es posible escribir funciones que devuelvan tipos generadores y de esta forma simplificar la sintaxis:
 
-```HULK
+```hulk
 function range(start:Number, end:Number):Number* -> new Range(start, end);
 
 for (x in range(1,100)) print(x);
@@ -853,19 +856,19 @@ for (x in range(1,100)) print(x);
 
 Las variables y parámetros declarados con un tipo generador pueden ser usados en una expresión `for`, pero además, es posible interpretarlos como una _supuesta_ clase con métodos `next()` y `current()`, ya que la implementación "real" es esta. Por lo tanto, el siguiente código es válido:
 
-```HULK
+```hulk
 let items:Number* = range(1,100) in items.next();
 ```
 
 Aún cuando no sea posible acceder estáticamente al tipo concreto que implementa el generador, es sabido que tendrá al menos los métodos `next()` y `current()` con la semántica esperada, por lo que es posible implementar funciones importantes tales como:
 
-```HULK
+```hulk
 function empty(items:Number*) -> !items.next();
 ```
 
 O patrones como este:
 
-```HULK
+```hulk
 class Take(items:Number*, k:Number) {
     items:Number* = items;
     k:Number = k;
@@ -883,7 +886,7 @@ Esta extensión añade una sintaxis para definir expresiones generadoras, es dec
 
 Una expresión generadora tiene la forma:
 
-```HULK
+```hulk
 { <expr> | <var> in <loop-expr> }
 ```
 
@@ -897,29 +900,29 @@ Donde `<expr>` es una expresión que involucra la variable `<var>`, y `<var>` ca
 Los siguientes ejemplos son todos válidos:
 
 - Tipo generador explícito:
-    ```HULK
+    ```hulk
     { 2*x | x in new Range(1, 100) }
     ```
 
 - Función que devuelve un tipo generador:
-    ```HULK
+    ```hulk
     { x+1 | x in range(1, 100) }
     ```
 
 - Ciclo `while` (infinito en este caso):
-    ```HULK
+    ```hulk
     { exp(x) | x in while (True) random() }
     ```
 
 - Ciclo `for` (anidado en este caso):
-    ```HULK
-    { x | x in for (i in range(1,100))
-               for (j in range(1,100))
+    ```hulk
+    { x | x in for (i in range(1, 100))
+               for (j in range(1, 100))
                i*j }
     ```
 
 - Expresión `let` con un ciclo en el cuerpo:
-    ```HULK
+    ```hulk
     { x | x in let i:Number=0 in while (i < 100) {
                    i := i + 1;
                    random(); }}
@@ -933,7 +936,7 @@ De manera general, el cuerpo del método `next()` corresponderá a la implementa
 
 Por ejemplo, para la siguiente expresión:
 
-```HULK
+```hulk
 { exp(x) | x in let i:Number=0 in while (i < 100) {
                     i := i + 1;
                     random(); }}
@@ -941,7 +944,7 @@ Por ejemplo, para la siguiente expresión:
 
 Una posible implementación será el siguiente tipo generador:
 
-```HULK
+```hulk
 class Generator {
     x:Number = 0; # Variable que almacenará current
     i:Number = 0; # Inicialización de la expresión let
@@ -963,7 +966,7 @@ En el caso de que el cuerpo de una expresión generadora sea un generador direct
 
 Al igual que en las funciones anónimas, las variables externas referenciadas dentro de la clausura de una expresión generadora se capturan **por copia**. Por lo tanto, su modificación dentro de una expresión generadora no se percibe fuera de la expresión:
 
-```HULK
+```hulk
 let i:Number = 0,
     items:Number* = { x | x in while (i<10) i := i+1 }
 in {
@@ -976,19 +979,19 @@ in {
 
 Esta extensión permite inicializar un _array_ a partir de un generador, mediante la sintaxis:
 
-```HULK
+```hulk
 new <array-type>[<generator>]
 ```
 
 Por ejemplo, usando directamente un tipo generador:
 
-```HULK
+```hulk
 new Number[range(1, 100)]
 ```
 
 O una expresión generadora (en caso de implementarse):
 
-```HULK
+```hulk
 new Number[{ 2*x | x in range(1, 100) }]
 ```
 
@@ -1000,13 +1003,13 @@ Esta extensión introduce inferencia de tipos en **HULK**, de modo que no sea ne
 
 El caso más sencillo, es cuando en una declaración de variable se omite el tipo. En este caso, el tipo se infiere de la expresión de inicialización:
 
-```HULK
+```hulk
 let x=3+2 in case x of y:Number -> print("Ok);
 ```
 
 De igual forma sucede con los atributos de una clase, cuando pueden ser inferidos por el tipo de la expresión de inicialización:
 
-```HULK
+```hulk
 class Point(x:Number, y:Number) {
     x=x;
     y=y;
@@ -1016,19 +1019,19 @@ class Point(x:Number, y:Number) {
 
 Un caso más complejo es cuando se deja sin especificar el tipo de retorno de una función, pero puede ser inferido a partir de su cuerpo:
 
-```HULK
+```hulk
 function succ(n:Number) -> n + 1;
 ```
 
 En el caso anterior, es fácil inferir el tipo de retorno de `succ` porque la expresión retorna exactamente el mismo tipo que un argumento. En estos casos, es posible incluso no especificar el tipo del argumento, ya que el operador `+` solo está definido para `Number`:
 
-```HULK
+```hulk
 function succ(n) -> n + 1;
 ```
 
 Sin embargo, a veces no es posible inferir el tipo de un argumento a partir de su uso _dentro del cuerpo_ de una función. En el caso siguiente, aunque sabemos que el tipo del argumento `p` debe ser `Point` para aceptar la invocación, _no se garantiza_ que el mecanismo de inferencia de tipos deba deducirlo (ya que en el futuro puede haber otras clases con un método `translate`). Dependiendo de la implementación, en estos casos se permite lanzar error semántico indicando que no fue posible inferir el tipo del argumento `p`.
 
-```HULK
+```hulk
 function step(p) -> p.translate(1,1);
 
 let p = new Point(0,0) in step(p); # Puede lanzar error semántico
@@ -1036,13 +1039,13 @@ let p = new Point(0,0) in step(p); # Puede lanzar error semántico
 
 Por último, especial complejidad acarrean las funciones recursivas:
 
-```HULK
+```hulk
 function fact(n) -> if (n<0) 1 else n*fact(n-1);
 ```
 
 El ejemplo anterior permite inferir simultáneamente el tipo del argumento `n` y del retorno, ya que se usa el retorno de la función recursiva en una operación `+` que solo está definida para `Number`. Sin embargo, en el ejemplo siguiente:
 
-```HULK
+```hulk
 function ackermann(m, n) ->
     if   (m==0) n+1
     elif (n==0) ackermann(m-1, 1)
@@ -1053,7 +1056,7 @@ Como el tipo de retorno no se utiliza explícitamente en una operación matemát
 
 Finalmente, dos funciones mutuamente recursivas:
 
-```HULK
+```hulk
 function f(a, b) -> is (a==1) b else g(a+1, b/2);
 function g(a, b) -> if (b==1) a else f(a/2, b+1);
 ```
@@ -1064,19 +1067,19 @@ Varias de las extensiones de **HULK** introducen tipos nuevos, por ejemplo, _arr
 
 Cuando se crea un _array_, es posible inferir el tipo estático si se provee una expresión de inicialización:
 
-```HULK
+```hulk
 let x = new [20]{ i -> (i+1)*(i+2) } in ... # Infiere Number
 ```
 
 Sin embargo, si en la expresión de inicialización se usa el propio _array_, entonces no se garantiza que sea posible inferir el tipo:
 
-```HULK
+```hulk
 let x = new [20]{ i -> if (i<=1) 1 else x[i-1] + x[i-2] } in ...
 ```
 
 Cuando se define un tipo funcional, el tipo puede ser inferido a partir de la declaración de una función global:
 
-```HULK
+```hulk
 function fib(n) -> if (n <= 1) 1 else fib(n-1) + fib(n-2);
 
 let f=fib in print(f(3)); # f infiere (Number) -> Number
@@ -1084,13 +1087,13 @@ let f=fib in print(f(3)); # f infiere (Number) -> Number
 
 Cuando se define una función anónima, el tipo puede ser inferido a partir de su cuerpo:
 
-```HULK
+```hulk
 let f = function (x) -> x % 2 == 0 in print(f(10));
 ```
 
 En ocasiones, se puede inferir el tipo de un parámetro a partir del tipo de la variable donde es almacenada la función anónima:
 
-```HULK
+```hulk
 let f:(Person)->Boolean = function (p) -> p.name() == "John" in ...
 ```
 
@@ -1098,7 +1101,7 @@ En este caso hipótetico el compilador infiere `Person` para el argumento `p` gr
 
 En una expresión `for` el tipo de la variable puede ser inferido a partir del tipo del generador:
 
-```HULK
+```hulk
 function range(start:Number, end:Number):Number* {
     new Range(start,end);
 }
@@ -1110,7 +1113,7 @@ Para las expresiones generadoras, el tipo puede ser inferido a partir del tipo d
 El tipo inferido para la expresion `exp(x) < 0` es `Boolean`.
 Por lo tanto el tipo inferido para toda la expresión `Boolean*`.
 
-```HULK
+```hulk
 # g infiere Boolean*
 let g = { exp(x) < 0 | x in let i:Number=0 in
                             while (i < 100) {
@@ -1129,7 +1132,7 @@ El caso más sencillo es cuando se usan variables de tipo `Number` o `Boolean`, 
 
 Un caso más interesante es cuando se puede inferir por la inicialización de una variable, por ejemplo:
 
-```HULK
+```hulk
 let x = new Person("John Doe") in print(x.greet());
 ```
 
@@ -1137,13 +1140,345 @@ En este caso se puede inferir que `x` nunca será `Null` pues no existe ninguna 
 
 Por el contrario, si se usa un ciclo o una expresión `if` sin parte `else`, no es posible garantizar _null-safety_, incluso cuando realmente el valor de la expresión no pueda ser `Null`.
 
-```HULK
+```hulk
 let i=10, x=(while (i > 0) i:=i-1) in print(x);
 ```
 
 Así mismo, en los argumentos de una función nunca será posible garantizar _null-safety_.
 
 De manera general el compilador de **HULK** hará todo lo posible por inferir si cada uso es _null-safe_, incluso cuando no se introduzca una expresión `with`. En los casos en que no sea posible inferirlo, el programador siempre podrá introducir una expresión `with` para satisfacer al compilador.
+
+### Extensión: Macros
+
+Esta extensión introduce un sistema limitado de macros en tiempo de compilación con verificación semántica. Una función macro es similar a una función estándar (global) en sintaxis, pero se define con la palabra clave `define`:
+
+```hulk
+define dmin(x:Number, y:Number):Number -> if (x <= y) x else y;
+```
+
+La diferencia más directa radica en que las funciones macro se evalúan en tiempo de compilación, y se expanden directamente en el lugar donde se usan. Por ejemplo, para el caso anterior, si se usa de la siguiente manera:
+
+```hulk
+print(min(3,4));
+```
+
+En tiempo de compilación se sustituirá el código anterior directamente por el resultado de expandir la función macro, lo que sería equivalente a haber escrito:
+
+```hulk
+print(if (3 <= 4) 3 else 4);
+```
+
+Una diferencia adicional entre las funciones macro y las funciones estándar, es que en las funciones macro los parámetros **no se evalúan**, sino que se expanden directamente en el cuerpo del macro. Por ejemplo:
+
+```hulk
+print(min(3+2, 4+5));
+```
+
+Expande a:
+
+```hulk
+print(if ((3+2) <= (4+5)) (3+2) else (4+5));
+```
+
+Otra diferencia que se desprende directamente de esta definición, es que los parámetros de una función macro **no son _l-values_**, por lo que no es posible asignarles una expresión.
+
+Esto cambia considerablemente el comportamiento en comparación con una función estándar global si un parámetro tiene efectos colaterales.
+Por ejemplo, supongamos las siguientes declaraciones:
+
+```hulk
+function fmin(x:Number, y:Number):Number -> if (x<y) x else y;
+define dmin(x:Number, y:Number):Number -> if (x<y) x else y;
+
+function f(x:Number) {
+    print(x);
+    x;
+}
+```
+
+Aparentemente `fmin` y `dmin` son equivalentes, sin embargo:
+
+```hulk
+fmin(f(3), f(4));
+```
+
+Imprime una vez `3` y una vez `4`, ya que los argumentos se evalúan antes de ser pasados como parámetros a `fmin`. Por el contrario:
+
+```hulk
+dmin(f(3), f(4));
+```
+
+Se expande directamente en el siguiente código:
+
+```hulk
+if (f(3) < f(4)) f(3) else f(4);
+```
+
+Por lo que `f(3)` es llamado 2 veces. Por tal motivo, las funciones macro deben usar en una instrucción `let` para expandir los argumentos una sola vez, a menos que se desee explícitamente ejecutar el efecto colateral potencial de una función más de una vez (por ejemplo, si la intención es realizar un ciclo).
+
+Las funciones macro también **son verificadas semánticamente**, siguiendo las mismas reglas semánticas de las funciones globales, por ejemplo, con respecto a la consistencia en los tipos de los parámetros, el tipo de retorno y el cuerpo del macro. Esto garantiza que las funciones macro son seguras de utilizar en cualquier contexto donde una función estándar con los mismos tipos sería válida.
+
+Un ejemplo más sobre las diferencias semánticas entre una función macro y una función estándar radica en que los argumentos en las funciones globales se pasan por copia. Sin embargo, como las funciones macro no son invocadas, sino expandidas **en el mismo contexto**, realmente no hay un paso de parámetros. Por tal motivo, los efectos colaterales sobre las variables del contexto donde de expande un macro funcionan de forma diferente.
+
+Por ejemplo, si tenemos la siguiente función global:
+
+```hulk
+function repeat(x:Number, y:Number):Number {
+    while (x > 0) {
+        x := x - 1;
+        y;
+    };
+}
+
+let y:Number=0 in print(repeat(10, y:=y + 1));
+```
+
+El resultado de invocar a `repeat` es `1` pues **primero** se evalúa `y := y + 1` y luego se pasa este valor por copia a `repeat`. Sin embargo, si se define como una función macro:
+
+```hulk
+define repeat(x:Number, y:Number):Number {
+    let i:Number=x in while (i > 0) {
+        i := i - 1;
+        y;
+    };
+}
+
+let y:Number=0 in print(repeat(10, y:=y + 1));
+```
+
+En este caso la expansión de `repeat` genera un código semánticamente equivalente al siguiente:
+
+```hulk
+let y:Number=0 in print(
+    let i:Number=10 in while (i > 0) {
+        i := i - 1;
+        y := y + 1;
+    }
+);
+```
+
+En este caso el valor de `y` será `10`, pues la expresión `y := y + 1` se ejecuta **todas** las iteraciones del ciclo, en **el mismo contexto** donde se expande el macro.
+Este efecto simplemente no es posible en **HULK** usando solo funciones, ni siquiera con expresiones _lambda_, pues el paso de parámetros siempre es **por copia**.
+
+Una función macro al expandirse puede generar un bloque de expresiones. Aunque en **HULK** no es permitido al usuario escribir directamente un bloque de expresiones en cualquier lugar (por ejemplo, como valor de un parámetro), esta es una restricción sintáctica, impuesta por el _parser_. Desde el punto de vista semántico los bloques de expresión se comportan como expresiones cuyo tipo y valor de retorno son los de la última expresión del bloque.
+
+La expansión de un macro **no es** una simple sustitución léxica del cuerpo del macro en el lugar donde se invoca. Por el contrario, la expansión es sintáctica, y se realiza a nivel de AST. Esto significa que no es necesario que una definición de macro se preocupe por parentizar expresiones o poner `;` adicionales "por si acaso", pues en el momento de la expansión del macro, los elementos léxicos ya no importan.
+
+Por otro lado, las funciones macros deben ser _higiénicas_, esto significa que **no pueden contaminar** el contexto donde se expanden con símbolos que puedan cambiar la semántica. Por este motivo, **todas las variables** declaradas dentro de un macro (ya sea en expresiones `let`, `for`, etc.) deben ser renombradas a símbolos internos que no puedan coincidir con los símbolos escritos por el programador. Si esto no se hiciera, entonces pudiera suceder que nombres de símbolos expandidos por el macro ocultaran símbolos del contexto.
+Por ejemplo:
+
+```hulk
+let i:Number=0 in repeat(10, i := i + 1);
+```
+
+Generaría:
+
+```hulk
+let i:Number=0 in
+    let i:Number=10 in while (i>0) {
+        i := i - 1;
+        i := i + 1;
+    }
+```
+
+Con lo cual el ciclo no terminaría nunca.
+Por este motivo realmente la sustitución debe generar un código más parecido al siguiente:
+
+```hulk
+let i:Number=0 in
+    let #var0:Number=10 in while (#var0>0) {
+        #var0 := #var0 - 1;
+        i := i + 1;
+    }
+```
+
+Donde `#var0` es un identificador generador dinámicamente que no puede ser escrito por el usuario (por restricciones del _lexer_). De esta forma se garantiza que la expansión de un macro nunca introduzca símbolos que oculten otros símbolos en el contexto donde se usen. Esta sustitución **debe hacerse automáticamente**, es decir, en la definición del macro se puede declarar un símbolo `i` que será automáticamente sustituido por `#varX` o cualquier otro convenio similar.
+
+El proceso de expansión de un macro puede terminar en una expresión que aún contenga macros. Estos macros volverán a ser expandidos, recursivamente, hasta que no quede ningún macro por expandir. Si este proceso produce una recursión infinita (en la práctica, una cantidad elevada de expansiones), se lanzará un error en tiempo de compilación. Idealmente, si es posible detectar durante el chequeo semántico del macro la posibilidad de una expansión infinita, se debe lanzar un error o _warning_.
+
+### Extensión: Bloques macro
+
+Esta extensión permite invocar a las funciones macro con una sintaxis especial, donde el último parámetro puede ser definido fuera de los paréntesis de la invocación. Siguiendo con el mismo ejemplo de la sección anterior (macro `repeat`), esta extensión permitiría invocarlo de la forma:
+
+```hulk
+let y:Number=0 in repeat (10) y:=y+1;
+```
+
+O de la forma:
+
+```hulk
+let y:Number=0 in repeat (10) {
+    y:=y+1;
+};
+```
+
+Es decir, la expresión (o bloque de expresiones) que sigue a una función macro se usa como el último parámetro del macro. Esto permite simular en **HULK** construcciones sintácticas como la anterior, que parecen nativas del lenguaje, sin perder la verificación semántica ni la inferencia de tipos (opcional) que funciona en el resto de **HULK**.
+Veamos algunas macros interesantes que se pueden implementar con esta idea.
+
+Es posible simular expresiones condicionales distintas, como la siguiente:
+
+```hulk
+define unless (cond:Boolean, expr:Object):Object -> if (!cond) expr;
+```
+
+Que se puede usar de la siguiente forma:
+
+```hulk
+let msg:String=read() in unless (msg=="Exit") {
+    print("Hello World");
+};
+```
+
+También es posible simular distintos sabores de ciclos, como este:
+
+```hulk
+define until (cond:Boolean, expr:Object):Object -> while(!cond) expr;
+```
+
+Que se podría usar de la siguiente manera:
+
+```hulk
+let x:Number=10 in until (x == 0) {
+    x := x - 1;
+    print(x);
+};
+```
+
+### Extensión: Patrones de expresiones en macros
+
+Esta extensión añade un mecanismo de _pattern matching_ para expresiones dentro de los macros. Este mecanismo permite definir macros cuya expansión dependa de la estructura sintáctica de los argumentos. Para ello introduciremos una expresión `match` que **solo** puede ser usada en macros. Esta expresión permite _deconstruir_ la estructura sintáctica de una expresión arbitraria `e` y tomar decisiones en función de los elementos que la componen.
+
+Veamos un ejemplo un tanto esotérico para introducir los elementos básicos de la sintaxis de patrones. Supongamos que queremos definir un macro `simplify` que recibe una expresión aritmética y devuelve una expresión de igual valor pero simplificada. Las reglas para simplificar serán muy sencillas: si es una expresión `+`, entonces si una de las dos partes es `0`, me quedo con la otra, y si es una expresión `*` entonces si una de las dos partes es `1` me quedo con la otra. En otro caso la expresión se mantiene igual.
+
+```hulk
+define simplify(e:Number):Number {
+    match e with {
+        e1:Number + Number(0) -> simplify(e1);
+        e1:Number * Number(1) -> simplify(e1);
+        Number(0) + e1:Number -> simplify(e1);
+        Number(1) * e1:Number -> simplify(e1);
+        e1:Number             -> e1;
+    };
+}
+```
+
+En esta sintaxis, similar a `case`, la expresión `e` se compara _estructuralmente_ (en términos del AST) con cada uno de los patrones (las expresiones en la parte izquierda de `->`). Para el **primer** patrón que sea compatible se expande entonces la expresión en la parte derecha de `->`. Si ningún patrón es compatible, se lanzará un error en tiempo de compilación durante la expansión del macro, indicando que ninguna de las formas esperadas era compatible.
+Para indicar _valores literales_ (`Boolean`, `Number` y `String`) usaremos una sintaxis como la mostrada (e.g., `Number(4)` o `String("Hello World")`).
+
+La compatibilidad se realiza mediante una _unificación_ recursiva del AST de `e` con el AST de cada patrón. En este proceso, las variables (`e1` en el ejemplo) que existan en el patrón se unificarán con los sub-árboles correspondientes del AST.
+Las "variables" `e1`, `e2`, etc., que unificarán con sub-árboles del AST, deben anotarse con un tipo que indica el tipo más abstracto esperado. Es decir que `e:Object` unifica con cualquier árbol.
+
+Por ejemplo:
+
+```hulk
+simplify (1 * 3 + 0);
+```
+
+En este caso el primer patrón es compatible, siendo `e1` unificado con `(1 * 3)`, por lo que se obtiene la expansión:
+
+```hulk
+simplify(1 * 3);
+```
+
+Como en esta expansión aún quedan macros, se vuelve a expandir `simplify` siendo compatible el cuarto patrón, `e1` unificando con `3`. La expansión final queda entonces:
+
+```hulk
+3;
+```
+
+Nótese que la unificación puede funcionar si se asigna a la misma variable ASTs con estructura idéntica. Por ejemplo, si deseamos añadir como patrón que `x + x` se convierte en `2*x`, podemos definir el macro como:
+
+```hulk
+define simplify(e:Number):Number {
+    match e with {
+        # ... los casos vistos anteriormente
+        e1:Number + e1:Number -> 2 * e1;
+        e1:Number             -> e1;
+    };
+}
+```
+
+En este caso se unificará solamente si ambas partes de la expresión `+` tienen exactamente la misma estructura, por ejemplo `3*2 + 3*2` unifica `e1` con `3*2`, pero `3*2 + 2*3` no funciona, ya que aunque semánticamente ambas sub-expresiones tendrán el mismo valor, no tienen exactamente la misma estructura sintáctica para los respectivos AST.
+
+Todas las expresiones de **HULK** _que no definen símbolos_ son usables como patrones en una expresión `match`, y para cada una la sintaxis como patrón se corresponde naturalmente con la sintaxis como expresión. Es decir, `let`, `for`, las expresiones generadoras, las expresiones _lambda_ y las expresiones de inicialización de _array_ **no pueden** ser usadas como patrones.
+También es posible unificar con una expresión compleja. En este caso, se verificará recursivamente cada parte de la expresión.
+Algunos ejemplos:
+
+```hulk
+# ...
+match e with {
+    e1:Number + e2:Number                   -> ... # Expresiones
+    e1:Number * e2:Number                   -> ... # aritméticas simples o
+    e1:Number + (e2:Number - e3:Number)     -> ... # complejas,
+    while (e1:Boolean) e2:Object            -> ... # Ciclos,
+    if (c:Boolean) e1:Object                -> ... # Condicionales sin o
+    if (c:Boolean) e1:Object else e2:Object -> ... # con parte else,
+    x:Number                                -> ... # Variables,
+    Number(5)                               -> ... # Literales,
+    Person(n:String)                        -> ... # Instanciación,
+    e1:Object := e2:Object                  -> ... # Asignación,
+    fib(e1:Number)                          -> ... # Invocación a funciones
+    e1:Person.greet()                       -> ... # y métodos de instancia.
+}
+```
+
+Para el caso de los bloques de expresiones, es posible unificar directamente con un bloque de expresión que tiene una cantidad exacta de elementos:
+
+```hulk
+match e with {
+    { e1:Object ; e2:Object ; e3:Object } -> ...
+}
+```
+
+Sin embargo, en ocasiones no se sabe de antemano la cantidad de expresiones que tendrá el bloque. Para estos casos, definiremos una sintaxis especial que permite _deconstruir_ un bloque de expresiones con **más de 1 elemento** en 2 partes: la primera expresión, y un bloque de expresiones restante. Esto permite aplicar recursivamente un macro a un bloque de expresiones de longitud arbitraria:
+
+```hulk
+define simplify(e:Number):Number {
+    match e with {
+        # ... los casos vistos anteriormente
+        { e1:Number | e2:Number } -> { simplify(e1) ; simplify(e2) };
+    }
+}
+```
+
+En esta nueva sintaxis, el operador `|` sirve para indicar la concatenación de la primera expresión con el resto del bloque de expresiones. Nótese que para que esto funcione, `e2` no puede ser un bloque vacío, es decir, `e` originalmente contenía al menos 2 expresiones. Nótese que en esta situación el código expandido tendría la forma `{ e1 ; { e2; { e3; ...} } }`, es decir, los bloques se irían anidando a medida que se ejecuta el macro recursivamente. Sin embargo, `{ e1; { e2; } }` es semánticamente equivalente a `{ e1; e2 }` siempre, por lo que el compilador es libre de "desenredar" esta anidación de bloques de expresiones de forma automática.
+Además, para que el caso base funcione, el compilador debe considerar un bloque con una sola expresión `{ e; }` equivalente a la misma expresión `e` por si sola.
+
+El _pattern matching_ en macros que hemos definido en esta extensión es uno de las técnicas más poderosas de meta-programación que se pueden lograr en un lenguaje con tipado estático. Nótese que el compilador puede tener que realizar un procesamiento potencialmente ilimitado (excepto por efectos prácticos en los límites de la recursividad). Aunque no lo hemos demostrado formalmente, el mecanismo de macros definido con _pattern matching_ es Turing-completo. Una manera relativamente fácil de entender por qué, es notar que es posible codificar cualquier máquina de Turing como una secuencia de expresiones, representando los estados y los valores de la cinta mediante constantes. A base de _pattern matching_ y expansiones de macro recursivas, es posible simular cualquier máquina de Turing _en tiempo de compilación_.
+
+A modo de ejemplo veamos cómo resolver el conocido problema de identificar si una secuencia de números `0` o `1` representa un número en binario divisible por `3`. Este es un conocido lenguaje regular, cuyo autómata tiene `3` estados que representan los posibles restos con `3`. La función macro siguiente simula este autómata (la presentaremos sin demostración):
+
+```hulk
+define multiple3(state:Number, value:Number):Boolean {
+    match state with {
+        Number(0) -> match value with {
+            Number(0)                   -> True;
+            Number(1)                   -> False;
+            { Number(0) | rest:Number } -> multiple3(0, rest);
+            { Number(1) | rest:Number } -> multiple3(1, rest);
+        };
+        Number(1) -> match value with {
+            Number(0)                   -> False;
+            Number(1)                   -> True;
+            { Number(0) | rest:Number } -> multiple3(2, rest);
+            { Number(1) | rest:Number } -> multiple3(0, rest);
+        };
+        Number(2) -> match value with {
+            Number(0)                   -> False;
+            Number(1)                   -> False;
+            { Number(0) | rest:Number } -> multiple3(1, rest);
+            { Number(1) | rest:Number } -> multiple3(2, rest);
+        };
+    };
+}
+```
+
+Este macro se puede ejecutar de la siguiente forma:
+
+```hulk
+multiple3 (0) { 1; 1; 0; };
+```
+
+Y se expandiría directamente al literal `True`, computando _en tiempo de compilación_ un problema de la palabra en un lenguaje regular. No es muy complicado ver como extender esta idea a simular una máquina de Turing. Solo es necesario "llevar la cuenta" de la posición del cabezal.
 
 ## Formalización del lenguaje HULK
 
@@ -1330,7 +1665,7 @@ Veamos entonces una propuesta de organización.
 
 Implementar los operadores `+`, `-`, `*`, `/` y `%`, y el tipo `Number`. En este punto tu compilador debe ser capaz de _interpretar_ programas como el siguiente:
 
-```HULK
+```hulk
 (34.1 * (123.42 - 208)) / (24 + 9);
 ```
 
@@ -1345,7 +1680,7 @@ Para resolver este paso deberás:
 
 Implementar la invocación (**solo la invocación**) a funciones globales (`print`, `parse`, `max`, `min`, `sin`, `cos`, etc.). En este punto tu compilador debe ser capaz de interpretar programas como el siguiente:
 
-```HULK
+```hulk
 print(sin(2 * 3.1415) + cos(1 / (4.54 - 6.72)));
 ```
 
@@ -1360,7 +1695,7 @@ Para resolver este paso deberás:
 
 Implementar la declaración de funciones, potencialmente _solo_ con la notación compacta. En este punto tu compilador debe ser capaz de interpretar programas como el siguiente:
 
-```HULK
+```hulk
 function tan(x) -> sin(x) / cos(x);
 
 print(tan(2 * 3.1415));
