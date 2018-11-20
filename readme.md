@@ -1,6 +1,6 @@
 # Introducción a la Construcción de Compiladores
 
-Este proyecto contiene las notas de conferencias, preparaciones metodológicas, y algunos ejercicios y sugerencias para clases prácticas, de un curso introductorio a la teoría de lenguajes formales y compiladores para estudiantes de Ciencia de la Computación. [Puedes comenzar a leer aquí.](https://apiad.github.io/compilers-uh/html/chap0.html)
+Este proyecto contiene las notas de conferencias, preparaciones metodológicas, y algunos ejercicios y sugerencias para clases prácticas, de un curso introductorio a la teoría de lenguajes formales y compiladores para estudiantes de Ciencia de la Computación. [Puedes comenzar a leer aquí.](https://matcom.github.io/compilers/html/chap0.html)
 
 ## Estructura del proyecto
 
