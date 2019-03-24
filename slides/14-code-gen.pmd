@@ -179,7 +179,7 @@ IF x GOTO label ;         IF x GOTO label ;
 
 - Paso de parámetros:
     ```
-    PARAM a ;
+    ARG a ;
     ```
 
 - Retorno (obligatorio):
@@ -298,7 +298,7 @@ function entry {
     instance = ALLOCATE Main ;       # ...
     SETATTR instance Main_msg lmsg ; # estos nombres
                                      # realmente son
-    PARAM instance ;                 # solo números !
+    ARG instance ;                 # solo números !
     result = VCALL Main Main_main ;  # ...
 
     RETURN 0 ;
