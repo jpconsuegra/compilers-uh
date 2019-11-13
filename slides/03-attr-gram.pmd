@@ -121,7 +121,7 @@ Una **gramática atributada** es una tupla $<G,A,R>$, donde:
 
 - En cada no-terminal hay atributos, que pueden almacenar algún valor
 - En cada terminal hay atributos que pone mágicamente el tokenizer
-- En cada producción hay un conjunto de reglas que invlucran a algunos de los atributos
+- En cada producción hay un conjunto de reglas que involucran a algunos de los atributos
 
 ## Todavía no hemos dicho en qué orden evaluar los atributos
 
@@ -161,7 +161,7 @@ De momento asumiremos que existe una forma de evaluarlos...
 
 ## Y sus respectivas reglas
 
-    S -> XC       {   S.ok = (X.cnt == B.cnt) }
+    S -> XC       {   S.ok = (X.cnt == C.cnt) }
     X -> aXb      { X0.cnt = 1 + X1.cnt }
        | epsilon  {  X.cnt = 0 }
     C -> cC       { C0.cnt = 1 + C1.cnt }
