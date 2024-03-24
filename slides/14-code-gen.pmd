@@ -4,7 +4,7 @@
 
 # El lenguaje CIL
 
-Compilar de COOL a MIPS directamente es muy difícil :(
+Compilar de HULK a MIPS directamente es muy difícil :(
 
 Necesitamos un lenguaje intermedio...
 
@@ -68,7 +68,7 @@ function f2 {
 
 ```
 function f1 {
-    PARAM x;   # argumentos (que vienen de afuera)
+    PARAM x; # parámetros (que vienen de afuera)
     PARAM y;
 
     LOCAL a; # variables locales (memoria propia)
@@ -233,30 +233,29 @@ function main {
 }
 ```
 
-# Hola Mundo (desde COOL)
+# Hola Mundo (desde HULK)
 
-Este es el código en COOL:
+Este es el código en HULK (un poco más elaborado de lo necesario para poder ilustrar mejor):
 
-```cool
-class Main: IO {
-    msg : string = "Hello World!\n";
-
-    function main() : IO {
-        self.print(self.msg);
-    }
+```hulk
+type Program {
+    msg = "Hellow World!";
+    main() => print(self.msg);
 }
+
+new Program().main();
 ```
 
-# Hola Mundo (desde COOL)
+# Hola Mundo (desde HULK)
 
 Primero los tipos:
 
 ```cil
 .TYPES
 
-type Main {
-    attribute Main_msg ;   # fíjense en los nombres
-    method Main_main: f1 ; # de los métodos y atributos
+type Program {
+    attribute Program_msg ;   # fíjense en los nombres
+    method Program_main: f1 ; # de los métodos y atributos
 }
 
 .DATA
@@ -264,7 +263,7 @@ type Main {
 s1 = "Hello World!\n";
 ```
 
-# Hola Mundo (desde COOL)
+# Hola Mundo (desde HULK)
 
 Esta es la función main
 
@@ -277,14 +276,14 @@ function f1 {
 
     LOCAL lmsg ;
 
-    lmsg = GETATTR self Main_msg ;
+    lmsg = GETATTR self Program_msg ;
     PRINT lmsg ;
 
     RETURN self ;
 }
 ```
 
-# Hola Mundo (desde COOL)
+# Hola Mundo (desde HULK)
 
 ```cil
 .CODE
@@ -295,11 +294,11 @@ function entry {
     LOCAL result ;
 
     lmsg = LOAD s1 ;
-    instance = ALLOCATE Main ;       # ...
-    SETATTR instance Main_msg lmsg ; # estos nombres
-                                     # realmente son
-    ARG instance ;                 # solo números !
-    result = VCALL Main Main_main ;  # ...
+    instance = ALLOCATE Program ;       # ...
+    SETATTR instance Program_msg lmsg ; # estos nombres
+                                        # realmente son
+    ARG instance ;                      # solo números !
+    result = VCALL Program Program_main ;  # ...
 
     RETURN 0 ;
 }
@@ -307,10 +306,10 @@ function entry {
 
 # Convenios para generación de código
 
-```cool
-let x : Integer = 5 in   # esto es parte de un
-    x + 1                # programa de COOL más
-end                      # largo
+```hulk
+let x = 5 in   # esto es parte de un
+    x + 1      # programa de HULK más
+;              # largo
 ```
 
 ```cil-template
@@ -328,10 +327,10 @@ function f {
 
 # Convenios para generación de código
 
-```cool-template
-let x : Integer = 5 in
+```hulk-template
+let x = 5 in
     x + <expr>      # expresión arbitraria
-end
+;
 ```
 
 ```cil-template
@@ -351,9 +350,9 @@ function f {
 # Generación de Let-In
 
 ```
-let <var> : <type> = <init> in  # expresión let-in
-    <body>                      # arbitraria
-end
+let <var> = <init> in  # expresión let-in
+    <body>             # arbitraria
+;
 ```
 
 ```
@@ -382,6 +381,6 @@ function f {
 - En CIL las variables no se ocultan, no hay ámbito ni visibilidad
 - Toda la consistencia se garantiza porque hicimos el chequeo semántico
 
-## Se ve bastante claro como llegar desde COOL hasta CIL, ¿verdad?
+## Se ve bastante claro como llegar desde HULK hasta CIL, ¿verdad?
 
 Al menos, bastante más claro que intentar llegar directo a un lenguaje ensamblador *de verdad*.
