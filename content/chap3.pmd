@@ -915,7 +915,7 @@ Estado  =             +        i        $             E       A
 0                              S3       S->E          1       2
 1                                       OK
 2       S4
-3       A->i                   S5                     E->i
+3       A->i          S5                E->i
 4                              S7                             6
 5                              S9                             8
 6                                       E -> A = A
